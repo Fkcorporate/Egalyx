@@ -2165,19 +2165,21 @@ class Recommandation(db.Model):
     score_priorite = db.Column(db.Integer, default=0)  # Calculé automatiquement
     statut = db.Column(db.String(50), default='a_traiter')
     taux_avancement = db.Column(db.Integer, default=0)
-    audit_id = db.Column(db.Integer, db.ForeignKey('audits.id'), nullable=False)  # 'audits.id'
+    audit_id = db.Column(db.Integer, db.ForeignKey('audits.id'), nullable=False)
     constatation_id = db.Column(db.Integer, db.ForeignKey('constatations.id'))
     risque_id = db.Column(db.Integer, db.ForeignKey('risques.id'), nullable=True)
     responsable_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)
-    is_archived = db.Column(db.Boolean, default=False)
-    archived_at = db.Column(db.DateTime)
-    archived_by = db.Column(db.Integer, db.ForeignKey('user.id'))
+    # CORRECTION : UN SEUL client_id
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)
     
+    # Correction : Supprimer ces lignes en double
+    # is_archived = db.Column(db.Boolean, default=False)  # SUPPRIMER
+    # archived_at = db.Column(db.DateTime)                # SUPPRIMER
+    # archived_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # SUPPRIMER
+    # client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)  # SUPPRIMER
     
     # Relations corrigées
     audit = db.relationship('Audit', back_populates='recommandations')
@@ -2187,7 +2189,6 @@ class Recommandation(db.Model):
     createur = db.relationship('User', foreign_keys=[created_by])
     plan_action = db.relationship('PlanAction', back_populates='recommandation', uselist=False, lazy=True)
     historique = db.relationship('HistoriqueRecommandation', backref='recommandation', lazy=True, cascade='all, delete-orphan')
-    archive_user = db.relationship('User', foreign_keys=[archived_by])
     client = db.relationship('Client')
     
     def __init__(self, **kwargs):
@@ -2253,20 +2254,21 @@ class Recommandation(db.Model):
         if nouveau_statut == 'termine':
             self.taux_avancement = 100
 
-    def archiver(self, user_id, raison=None):
-        """Archiver la recommandation"""
-        self.is_archived = True
-        self.archived_at = datetime.utcnow()
-        self.archived_by = user_id
-        if raison:
-            self.archive_raison = raison
+    # SUPPRIMER les méthodes d'archivage qui n'existent pas
+    # def archiver(self, user_id, raison=None):
+    #     """Archiver la recommandation"""
+    #     self.is_archived = True
+    #     self.archived_at = datetime.utcnow()
+    #     self.archived_by = user_id
+    #     if raison:
+    #         self.archive_raison = raison
     
-    def restaurer(self):
-        """Restaurer la recommandation"""
-        self.is_archived = False
-        self.archived_at = None
-        self.archived_by = None
-        self.archive_raison = None
+    # def restaurer(self):
+    #     """Restaurer la recommandation"""
+    #     self.is_archived = False
+    #     self.archived_at = None
+    #     self.archived_by = None
+    #     self.archive_raison = None
     
     def mettre_a_jour_avancement(self, nouveau_taux, utilisateur_id):
         """Met à jour le taux d'avancement"""
