@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block title %}Analyses IA - {{ audit.reference }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas fa-history me-2"></i>
+                Analyses IA - {{ audit.reference }}
+            </h2>
+            <p class="text-muted mb-0">{{ audit.titre }}</p>
+        </div>
+        <div>
+            {% if analyses %}
+            <button type="button" class="btn btn-danger me-2" data-bs-toggle="modal" data-bs-target="#deleteAllModal">
+                <i class="fas fa-trash me-1"></i> {{ t("Tout supprimer") }} </button>
+            {% endif %}
+            <a href="{{ url_for('analyse_ia_audit', audit_id=audit.id) }}" class="btn btn-primary me-2">
+                <i class="fas fa-plus me-1"></i> {{ t("New analysis") }} </a>
+            <a href="{{ url_for('detail_audit', id=audit.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+        </div>
+    </div>
+
+    {% if analyses %}
+    <div class="row">
+        {% for analyse in analyses %}
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-{{ 'brain' if analyse.score_confiance > 70 else 'robot' }} me-2"></i>
+                        {{ analyse.type_analyse|title }}
+                    </h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                data-bs-toggle="dropdown">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('resultat_analyse_ia', audit_id=audit.id, analyse_id=analyse.id) }}">
+                                    <i class="fas fa-eye me-2"></i> {{ t("Voir") }} </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ url_for('export_analyse_ia', analyse_id=analyse.id) }}">
+                                    <i class="fas fa-download me-2"></i> {{ t("Exporter") }} </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <button class="dropdown-item text-danger" 
+                                        onclick="confirmDeleteAnalysis({{ analyse.id }})">
+                                    <i class="fas fa-trash me-2"></i> {{ t("Supprimer") }} </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted"> {{ t("Date") }} </small>
+                            <p class="mb-0">{{ analyse.date_analyse|format_datetime }}</p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted"> {{ t("Score") }} </small>
+                            <p class="mb-0">
+                                <span class="badge bg-{{ 'success' if analyse.score_confiance > 70 else 'warning' if analyse.score_confiance > 40 else 'danger' }}">
+                                    {{ analyse.score_confiance|round(1) }}%
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <small class="text-muted"> {{ t("Performed by") }} </small>
+                            <p class="mb-0">{{ analyse.utilisateur.username if analyse.utilisateur else 'Système' }}</p>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted"> {{ t("Recommendations") }} </small>
+                            <p class="mb-0">
+                                {% if analyse.resultat and analyse.resultat.recommandations_ia %}
+                                {{ analyse.resultat.recommandations_ia|length }}
+                                {% else %}
+                                0
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+
+                    {% if analyse.resultat and analyse.resultat.metadata %}
+                    <div class="mb-3">
+                        <small class="text-muted"> {{ t("Mode") }} </small>
+                        <p class="mb-0">
+                            <span class="badge bg-{{ 'success' if analyse.resultat.metadata.mode == 'reel' else 'warning' }}">
+                                {{ 'Réel (OpenAI)' if analyse.resultat.metadata.mode == 'reel' else 'Simulation' }}
+                            </span>
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('resultat_analyse_ia', audit_id=audit.id, analyse_id=analyse.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-eye me-1"></i> {{ t("See the results") }} </a>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>
+                        {{ analyse.date_analyse|format_datetime }}
+                        {% if analyse.resultat and analyse.resultat.metadata and analyse.resultat.metadata.model %}
+                        • Modèle: {{ analyse.resultat.metadata.model }}
+                        {% endif %}
+                    </small>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="card">
+        <div class="card-body text-center py-5">
+            <i class="fas fa-robot fa-4x text-muted mb-4"></i>
+            <h4 class="text-muted mb-3"> {{ t("No AI analysis performed") }} </h4>
+            <p class="text-muted mb-4"> {{ t("Run your first AI analysis to gain intelligent insights from this audit.") }} </p>
+            <a href="{{ url_for('analyse_ia_audit', audit_id=audit.id) }}" class="btn btn-primary">
+                <i class="fas fa-play me-1"></i> {{ t("Run an AI analysis") }} </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="deleteAllModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i> {{ t("Deletion confirmation") }} </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p> {{ t("Are you sure you want to delete") }} <strong> {{ t("all AI analyzes") }} </strong> {{ t("of this audit?") }} </p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-circle me-2"></i> {{ t("This action is irreversible.") }} </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                <form method="POST" action="{{ url_for('supprimer_toutes_analyses_ia', audit_id=audit.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-1"></i> {{ t("Supprimer tout") }} </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDeleteAnalysis(analyseId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette analyse IA ?')) {
+        // Créer un formulaire de suppression
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/analyse-ia/${analyseId}/supprimer`;
+        
+        // Ajouter le token CSRF
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrf_token';
+        csrfInput.value = '{{ csrf_token() }}';
+        form.appendChild(csrfInput);
+        
+        // Soumettre le formulaire
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Suppression d'une recommandation IA appliquée
+function deleteIARecommendation(recommendationId) {
+    if (confirm('Supprimer cette recommandation générée par l\'IA ?')) {
+        fetch(`/recommandation/${recommendationId}/supprimer`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        });
+    }
+}
+</script>
+
+<style>
+.dropdown-toggle::after {
+    display: none;
+}
+
+.card {
+    transition: transform 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.badge {
+    font-size: 0.75em;
+    padding: 0.35em 0.65em;
+}
+</style>
+{% endblock %}

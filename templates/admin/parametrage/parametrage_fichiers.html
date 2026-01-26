@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-file-upload"></i> {{ t("File Settings") }} </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{{ url_for('parametrage_risque') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> {{ t("Return to settings") }} </a>
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-cog"></i> {{ t("File Configuration") }} </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('configurer_types_fichiers') }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"> {{ t("Authorized extensions:") }} </label>
+                            <input type="text" class="form-control" 
+                                   name="extensions" 
+                                   value="{{ config_fichiers.extensions|join(', ') }}"
+                                   required
+                                   placeholder="{{ t("pdf, doc, docx, xls, xlsx, jpg, png") }}">
+                            <small class="form-text text-muted"> {{ t("Separate extensions with commas (without the period)") }} </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold"> {{ t("Maximum size (MB):") }} </label>
+                            <input type="number" class="form-control" 
+                                   name="taille_max" 
+                                   value="{{ config_fichiers.taille_max_mo }}"
+                                   min="1" max="100" required>
+                            <small class="form-text text-muted"> {{ t("Maximum file size in megabytes (1-100 MB)") }} </small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save"></i> {{ t("Save configuration") }} </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-success text-white">
+                    <h6 class="mb-0"><i class="fas fa-folder"></i> {{ t("File Categories") }} </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('ajouter_categorie_fichier') }}" 
+                          class="input-group mb-3" id="formCategorie">
+                        <input type="text" class="form-control" 
+                               name="categorie" 
+                               id="categorieInput"
+                               placeholder="{{ t("Category name") }}" required
+                               maxlength="50">
+                        <button class="btn btn-success" type="submit">
+                            <i class="fas fa-plus"></i> {{ t("Ajouter") }} </button>
+                    </form>
+                    
+                    <div class="list-group">
+                        {% for categorie in config_fichiers.categories %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-folder text-success me-2"></i>
+                                {{ categorie|title }}
+                            </div>
+                            {% if categorie not in ['document', 'image', 'analyse', 'autre'] %}
+                            <form method="POST" action="{{ url_for('supprimer_categorie_fichier') }}"
+                                  class="d-inline"
+                                  onsubmit="return confirm('Supprimer cette catégorie ?');">
+                                <input type="hidden" name="categorie" value="{{ categorie }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="badge bg-light text-dark"> {{ t("Système") }} </span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i>
+                        <strong> {{ t("Note :") }} </strong> {{ t("Les catégories \"Document\", \"Image\", \"Analyse\" et \"Autre\" sont des catégories système et ne peuvent pas être supprimées.") }} </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-eye"></i> {{ t("Previewing File Types") }} </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for extension in config_fichiers.extensions %}
+                        <div class="col-md-2 col-sm-3 col-4 mb-3">
+                            <div class="file-preview text-center p-3">
+                                {% if extension in ['pdf'] %}
+                                    <i class="fas fa-file-pdf text-danger fa-2x mb-2"></i>
+                                {% elif extension in ['doc', 'docx'] %}
+                                    <i class="fas fa-file-word text-primary fa-2x mb-2"></i>
+                                {% elif extension in ['xls', 'xlsx'] %}
+                                    <i class="fas fa-file-excel text-success fa-2x mb-2"></i>
+                                {% elif extension in ['jpg', 'jpeg', 'png', 'gif'] %}
+                                    <i class="fas fa-file-image text-warning fa-2x mb-2"></i>
+                                {% elif extension in ['txt'] %}
+                                    <i class="fas fa-file-alt fa-2x mb-2"></i>
+                                {% else %}
+                                    <i class="fas fa-file fa-2x mb-2"></i>
+                                {% endif %}
+                                <div class="file-info">
+                                    <strong>.{{ extension }}</strong>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation du formulaire des catégories
+    document.getElementById('formCategorie').addEventListener('submit', function(e) {
+        const categorie = document.getElementById('categorieInput').value.trim();
+        const categoriesExistantes = {{ config_fichiers.categories|tojson }};
+        
+        if (!categorie) {
+            e.preventDefault();
+            alert('Veuillez saisir un nom de catégorie');
+            return;
+        }
+        
+        if (categoriesExistantes.map(c => c.toLowerCase()).includes(categorie.toLowerCase())) {
+            e.preventDefault();
+            alert('Cette catégorie existe déjà');
+            return;
+        }
+        
+        if (!/^[a-zA-Z0-9\s\-_]+$/.test(categorie)) {
+            e.preventDefault();
+            alert('Le nom de catégorie ne peut contenir que des lettres, chiffres, espaces, tirets et underscores');
+            return;
+        }
+    });
+    
+    // Validation du formulaire des extensions
+    document.querySelector('form[action*="configurer_types_fichiers"]').addEventListener('submit', function(e) {
+        const extensionsInput = document.querySelector('input[name="extensions"]');
+        const extensions = extensionsInput.value.split(',').map(ext => ext.trim().toLowerCase()).filter(ext => ext);
+        
+        // Vérifier le format des extensions
+        for (const ext of extensions) {
+            if (!/^[a-z0-9]{1,10}$/.test(ext)) {
+                e.preventDefault();
+                alert(`Extension invalide : "${ext}". Les extensions doivent contenir uniquement des lettres et chiffres (max 10 caractères).`);
+                extensionsInput.focus();
+                return;
+            }
+        }
+        
+        // Limiter le nombre d'extensions
+        if (extensions.length > 20) {
+            e.preventDefault();
+            alert('Maximum 20 extensions autorisées');
+            extensionsInput.focus();
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

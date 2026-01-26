@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Comparaison d'Audits{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-bar me-2"></i> {{ t("Audit Comparison") }} </h2>
+        <a href="{{ url_for('liste_audits') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"> {{ t("Comparison of Audits") }} </h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th> {{ t("Audit") }} </th>
+                            <th> {{ t("Type") }} </th>
+                            <th> {{ t("Statut") }} </th>
+                            <th> {{ t("Findings") }} </th>
+                            <th> {{ t("Recommendations") }} </th>
+                            <th> {{ t("Action plans") }} </th>
+                            <th> {{ t("Completion rate") }} </th>
+                            <th> {{ t("Score") }} </th>
+                            <th> {{ t("Actions") }} </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in comparaison_data %}
+                        <tr>
+                            <td>
+                                <strong>{{ data.audit.reference }}</strong><br>
+                                <small>{{ data.audit.titre }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-info">{{ data.audit.type_audit|title }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'success' if data.audit.statut == 'termine' 
+                                    else 'warning' if data.audit.statut == 'en_cours' 
+                                    else 'primary' if data.audit.statut == 'planifie'
+                                    else 'danger'
+                                }}">
+                                    {{ data.audit.statut|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary">{{ data.nb_constatations }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">{{ data.nb_recommandations }}</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-success">{{ data.nb_plans_action }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 8px;">
+                                        <div class="progress-bar bg-{{ 
+                                            'success' if data.taux_realisation >= 80 
+                                            else 'warning' if data.taux_realisation >= 50 
+                                            else 'danger'
+                                        }}" style="width: {{ data.taux_realisation }}%"></div>
+                                    </div>
+                                    <span>{{ data.taux_realisation|round|int }}%</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 
+                                    'success' if data.score_global >= 80 
+                                    else 'warning' if data.score_global >= 50 
+                                    else 'danger'
+                                }}">
+                                    {{ data.score_global|round|int }}/100
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('detail_audit', id=data.audit.id) }}" 
+                                   class="btn btn-sm btn-outline-primary" title="{{ t("Voir") }}">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"> {{ t("Number of Findings per Audit") }} </h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="chartConstatations"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"> {{ t("Completion Rate") }} </h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="chartRealisation"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"> {{ t("Summary of the Comparison") }} </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 text-center">
+                    <div class="alert alert-primary">
+                        <h4>{{ comparaison_data|length }}</h4>
+                        <p> {{ t("Comparative audits") }} </p>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="alert alert-success">
+                        <h4>{{ (comparaison_data|sum(attribute='taux_realisation') / comparaison_data|length if comparaison_data else 0)|round|int }}%</h4>
+                        <p> {{ t("Average completion rate") }} </p>
+                    </div>
+                </div>
+                <div class="col-md-4 text-center">
+                    <div class="alert alert-info">
+                        <h4>{{ (comparaison_data|sum(attribute='score_global') / comparaison_data|length if comparaison_data else 0)|round|int }}/100</h4>
+                        <p> {{ t("Score moyen") }} </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Données pour les graphiques
+    const audits = {{ comparaison_data|map(attribute='audit.reference')|list|tojson }};
+    const constatations = {{ comparaison_data|map(attribute='nb_constatations')|list|tojson }};
+    const tauxRealisation = {{ comparaison_data|map(attribute='taux_realisation')|list|tojson }};
+    
+    // Graphique des constatations
+    const ctx1 = document.getElementById('chartConstatations').getContext('2d');
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: audits,
+            datasets: [{
+                label: 'Nombre de constatations',
+                data: constatations,
+                backgroundColor: '#007bff',
+                borderColor: '#0056b3',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique des taux de réalisation
+    const ctx2 = document.getElementById('chartRealisation').getContext('2d');
+    new Chart(ctx2, {
+        type: 'line',
+        data: {
+            labels: audits,
+            datasets: [{
+                label: 'Taux de réalisation (%)',
+                data: tauxRealisation,
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y + '%';
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

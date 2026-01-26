@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Exporter Rapport - {{ audit.reference }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-file-export me-2"></i>
+            Exporter Rapport - {{ audit.reference }}
+        </h2>
+        <a href="{{ url_for('detail_audit', id=audit.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"> {{ t("Export configuration") }} </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('export_rapport_audit', audit_id=audit.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.format_export.label(class="form-label") }}
+                                    {{ form.format_export(class="form-select") }}
+                                    {% for error in form.format_export.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <h6 class="mb-3">{{ form.sections.label.text }}</h6>
+                            <div class="row">
+                                {% for choice in form.sections %}
+                                    <div class="col-md-6 mb-2">
+                                        <div class="form-check">
+                                            {{ choice(class="form-check-input") }}
+                                            {{ choice.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                            {% for error in form.sections.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="mb-4">
+                            <h6 class="mb-3"> {{ t("Additional options") }} </h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        {{ form.inclure_logo(class="form-check-input") }}
+                                        {{ form.inclure_logo.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-check mb-2">
+                                        {{ form.inclure_signature(class="form-check-input") }}
+                                        {{ form.inclure_signature.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('detail_audit', id=audit.id) }}" class="btn btn-outline-secondary"> {{ t("Annuler") }} </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"> {{ t("Report Overview") }} </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong> {{ t("Audit:") }} </strong> {{ audit.reference }} - {{ audit.titre }}
+                    </div>
+                    <div class="mb-3">
+                        <strong> {{ t("Information:") }} </strong>
+                        <ul class="list-unstyled">
+                            <li><small>• Type: {{ audit.type_audit|title }}</small></li>
+                            <li><small>• Statut: {{ audit.statut|replace('_', ' ')|title }}</small></li>
+                            <li><small>• Responsable: {{ audit.responsable.username if audit.responsable else 'Non assigné' }}</small></li>
+                        </ul>
+                    </div>
+                    <div class="mb-3">
+                        <strong> {{ t("Content available:") }} </strong>
+                        <ul class="list-unstyled">
+                            <li><small>• {{ audit.constatations|length }} constatations</small></li>
+                            <li><small>• {{ audit.recommandations|length }} recommandations</small></li>
+                            <li><small>• {{ audit.plans_action|length }} plans d'action</small></li>
+                        </ul>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <small>
+                            <i class="fas fa-info-circle me-1"></i>
+                            Le rapport sera généré avec les options sélectionnées.
+                            Le temps de génération dépend de la taille du rapport.
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6 class="mb-0"> {{ t("Quick export") }} </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('export_rapport_audit_pdf', audit_id=audit.id) }}" 
+                           class="btn btn-outline-danger">
+                            <i class="fas fa-file-pdf me-1"></i> {{ t("PDF standard") }} </a>
+                        <a href="{{ url_for('export_synthese_word', audit_id=audit.id) }}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-file-word me-1"></i> {{ t("Word standard") }} </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Mettre à jour l'aperçu en fonction des sélections
+    const formatSelect = document.querySelector('#format_export');
+    const sectionsCheckboxes = document.querySelectorAll('input[name="sections"]');
+    
+    function updatePreview() {
+        const selectedFormat = formatSelect.value;
+        const selectedSections = Array.from(sectionsCheckboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+        
+        console.log('Format:', selectedFormat, 'Sections:', selectedSections);
+    }
+    
+    formatSelect.addEventListener('change', updatePreview);
+    sectionsCheckboxes.forEach(cb => {
+        cb.addEventListener('change', updatePreview);
+    });
+});
+</script>
+{% endblock %}

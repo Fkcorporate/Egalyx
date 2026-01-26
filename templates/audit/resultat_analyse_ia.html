@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}Résultat Analyse IA - {{ audit.reference }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2>
+                <i class="fas fa-chart-line me-2"></i>
+                Résultat Analyse IA - {{ audit.reference }}
+            </h2>
+            <p class="text-muted mb-0">{{ audit.titre }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('liste_analyses_ia', audit_id=audit.id) }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-history me-1"></i> {{ t("Historique") }} </a>
+            <a href="{{ url_for('detail_audit', id=audit.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h6 class="text-white-50 mb-2"> {{ t("Trust Score") }} </h6>
+                    <h1 class="mb-0">{{ resultat.statistiques.score_global|round(1) }}%</h1>
+                    <small>Analyse {{ analyse.type_analyse|title }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h6 class="text-white-50 mb-2"> {{ t("Recommendations") }} </h6>
+                    <h1 class="mb-0">{{ resultat.statistiques.nb_recommandations_suggerees }}</h1>
+                    <small> {{ t("Suggestions generated") }} </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <h6 class="text-white-50 mb-2"> {{ t("Root causes") }} </h6>
+                    <h1 class="mb-0">{{ resultat.statistiques.nb_causes_identifiees }}</h1>
+                    <small> {{ t("Problems identified") }} </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h6 class="text-white-50 mb-2"> {{ t("Analysis time") }} </h6>
+                    <h1 class="mb-0">{{ resultat.statistiques.temps_analyse }}</h1>
+                    <small>{{ analyse.date_analyse|format_datetime }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-lightbulb me-2"></i> {{ t("AI-suggested recommendations") }} </h5>
+                    <span class="badge bg-primary">{{ resultat.recommandations_ia|length }}</span>
+                </div>
+                <div class="card-body">
+                    {% if resultat.recommandations_ia %}
+                    <div class="row">
+                        {% for reco in resultat.recommandations_ia %}
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-{{ 'danger' if reco.priorite == 'haute' else 'warning' if reco.priorite == 'moyenne' else 'success' }}">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ reco.titre }}</h6>
+                                        <span class="badge bg-{{ 'danger' if reco.priorite == 'haute' else 'warning' if reco.priorite == 'moyenne' else 'success' }}">
+                                            {{ reco.priorite|title }}
+                                        </span>
+                                    </div>
+                                    <p class="card-text small">{{ reco.description }}</p>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <small class="text-muted">
+                                            <i class="fas fa-chart-bar me-1"></i>
+                                            Confiance: {{ reco.score_confiance }}%
+                                        </small>
+                                        <button class="btn btn-sm btn-outline-primary appliquer-reco"
+                                                data-reco-id="{{ reco.id }}"
+                                                data-analyse-id="{{ analyse.id }}">
+                                            <i class="fas fa-plus me-1"></i> {{ t("Appliquer") }} </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-robot fa-2x text-muted mb-3"></i>
+                        <p class="text-muted"> {{ t("No recommendations generated") }} </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if resultat.causes_racines %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-search me-2"></i> {{ t("Root causes identified") }} </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th> {{ t("Cause") }} </th>
+                                    <th> {{ t("Fréquence") }} </th>
+                                    <th> {{ t("Impact") }} </th>
+                                    <th> {{ t("Suggested Solutions") }} </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for cause in resultat.causes_racines %}
+                                <tr>
+                                    <td>{{ cause.cause }}</td>
+                                    <td>
+                                        <span class="badge bg-info">{{ cause.frequence }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if cause.impact == 'élevé' else 'warning' if cause.impact == 'moyen' else 'success' }}">
+                                            {{ cause.impact|title }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if cause.solutions %}
+                                        <ul class="list-unstyled mb-0">
+                                            {% for solution in cause.solutions[:2] %}
+                                            <li class="small"><i class="fas fa-check text-success me-1"></i> {{ solution }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i> {{ t("Quick Actions") }} </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('export_analyse_ia', analyse_id=analyse.id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-download me-1"></i> {{ t("Exporter en PDF") }} </a>
+                        <a href="{{ url_for('detail_audit', id=audit.id) }}" class="btn btn-outline-success">
+                            <i class="fas fa-eye me-1"></i> {{ t("View the audit") }} </a>
+                        <a href="{{ url_for('analyse_ia_audit', audit_id=audit.id) }}" class="btn btn-outline-warning">
+                            <i class="fas fa-redo me-1"></i> {{ t("New analysis") }} </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i> {{ t("Informations sur l'analyse") }} </h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-6"> {{ t("Analysis type:") }} </dt>
+                        <dd class="col-sm-6">{{ analyse.type_analyse|title }}</dd>
+                        
+                        <dt class="col-sm-6"> {{ t("Date:") }} </dt>
+                        <dd class="col-sm-6">{{ analyse.date_analyse|format_datetime }}</dd>
+                        
+                        <dt class="col-sm-6"> {{ t("Performed by:") }} </dt>
+                        <dd class="col-sm-6">{{ analyse.utilisateur.username if analyse.utilisateur else 'Système' }}</dd>
+                        
+                        <dt class="col-sm-6"> {{ t("Mode:") }} </dt>
+                        <dd class="col-sm-6">
+                            <span class="badge bg-{{ 'success' if resultat.metadata.mode == 'reel' else 'warning' }}">
+                                {{ 'Réel' if resultat.metadata.mode == 'reel' else 'Simulation' }}
+                            </span>
+                        </dd>
+                        
+                        {% if resultat.metadata.model %}
+                        <dt class="col-sm-6"> {{ t("Modèle IA:") }} </dt>
+                        <dd class="col-sm-6">{{ resultat.metadata.model }}</dd>
+                        {% endif %}
+                        
+                        {% if resultat.metadata.tokens %}
+                        <dt class="col-sm-6"> {{ t("Tokens used:") }} </dt>
+                        <dd class="col-sm-6">{{ resultat.metadata.tokens }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion du clic sur "Appliquer" une recommandation
+    document.querySelectorAll('.appliquer-reco').forEach(button => {
+        button.addEventListener('click', function() {
+            const recoId = this.dataset.recoId;
+            const analyseId = this.dataset.analyseId;
+            
+            // Afficher un modal de confirmation
+            if (confirm('Voulez-vous vraiment ajouter cette recommandation à l\'audit ?')) {
+                appliquerRecommandation(recoId, analyseId, this);
+            }
+        });
+    });
+});
+
+function appliquerRecommandation(recoId, analyseId, buttonElement) {
+    // Afficher un indicateur de chargement
+    const originalText = buttonElement.innerHTML;
+    buttonElement.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Traitement...';
+    buttonElement.disabled = true;
+    
+    // Envoyer la requête
+    fetch(`/api/analyse-ia/${analyseId}/appliquer-recommandation/${recoId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Afficher un message de succès
+            buttonElement.innerHTML = '<i class="fas fa-check me-1"></i> Ajoutée';
+            buttonElement.classList.remove('btn-outline-primary');
+            buttonElement.classList.add('btn-success');
+            
+            // Afficher une notification
+            showNotification('success', `Recommandation ${data.reference} ajoutée avec succès !`);
+            
+            // Rediriger vers la nouvelle recommandation après 2 secondes
+            setTimeout(() => {
+                window.location.href = `/audit/{{ audit.id }}#recommandation-${data.recommandation_id}`;
+            }, 2000);
+        } else {
+            // Afficher un message d'erreur
+            buttonElement.innerHTML = originalText;
+            buttonElement.disabled = false;
+            showNotification('error', data.message || 'Erreur lors de l\'ajout');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        buttonElement.innerHTML = originalText;
+        buttonElement.disabled = false;
+        showNotification('error', 'Erreur réseau');
+    });
+}
+
+function showNotification(type, message) {
+    // Créer une notification toast
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    toast.style.top = '20px';
+    toast.style.right = '20px';
+    toast.style.zIndex = '9999';
+    toast.style.minWidth = '300px';
+    
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Supprimer automatiquement après 5 secondes
+    setTimeout(() => {
+        toast.remove();
+    }, 5000);
+}
+</script>
+
+<style>
+.card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.875em;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.table td {
+    font-size: 0.9em;
+}
+</style>
+{% endblock %}

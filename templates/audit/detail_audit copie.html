@@ -1,0 +1,2410 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-clipboard-check me-2"></i>
+            Audit {{ audit.reference }} - {{ audit.titre }}
+        </h2>
+        <div>
+            <a href="{{ url_for('liste_audits') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalRapport">
+                <i class="fas fa-file-pdf me-1"></i> {{ t("Rapport") }} </button>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ audit.constatations|length }}</h4>
+                            <small> {{ t("Findings") }} </small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ audit.recommandations|length }}</h4>
+                            <small> {{ t("Recommendations") }} </small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-lightbulb fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ audit.plans_action|length }}</h4>
+                            <small> {{ t("Action Plans") }} </small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-tasks fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 class="mb-0">{{ audit.plans_action|selectattr('statut', 'equalto', 'termine')|list|length }}</h4>
+                            <small> {{ t("Completed Plans") }} </small>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs mb-4" id="auditTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">
+                <i class="fas fa-info-circle me-1"></i> {{ t("Informations") }} </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="constatations-tab" data-bs-toggle="tab" data-bs-target="#constatations" type="button" role="tab">
+                <i class="fas fa-exclamation-triangle me-1"></i> {{ t("Constatations") }} <span class="badge bg-danger ms-1">{{ audit.constatations|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="recommandations-tab" data-bs-toggle="tab" data-bs-target="#recommandations" type="button" role="tab">
+                <i class="fas fa-lightbulb me-1"></i> {{ t("Recommandations") }} <span class="badge bg-warning ms-1">{{ audit.recommandations|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="plans-action-tab" data-bs-toggle="tab" data-bs-target="#plans-action" type="button" role="tab">
+                <i class="fas fa-tasks me-1"></i> {{ t("Action Plans") }} <span class="badge bg-success ms-1">{{ audit.plans_action|length }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="risques-tab" data-bs-toggle="tab" data-bs-target="#risques" type="button" role="tab">
+                <i class="fas fa-bug me-1"></i> {{ t("Associated Risks") }} <span class="badge bg-info ms-1">{{ risques_dissociables }}</span>
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="preuves-tab" data-bs-toggle="tab" data-bs-target="#preuves" type="button" role="tab">
+                <i class="fas fa-paperclip me-1"></i> {{ t("Preuves") }} <span class="badge bg-secondary ms-1">{{ total_preuves }}</span>
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="auditTabsContent">
+        
+        <div class="tab-pane fade show active" id="info" role="tabpanel">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0"> {{ t("General Information") }} </h5>
+                            <span class="badge bg-{{ 'success' if audit.statut == 'termine' else 'warning' if audit.statut == 'en_cours' else 'info' if audit.statut == 'planifie' else 'secondary' }}">
+                                {{ audit.statut|upper }}
+                            </span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong> {{ t("Référence :") }} </strong></td>
+                                            <td>{{ audit.reference }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong> {{ t("Titre :") }} </strong></td>
+                                            <td>{{ audit.titre }}</td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong> {{ t("Type :") }} </strong></td>
+                                            <td>
+                                                <span class="badge bg-primary">{{ audit.type_audit }}</span>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong> {{ t("Responsible :") }} </strong></td>
+                                            <td>
+                                                {% if audit.responsable %}
+                                                    <span class="badge bg-secondary">{{ audit.responsable.username }}</span>
+                                                {% else %}
+                                                    <span class="text-muted"> {{ t("Non assigné") }} </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-borderless">
+                                        <tr>
+                                            <td><strong> {{ t("Date début :") }} </strong></td>
+                                            <td>
+                                                {% if audit.date_debut_prevue %}
+                                                    {{ audit.date_debut_prevue.strftime('%d/%m/%Y') }}
+                                                {% else %}
+                                                    <span class="text-muted"> {{ t("Non définie") }} </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong> {{ t("Date fin :") }} </strong></td>
+                                            <td>
+                                                {% if audit.date_fin_prevue %}
+                                                    {{ audit.date_fin_prevue.strftime('%d/%m/%Y') }}
+                                                {% else %}
+                                                    <span class="text-muted"> {{ t("Non définie") }} </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong> {{ t("Processus :") }} </strong></td>
+                                            <td>
+                                                {% if audit.processus %}
+                                                    <span class="badge bg-info">{{ audit.processus.nom }}</span>
+                                                {% else %}
+                                                    <span class="text-muted"> {{ t("Not specified") }} </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong> {{ t("Créé le :") }} </strong></td>
+                                            <td>{{ audit.created_at.strftime('%d/%m/%Y à %H:%M') }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            {% if audit.description %}
+                            <div class="mt-3">
+                                <strong> {{ t("Description :") }} </strong>
+                                <p class="mt-2 p-3 bg-light rounded">{{ audit.description }}</p>
+                            </div>
+                            {% endif %}
+
+                            {% if audit.portee %}
+                            <div class="mt-3">
+                                <strong> {{ t("Portée :") }} </strong>
+                                <p class="mt-2 p-3 bg-light rounded">{{ audit.portee }}</p>
+                            </div>
+                            {% endif %}
+
+                            {% if audit.objectifs %}
+                            <div class="mt-3">
+                                <strong> {{ t("Objectifs :") }} </strong>
+                                <p class="mt-2 p-3 bg-light rounded">{{ audit.objectifs }}</p>
+                            </div>
+                            {% endif %}
+
+                            {% if audit.criteres %}
+                            <div class="mt-3">
+                                <strong> {{ t("Critères :") }} </strong>
+                                <p class="mt-2 p-3 bg-light rounded">{{ audit.criteres }}</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-bolt me-1"></i> {{ t("Quick Actions") }} </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-outline-primary mb-2" data-bs-toggle="modal" data-bs-target="#modalConstatation">
+                                    <i class="fas fa-plus me-1"></i> {{ t("New Finding") }} </button>
+                                <button class="btn btn-outline-warning mb-2" data-bs-toggle="modal" data-bs-target="#modalRecommandation">
+                                    <i class="fas fa-plus me-1"></i> {{ t("New Recommendation") }} </button>
+                                <button class="btn btn-outline-success mb-2" data-bs-toggle="modal" data-bs-target="#modalPlanAction">
+                                    <i class="fas fa-plus me-1"></i> {{ t("New Action Plan") }} </button>
+                                <hr>
+                                <a href="{{ url_for('rapport_audit_complet', audit_id=audit.id) }}" class="btn btn-info mb-2">
+                                    <i class="fas fa-eye me-1"></i> {{ t("View Full Report") }} </a>
+                                <a href="{{ url_for('export_rapport_audit_pdf', audit_id=audit.id) }}" class="btn btn-danger">
+                                    <i class="fas fa-file-pdf me-1"></i> {{ t("Exporter PDF") }} </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-users me-1"></i> {{ t("Audit Team") }} </h5>
+                        </div>
+                        <div class="card-body">
+                            {% if audit.equipe_audit_ids %}
+                                <div class="list-group list-group-flush">
+                                    {% for user in audit.get_equipe_audit() %}
+                                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong>{{ user.username }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ user.role }}</small>
+                                            </div>
+                                            <span class="badge bg-secondary">{{ user.department }}</span>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <p class="text-muted text-center"> {{ t("No team members defined") }} </p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="constatations" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-exclamation-circle me-2"></i> {{ t("List of Findings") }} <span class="badge bg-primary ms-2">{{ audit.constatations|length }}</span>
+                    </h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#ajouterConstatationModal">
+                        <i class="fas fa-plus me-1"></i> {{ t("Ajouter") }} </button>
+                </div>
+                <div class="card-body">
+                    {% if audit.constatations %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th width="10%"> {{ t("Référence") }} </th>
+                                        <th width="25%"> {{ t("Description") }} </th>
+                                        <th width="10%"> {{ t("Type") }} </th>
+                                        <th width="10%"> {{ t("Gravité") }} </th>
+                                        <th width="10%"> {{ t("Processus") }} </th>
+                                        <th width="15%"> {{ t("Statut") }} </th>
+                                        <th width="20%"> {{ t("Actions") }} </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for constatation in audit.constatations %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ constatation.reference }}</strong>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold">{{ constatation.description|truncate(80) }}</div>
+                                            {% if constatation.cause_racine %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-search me-1"></i>Cause: {{ constatation.cause_racine|truncate(50) }}
+                                                </small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'danger' if constatation.type_constatation == 'non_conformite' else 'warning' if constatation.type_constatation == 'observation' else 'info' }}">
+                                                {{ constatation.type_constatation|replace('_', ' ')|title }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'danger' if constatation.gravite == 'critique' else 'warning' if constatation.gravite == 'majeure' else 'info' if constatation.gravite == 'moyenne' else 'secondary' }}">
+                                                {{ constatation.gravite|title }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if constatation.processus_concerne %}
+                                                <span class="badge bg-secondary">{{ constatation.processus_concerne|truncate(20) }}</span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if constatation.statut == 'a_analyser' %}
+                                                <span class="badge bg-secondary"> {{ t("À analyser") }} </span>
+                                            {% elif constatation.statut == 'a_valider' %}
+                                                <span class="badge bg-warning"> {{ t("À valider") }} </span>
+                                            {% elif constatation.statut == 'en_action' %}
+                                                <span class="badge bg-info"> {{ t("En action") }} </span>
+                                            {% elif constatation.statut == 'clos' %}
+                                                <span class="badge bg-success"> {{ t("Clos") }} </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                
+                                                <button class="btn btn-outline-primary" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modifierConstatationModal{{ constatation.id }}"
+                                                        title="{{ t("Modifier") }}">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+
+                                                <button class="btn btn-outline-warning" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#changerStatutConstatationModal{{ constatation.id }}"
+                                                        title="{{ t("Change status") }}">
+                                                    <i class="fas fa-sync-alt"></i>
+                                                </button>
+
+                                                <button class="btn btn-outline-success" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#ajouterRecommandationModal{{ constatation.id }}"
+                                                        title="{{ t("Add recommendation") }}">
+                                                    <i class="fas fa-lightbulb"></i>
+                                                </button>
+
+                                                <button class="btn btn-outline-info" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#ajouterPreuveModal{{ constatation.id }}"
+                                                        title="{{ t("Add proof") }}">
+                                                    <i class="fas fa-paperclip"></i>
+                                                </button>
+
+                                                {% if constatation.preuves %}
+                                                <button class="btn btn-outline-secondary" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#voirPreuvesModal{{ constatation.id }}"
+                                                        title="{{ t("See the evidence") }}">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                {% endif %}
+
+                                                <form method="POST" 
+                                                      action="{{ url_for('supprimer_constatation', audit_id=audit.id, constatation_id=constatation.id) }}" 
+                                                      class="d-inline"
+                                                      onsubmit="return confirm('Supprimer cette constatation ?');">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    <button type="submit" class="btn btn-outline-danger" title="{{ t("Supprimer") }}">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="row mt-4">
+                            <div class="col-md-3 col-6">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="text-primary">
+                                            {{ audit.constatations|selectattr('type_constatation', 'equalto', 'non_conformite')|list|length }}
+                                        </h5>
+                                        <small class="text-muted"> {{ t("Non-conformities") }} </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="text-warning">
+                                            {{ audit.constatations|selectattr('type_constatation', 'equalto', 'observation')|list|length }}
+                                        </h5>
+                                        <small class="text-muted"> {{ t("Comments") }} </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="text-danger">
+                                            {{ audit.constatations|selectattr('gravite', 'equalto', 'critique')|list|length }}
+                                        </h5>
+                                        <small class="text-muted"> {{ t("Critiques") }} </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-6">
+                                <div class="card text-center">
+                                    <div class="card-body">
+                                        <h5 class="text-success">
+                                            {{ audit.constatations|selectattr('statut', 'equalto', 'clos')|list|length }}
+                                        </h5>
+                                        <small class="text-muted"> {{ t("Closes") }} </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-triangle fa-4x text-muted mb-3"></i>
+                            <h5> {{ t("No findings") }} </h5>
+                            <p class="text-muted"> {{ t("Start by adding an audit finding.") }} </p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ajouterConstatationModal">
+                                <i class="fas fa-plus me-1"></i> {{ t("Add the first finding") }} </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="ajouterConstatationModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form method="POST" action="{{ url_for('ajouter_constatation', audit_id=audit.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title"> {{ t("Add a finding") }} </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label"> {{ t("Description *") }} </label>
+                                    <textarea class="form-control" name="description" rows="4" required 
+                                              placeholder="{{ t("Describe the observation precisely...") }}"></textarea>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Type *") }} </label>
+                                    <select class="form-select" name="type_constatation" required>
+                                        <option value=""> {{ t("Select...") }} </option>
+                                        <option value="non_conformite"> {{ t("Non-compliance") }} </option>
+                                        <option value="observation"> {{ t("Observation") }} </option>
+                                        <option value="amelioration"> {{ t("Opportunity for improvement") }} </option>
+                                        <option value="recommandation"> {{ t("Recommendation") }} </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Gravité *") }} </label>
+                                    <select class="form-select" name="gravite" required>
+                                        <option value=""> {{ t("Select...") }} </option>
+                                        <option value="mineure"> {{ t("Minore") }} </option>
+                                        <option value="moyenne"> {{ t("Moyenne") }} </option>
+                                        <option value="majeure"> {{ t("Majore") }} </option>
+                                        <option value="critique"> {{ t("Critique") }} </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Criticité") }} </label>
+                                    <select class="form-select" name="criticite">
+                                        <option value=""> {{ t("Select...") }} </option>
+                                        <option value="mineure"> {{ t("Minore") }} </option>
+                                        <option value="moyenne"> {{ t("Moyenne") }} </option>
+                                        <option value="majeure"> {{ t("Majore") }} </option>
+                                        <option value="critique"> {{ t("Critique") }} </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Process concerned") }} </label>
+                                    <input type="text" class="form-control" name="processus_concerne" 
+                                           placeholder="{{ t("Process name...") }}">
+                                </div>
+                                
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label"> {{ t("Root cause (optional)") }} </label>
+                                    <textarea class="form-control" name="cause_racine" rows="3" 
+                                              placeholder="{{ t("Root cause analysis (5 Why method)...") }}"></textarea>
+                                </div>
+                                
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label"> {{ t("Associated risk (optional)") }} </label>
+                                    <select class="form-select" name="risque_id">
+                                        <option value=""> {{ t("Select a risk...") }} </option>
+                                        {% for risque in risques_list %}
+                                        <option value="{{ risque.id }}">
+                                            {{ risque.reference }} - {{ risque.intitule|truncate(50) }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                            <button type="submit" class="btn btn-primary"> {{ t("Ajouter") }} </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {% for constatation in audit.constatations %}
+        
+        <div class="modal fade" id="modifierConstatationModal{{ constatation.id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form method="POST" action="{{ url_for('modifier_constatation', constatation_id=constatation.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title"> {{ t("Edit finding") }} </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label"> {{ t("Description *") }} </label>
+                                    <textarea class="form-control" name="description" rows="4" required>{{ constatation.description }}</textarea>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Type *") }} </label>
+                                    <select class="form-select" name="type_constatation" required>
+                                        <option value="non_conformite" {% if constatation.type_constatation == 'non_conformite' %}selected{% endif %}> {{ t("Non-compliance") }} </option>
+                                        <option value="observation" {% if constatation.type_constatation == 'observation' %}selected{% endif %}> {{ t("Observation") }} </option>
+                                        <option value="amelioration" {% if constatation.type_constatation == 'amelioration' %}selected{% endif %}> {{ t("Opportunity for improvement") }} </option>
+                                        <option value="recommandation" {% if constatation.type_constatation == 'recommandation' %}selected{% endif %}> {{ t("Recommendation") }} </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Gravité *") }} </label>
+                                    <select class="form-select" name="gravite" required>
+                                        <option value="mineure" {% if constatation.gravite == 'mineure' %}selected{% endif %}> {{ t("Minore") }} </option>
+                                        <option value="moyenne" {% if constatation.gravite == 'moyenne' %}selected{% endif %}> {{ t("Moyenne") }} </option>
+                                        <option value="majeure" {% if constatation.gravite == 'majeure' %}selected{% endif %}> {{ t("Majore") }} </option>
+                                        <option value="critique" {% if constatation.gravite == 'critique' %}selected{% endif %}> {{ t("Critique") }} </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Statut") }} </label>
+                                    <select class="form-select" name="statut">
+                                        <option value="a_analyser" {% if constatation.statut == 'a_analyser' %}selected{% endif %}> {{ t("À analyser") }} </option>
+                                        <option value="a_valider" {% if constatation.statut == 'a_valider' %}selected{% endif %}> {{ t("À valider") }} </option>
+                                        <option value="en_action" {% if constatation.statut == 'en_action' %}selected{% endif %}> {{ t("En action") }} </option>
+                                        <option value="clos" {% if constatation.statut == 'clos' %}selected{% endif %}> {{ t("Clos") }} </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Process concerned") }} </label>
+                                    <input type="text" class="form-control" name="processus_concerne" 
+                                           value="{{ constatation.processus_concerne or '' }}">
+                                </div>
+                                
+                                <div class="col-md-12 mb-3">
+                                    <label class="form-label"> {{ t("Cause racine") }} </label>
+                                    <textarea class="form-control" name="cause_racine" rows="3">{{ constatation.cause_racine or '' }}</textarea>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                            <button type="submit" class="btn btn-primary"> {{ t("Enregistrer") }} </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="changerStatutConstatationModal{{ constatation.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{{ url_for('changer_statut_constatation', constatation_id=constatation.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title"> {{ t("Change status") }} </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label"> {{ t("New status") }} </label>
+                                <select class="form-select" name="statut">
+                                    <option value="a_analyser" {% if constatation.statut == 'a_analyser' %}selected{% endif %}> {{ t("À analyser") }} </option>
+                                    <option value="a_valider" {% if constatation.statut == 'a_valider' %}selected{% endif %}> {{ t("À valider") }} </option>
+                                    <option value="en_action" {% if constatation.statut == 'en_action' %}selected{% endif %}> {{ t("En action") }} </option>
+                                    <option value="clos" {% if constatation.statut == 'clos' %}selected{% endif %}> {{ t("Clos") }} </option>
+                                </select>
+                            </div>
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> {{ t("Changing the status impacts the progress of the audit.") }} </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                            <button type="submit" class="btn btn-primary"> {{ t("Changer") }} </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="ajouterRecommandationModal{{ constatation.id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <form method="POST" action="{{ url_for('ajouter_recommandation', audit_id=audit.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title"> {{ t("Create a recommendation") }} </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i> {{ t("This recommendation will be linked to the finding") }} <strong>{{ constatation.reference }}</strong>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label"> {{ t("Description *") }} </label>
+                                <textarea class="form-control" name="description" rows="4" required 
+                                          placeholder="{{ t("Describe the corrective or preventive recommendation...") }}"></textarea>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Type") }} </label>
+                                    <select class="form-select" name="type_recommandation">
+                                        <option value="corrective"> {{ t("Corrective") }} </option>
+                                        <option value="preventive"> {{ t("Préventive") }} </option>
+                                        <option value="amelioration"> {{ t("Amélioration") }} </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Catégorie") }} </label>
+                                    <select class="form-select" name="categorie">
+                                        <option value=""> {{ t("Select...") }} </option>
+                                        <option value="conformite_reglementaire"> {{ t("Regulatory Compliance") }} </option>
+                                        <option value="amelioration_continue"> {{ t("Continuous improvement") }} </option>
+                                        <option value="reduction_risque"> {{ t("Risk reduction") }} </option>
+                                        <option value="optimisation_processus"> {{ t("Process optimization") }} </option>
+                                        <option value="securite"> {{ t("Sécurité") }} </option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Lead time") }} </label>
+                                    <select class="form-select" name="delai_mise_en_oeuvre">
+                                        <option value=""> {{ t("Select...") }} </option>
+                                        <option value="immediat"> {{ t("Immédiat") }} </option>
+                                        <option value="court_terme"> {{ t("Short term (1-3 months)") }} </option>
+                                        <option value="moyen_terme"> {{ t("Medium term (3-6 months)") }} </option>
+                                        <option value="long_terme">Long terme (> {{ t("6 mois)") }} </option>
+                                    </select>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Due date") }} </label>
+                                    <input type="date" class="form-control" name="date_echeance">
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Emergency (1-5)") }} </label>
+                                    <input type="range" class="form-range" name="urgence" min="1" max="5" value="3">
+                                    <div class="d-flex justify-content-between">
+                                        <small> {{ t("1 - Faible") }} </small>
+                                        <small> {{ t("5 - Critique") }} </small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label"> {{ t("Responsable") }} </label>
+                                    <select class="form-select" name="responsable_id">
+                                        <option value=""> {{ t("Select...") }} </option>
+                                        {% for user in users %}
+                                        <option value="{{ user.id }}">{{ user.username }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                            <button type="submit" class="btn btn-primary"> {{ t("Create the recommendation") }} </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="ajouterPreuveModal{{ constatation.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{{ url_for('upload_preuve_constatation', constatation_id=constatation.id) }}" 
+                          enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title"> {{ t("Add proof") }} </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info mb-3">
+                                <i class="fas fa-info-circle me-2"></i> {{ t("Evidence for the finding") }} <strong>{{ constatation.reference }}</strong>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label"> {{ t("Select file *") }} </label>
+                                <input type="file" class="form-control" name="preuve" required>
+                                <small class="text-muted"> {{ t("Formats: PDF, DOC, XLS, JPG, PNG (max 16MB)") }} </small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label"> {{ t("Description (optional)") }} </label>
+                                <textarea class="form-control" name="description" rows="3" 
+                                          placeholder="{{ t("Description of the evidence...") }}"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                            <button type="submit" class="btn btn-primary"> {{ t("Uploader") }} </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="voirPreuvesModal{{ constatation.id }}" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Preuves pour {{ constatation.reference }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        {% if constatation.preuves %}
+                            <div class="table-responsive">
+                                <table class="table table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th> {{ t("File name") }} </th>
+                                            <th> {{ t("Upload date") }} </th>
+                                            <th> {{ t("Taille") }} </th>
+                                            <th> {{ t("Actions") }} </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for preuve in constatation.get_preuves_list %}
+                                        <tr>
+                                            <td>
+                                                <i class="fas {{ preuve.icone }} me-2"></i>
+                                                {{ preuve.nom }}
+                                            </td>
+                                            <td>{{ preuve.date_upload.strftime('%d/%m/%Y %H:%M') if preuve.date_upload else 'N/A' }}</td>
+                                            <td>{{ preuve.taille }}</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <a href="{{ url_for('download_preuve', filename=preuve.nom) }}" 
+                                                       class="btn btn-outline-primary" 
+                                                       target="_blank">
+                                                        <i class="fas fa-download"></i> {{ t("Télécharger") }} </a>
+                                                    <button class="btn btn-outline-info" 
+                                                            onclick="afficherPreview('{{ preuve.nom }}', '{{ preuve.type }}')">
+                                                        <i class="fas fa-eye"></i> {{ t("Voir") }} </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="text-center py-4">
+                                <i class="fas fa-paperclip fa-3x text-muted mb-3"></i>
+                                <h5> {{ t("No evidence") }} </h5>
+                                <p class="text-muted"> {{ t("Add evidence for this finding.") }} </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Fermer") }} </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="tab-pane fade" id="preuves" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-paperclip me-2"></i> {{ t("All the Evidence") }} </h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#uploadMultiplePreuvesModal">
+                        <i class="fas fa-upload me-1"></i> {{ t("Multiple Upload") }} </button>
+                </div>
+                <div class="card-body">
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Filter by finding") }} </label>
+                            <select class="form-select" id="filtreConstatation">
+                                <option value="all"> {{ t("All findings") }} </option>
+                                {% for constatation in audit.constatations %}
+                                    <option value="{{ constatation.id }}">{{ constatation.reference }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Rechercher") }} </label>
+                            <input type="text" class="form-control" id="recherchePreuve" placeholder="{{ t("File name...") }}">
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="tablePreuves">
+                            <thead>
+                                <tr>
+                                    <th> {{ t("Constatation") }} </th>
+                                    <th> {{ t("Fichier") }} </th>
+                                    <th> {{ t("Type") }} </th>
+                                    <th> {{ t("Date") }} </th>
+                                    <th> {{ t("Taille") }} </th>
+                                    <th> {{ t("Actions") }} </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set total_preuves = 0 %}
+                                {% for constatation in audit.constatations %}
+                                    {% if constatation.preuves %}
+                                    {% for preuve in constatation.get_preuves_list %}                                            {% set total_preuves = total_preuves + 1 %}
+                                            <tr data-constatation="{{ constatation.id }}">
+                                                <td>
+                                                    <span class="badge bg-primary">{{ constatation.reference }}</span>
+                                                </td>
+                                                <td>
+                                                    <i class="fas {{ preuve.icone }} me-2"></i>
+                                                    {{ preuve.nom }}
+                                                </td>
+                                                <td>
+                                                    <span class="badge bg-info">{{ preuve.type|upper }}</span>
+                                                </td>
+                                                <td>{{ preuve.date_upload.strftime('%d/%m/%Y') if preuve.date_upload else 'N/A' }}</td>
+                                                <td>{{ preuve.taille }}</td>
+                                                <td>
+                                                    <div class="btn-group btn-group-sm">
+                                                        <a href="{{ url_for('download_preuve', filename=preuve.nom) }}" 
+                                                           class="btn btn-outline-primary" 
+                                                           target="_blank">
+                                                            <i class="fas fa-download"></i>
+                                                        </a>
+                                                        <a href="{{ url_for('download_preuve', filename=preuve) }}"
+                                                        class="btn btn-outline-info" 
+                                                           target="_blank">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                        <button class="btn btn-outline-danger" 
+                                                                onclick="supprimerPreuve('{{ preuve.nom }}', '{{ constatation.id }}')">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-3 col-6">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="text-primary">{{ total_preuves }}</h5>
+                                    <small class="text-muted"> {{ t("Total evidence") }} </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="text-success">{{ audit.constatations|selectattr('preuves')|list|length }}</h5>
+                                    <small class="text-muted"> {{ t("Findings with evidence") }} </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <h5 class="text-warning">{{ (total_preuves / audit.constatations|length)|round|int if audit.constatations|length > 0 else 0 }}</h5>
+                                    <small class="text-muted"> {{ t("Average per finding") }} </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="card text-center">
+                                <div class="card-body">
+                                    <button class="btn btn-primary" onclick="telechargerToutesPreuves()">
+                                        <i class="fas fa-download me-1"></i> {{ t("Download all") }} </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="uploadMultiplePreuvesModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="POST" action="{{ url_for('upload_multiple_preuves', audit_id=audit.id) }}" 
+                          enctype="multipart/form-data" id="formUploadMultiple">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <div class="modal-header">
+                            <h5 class="modal-title"> {{ t("Upload multiple evidence") }} </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label"> {{ t("Select a finding") }} </label>
+                                <select class="form-select" name="constatation_id" required>
+                                    <option value=""> {{ t("Choose a finding...") }} </option>
+                                    {% for constatation in audit.constatations %}
+                                        <option value="{{ constatation.id }}">{{ constatation.reference }} - {{ constatation.description|truncate(50) }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label"> {{ t("Select files") }} </label>
+                                <input type="file" class="form-control" name="preuves" multiple required>
+                                <small class="text-muted"> {{ t("Select multiple files (max 10 files, 16MB each)") }} </small>
+                            </div>
+                            
+                            <div class="progress mb-3" style="display: none;" id="progressBarContainer">
+                                <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%">0%</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                            <button type="submit" class="btn btn-primary" id="btnUpload"> {{ t("Uploader") }} </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="recommandations" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"> {{ t("List of Recommendations") }} </h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalRecommandation">
+                        <i class="fas fa-plus me-1"></i> {{ t("Ajouter") }} </button>
+                </div>
+                <div class="card-body">
+                    {% if audit.recommandations %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th> {{ t("Description") }} </th>
+                                        <th> {{ t("Type") }} </th>
+                                        <th> {{ t("Status & Advancement") }} </th>
+                                        <th> {{ t("Échéance") }} </th>
+                                        <th> {{ t("Associated Risks") }} </th>
+                                        <th> {{ t("Actions") }} </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for recommandation in audit.recommandations %}
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold">{{ recommandation.description[:100] }}{% if recommandation.description|length > 100 %}...{% endif %}</div>
+                                            {% if recommandation.constatation %}
+                                                <small class="text-muted">Constat: {{ recommandation.constatation.reference }}</small>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ 'warning' if recommandation.type_recommandation == 'corrective' else 'info' if recommandation.type_recommandation == 'preventive' else 'success' }}">
+                                                {{ recommandation.type_recommandation }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-{{ 'success' if recommandation.statut == 'termine' else 'warning' if recommandation.statut == 'en_cours' else 'danger' if recommandation.statut == 'retarde' else 'secondary' }} me-2">
+                                                    {{ recommandation.statut }}
+                                                </span>
+                                                {% if recommandation.statut != 'termine' %}
+                                                <div class="progress flex-grow-1" style="height: 8px; width: 80px;">
+                                                    <div class="progress-bar bg-{{ 'success' if recommandation.taux_avancement == 100 else 'warning' }}" 
+                                                         style="width: {{ recommandation.taux_avancement or 0 }}%"
+                                                         title="{{ recommandation.taux_avancement or 0 }}%">
+                                                    </div>
+                                                </div>
+                                                <small class="ms-2">{{ recommandation.taux_avancement or 0 }}%</small>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                        <td>
+                                            {% if recommandation.date_echeance %}
+                                                {% set aujourdhui = now().date() %}
+                                                {% set echeance = recommandation.date_echeance %}
+                                                {% if echeance < aujourdhui and recommandation.statut != 'termine' %}
+                                                    <span class="text-danger" title="{{ t("En retard") }}">
+                                                        <i class="fas fa-exclamation-triangle"></i>
+                                                        {{ echeance.strftime('%d/%m/%Y') }}
+                                                    </span>
+                                                {% else %}
+                                                    {{ echeance.strftime('%d/%m/%Y') }}
+                                                {% endif %}
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if recommandation.risque %}
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    <a href="{{ url_for('detail_risque', id=recommandation.risque_id) }}" 
+                                                       class="badge bg-info text-decoration-none"
+                                                       data-bs-toggle="tooltip" 
+                                                       title="{{ recommandation.risque.intitule }} - {{ recommandation.risque.cartographie.nom }}">
+                                                        {{ recommandation.risque.reference }}
+                                                        {% if recommandation.risque.evaluations %}
+                                                            {% set derniere_eval = recommandation.risque.evaluations|sort(attribute='created_at')|last %}
+                                                            <span class="badge bg-{{ 'danger' if derniere_eval.niveau_risque == 'Critique' else 'warning' if derniere_eval.niveau_risque == 'Élevé' else 'success' }} ms-1">
+                                                                {% if derniere_eval and derniere_eval.niveau_risque %}
+                                                                {{ derniere_eval.niveau_risque[:1] }}
+                                                            {% else %}
+                                                                N/A
+                                                            {% endif %}                                                            </span>
+                                                        {% endif %}
+                                                    </a>
+                                                </div>
+                                            {% else %}
+                                                <span class="text-muted"> {{ t("Aucun risque") }} </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                
+                                                <button class="btn btn-outline-info associer-risques-btn" 
+                                                        title="{{ t("Associate risks") }}"
+                                                        data-recommandation-id="{{ recommandation.id }}">
+                                                    <i class="fas fa-link"></i>
+                                                </button>
+
+                                                <button class="btn btn-outline-warning" 
+                                                        title="{{ t("Change status") }}"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalStatutRecommandation"
+                                                        data-recommandation-id="{{ recommandation.id }}"
+                                                        data-recommandation-statut="{{ recommandation.statut }}"
+                                                        data-recommandation-avancement="{{ recommandation.taux_avancement or 0 }}">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+
+                                                {% if not recommandation.plan_action %}
+                                                <form action="{{ url_for('supprimer_recommandation', audit_id=audit.id, recommandation_id=recommandation.id) }}" 
+                                                      method="POST" 
+                                                      class="d-inline"
+                                                      onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette recommandation ?');">
+                                                    <button type="submit" class="btn btn-outline-danger" title="{{ t("Supprimer") }}">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                                {% else %}
+                                                <button class="btn btn-outline-secondary" title="{{ t("Non supprimable - Plan d") }}'action associé" disabled>
+                                                    <i class="fas fa-lock"></i>
+                                                </button>
+                                                {% endif %}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-lightbulb fa-3x text-muted mb-3"></i>
+                            <h5> {{ t("No recommendation") }} </h5>
+                            <p class="text-muted"> {{ t("Add recommendations based on findings.") }} </p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalRecommandation">
+                                <i class="fas fa-plus me-1"></i> {{ t("First Recommendation") }} </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="plans-action" role="tabpanel">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0"> {{ t("Action Plans") }} </h5>
+                    <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalPlanAction">
+                        <i class="fas fa-plus me-1"></i> {{ t("New Plan") }} </button>
+                </div>
+                <div class="card-body">
+                    {% if audit.plans_action %}
+                        <div class="row">
+                            {% for plan in audit.plans_action %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="card-title mb-0">{{ plan.nom }}</h6>
+                                        <span class="badge bg-{{ 'success' if plan.statut == 'termine' else 'warning' if plan.statut == 'en_cours' else 'danger' if plan.statut == 'retarde' else 'secondary' }}">
+                                            {{ plan.statut }}
+                                        </span>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if plan.description %}
+                                            <p class="card-text">{{ plan.description[:150] }}{% if plan.description|length > 150 %}...{% endif %}</p>
+                                        {% endif %}
+                                        
+                                        <div class="mb-2">
+                                            <small class="text-muted"> {{ t("Progress:") }} </small>
+                                            <div class="progress">
+                                                <div class="progress-bar bg-{{ 'success' if plan.pourcentage_realisation == 100 else 'warning' }}" 
+                                                     style="width: {{ plan.pourcentage_realisation }}%">
+                                                    {{ plan.pourcentage_realisation }}%
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row text-center">
+                                            <div class="col-6">
+                                                <small class="text-muted"> {{ t("Début") }} </small><br>
+                                                <strong>{{ plan.date_debut.strftime('%d/%m/%Y') if plan.date_debut else '-' }}</strong>
+                                            </div>
+                                            <div class="col-6">
+                                                <small class="text-muted"> {{ t("Fin prévue") }} </small><br>
+                                                <strong>{{ plan.date_fin_prevue.strftime('%d/%m/%Y') if plan.date_fin_prevue else '-' }}</strong>
+                                            </div>
+                                        </div>
+
+                                        {% if plan.risque %}
+                                        <div class="mt-2">
+                                            <small class="text-muted"> {{ t("Associated risk:") }} </small><br>
+                                            <a href="{{ url_for('detail_risque', id=plan.risque_id) }}" class="badge bg-info text-decoration-none">
+                                                {{ plan.risque.reference }}
+                                            </a>
+                                        </div>
+                                        {% endif %}
+
+                                        {% if plan.recommandation %}
+                                        <div class="mt-2">
+                                            <small class="text-muted"> {{ t("Recommendation:") }} </small><br>
+                                            <span class="badge bg-secondary">{{ plan.recommandation.type_recommandation }}</span>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="card-footer">
+                                        <div class="btn-group w-100">
+                                            <a href="{{ url_for('detail_plan_action', plan_id=plan.id) }}" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye me-1"></i> {{ t("Détails") }} </a>
+                                            
+                                            <form action="{{ url_for('supprimer_plan_action_audit', audit_id=audit.id, plan_id=plan.id) }}" 
+                                                  method="POST" 
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce plan d\\'action ?');">
+                                                <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                    <i class="fas fa-trash me-1"></i> {{ t("Supprimer") }} </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+                            <h5> {{ t("No action plan") }} </h5>
+                            <p class="text-muted"> {{ t("Create action plans to implement the recommendations.") }} </p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalPlanAction">
+                                <i class="fas fa-plus me-1"></i> {{ t("First Action Plan") }} </button>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="risques" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0"> {{ t("Risks Associated with this Audit") }} </h5>
+                </div>
+                <div class="card-body">
+                    {% set risques_associes = [] %}
+                    {% for recommandation in audit.recommandations %}
+                        {% if recommandation.risque and recommandation.risque not in risques_associes %}
+                            {% set _ = risques_associes.append(recommandation.risque) %}
+                        {% endif %}
+                    {% endfor %}
+                    {% for plan in audit.plans_action %}
+                        {% if plan.risque and plan.risque not in risques_associes %}
+                            {% set _ = risques_associes.append(plan.risque) %}
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if risques_associes %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th> {{ t("Référence") }} </th>
+                                        <th> {{ t("Intitulé") }} </th>
+                                        <th> {{ t("Catégorie") }} </th>
+                                        <th> {{ t("Niveau") }} </th>
+                                        <th> {{ t("Recommendations") }} </th>
+                                        <th> {{ t("Action Plans") }} </th>
+                                        <th> {{ t("Actions") }} </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for risque in risques_associes %}
+                                    <tr>
+                                        <td>
+                                            <strong>{{ risque.reference }}</strong>
+                                        </td>
+                                        <td>{{ risque.intitule }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ risque.categorie }}</span>
+                                        </td>
+                                        <td>
+                                            {% if risque.evaluations %}
+                                                {% set derniere_eval = risque.evaluations|sort(attribute='created_at')|last %}
+                                                <span class="badge bg-{{ 'danger' if derniere_eval.niveau_risque == 'Critique' else 'warning' if derniere_eval.niveau_risque == 'Élevé' else 'info' if derniere_eval.niveau_risque == 'Moyen' else 'success' }}">
+                                                    {{ derniere_eval.niveau_risque }}
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-light text-dark"> {{ t("Non évalué") }} </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% set nb_recommandations = audit.recommandations|selectattr('risque_id', 'equalto', risque.id)|list|length %}
+                                            <span class="badge bg-warning">{{ nb_recommandations }}</span>
+                                        </td>
+                                        <td>
+                                            {% set nb_plans = audit.plans_action|selectattr('risque_id', 'equalto', risque.id)|list|length %}
+                                            <span class="badge bg-success">{{ nb_plans }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('detail_risque', id=risque.id) }}" class="btn btn-outline-primary">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                
+                                                <form action="{{ url_for('dissocier_risque_audit', audit_id=audit.id, risque_id=risque.id) }}" 
+                                                      method="POST" 
+                                                      class="d-inline"
+                                                      onsubmit="return confirm('Êtes-vous sûr de vouloir dissocier ce risque de l\\'audit ?');">
+                                                    <button type="submit" class="btn btn-outline-warning" title="{{ t("Dissocier") }}">
+                                                        <i class="fas fa-unlink"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-bug fa-3x text-muted mb-3"></i>
+                            <h5> {{ t("No associated risk") }} </h5>
+                            <p class="text-muted"> {{ t("Associate risks with recommendations to link them to this audit.") }} </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalConstatation" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form action="{{ url_for('nouvelle_constatation', audit_id=audit.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title"> {{ t("New Finding") }} </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Description *") }} </label>
+                        <textarea class="form-control" name="description" rows="4" required placeholder="{{ t("Describe the finding...") }}"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Type of finding *") }} </label>
+                            <select class="form-select" name="type_constatation" required>
+                                <option value=""> {{ t("Select...") }} </option>
+                                <option value="conformite"> {{ t("Conformité") }} </option>
+                                <option value="non_conformite"> {{ t("Non-compliance") }} </option>
+                                <option value="observation"> {{ t("Observation") }} </option>
+                                <option value="recommandation"> {{ t("Recommendation") }} </option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Gravité") }} </label>
+                            <select class="form-select" name="gravite">
+                                <option value="mineure"> {{ t("Minore") }} </option>
+                                <option value="moyenne" selected> {{ t("Moyenne") }} </option>
+                                <option value="majeure"> {{ t("Majore") }} </option>
+                                <option value="critique"> {{ t("Critique") }} </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Process concerned") }} </label>
+                        <input type="text" class="form-control" name="processus_concerne" placeholder="{{ t("Process name...") }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Cause racine") }} </label>
+                        <textarea class="form-control" name="cause_racine" rows="2" placeholder="{{ t("Root cause identified...") }}"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Associated risk (optional)") }} </label>
+
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label"> {{ t("Filter by mapping") }} </label>
+                                <select class="form-select" id="filtreCartographieConstatation" onchange="filtrerRisquesConstatation()">
+                                    <option value="all"> {{ t("All maps") }} </option>
+                                    {% for cartographie in cartographies_list %}
+                                        <option value="{{ cartographie.id }}">{{ cartographie.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label"> {{ t("Look for a risk") }} </label>
+                                <input type="text" class="form-control" id="rechercheRisqueConstatation" placeholder="{{ t("Reference or title...") }}" onkeyup="filtrerRisquesConstatation()">
+                            </div>
+                        </div>
+                        
+                        <select class="form-select" name="risque_id" id="selectRisqueConstatation">
+                            <option value=""> {{ t("No associated risk") }} </option>
+                            {% for risque in risques_list %}
+                                <option value="{{ risque.id }}" 
+                                        data-cartographie="{{ risque.cartographie_id }}"
+                                        data-reference="{{ risque.reference }}"
+                                        data-intitule="{{ risque.intitule }}"
+                                        data-categorie="{{ risque.categorie }}"
+                                        data-niveau="{% if risque.evaluations %}{% set derniere_eval = risque.evaluations|sort(attribute='created_at')|last %}{{ derniere_eval.niveau_risque }}{% else %}Non évalué{% endif %}">
+                                    {{ risque.reference }} - {{ risque.intitule }} 
+                                    {% if risque.evaluations %}
+                                        {% set derniere_eval = risque.evaluations|sort(attribute='created_at')|last %}
+                                        - {{ derniere_eval.niveau_risque }} (Score: {{ derniere_eval.score_risque }})
+                                    {% endif %}
+                                    - {{ risque.cartographie.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <div id="infoRisqueConstatation" class="mt-2 p-2 bg-light rounded" style="display: none;">
+                            <small>
+                                <strong> {{ t("Selected risk:") }} </strong>
+                                <span id="risqueReference"></span> - 
+                                <span id="risqueIntitule"></span><br>
+                                <span id="risqueCategorie"></span> - 
+                                <span id="risqueNiveau"></span>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                    <button type="submit" class="btn btn-primary"> {{ t("Create the finding") }} </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalRecommandation" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form action="{{ url_for('nouvelle_recommandation', audit_id=audit.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title"> {{ t("New Recommendation") }} </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Description *") }} </label>
+                        <textarea class="form-control" name="description" rows="4" required placeholder="{{ t("Describe the recommendation...") }}"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Type of recommendation *") }} </label>
+                            <select class="form-select" name="type_recommandation" required>
+                                <option value=""> {{ t("Select...") }} </option>
+                                <option value="corrective"> {{ t("Corrective") }} </option>
+                                <option value="preventive"> {{ t("Préventive") }} </option>
+                                <option value="amelioration"> {{ t("Amélioration") }} </option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Lead time") }} </label>
+                            <select class="form-select" name="delai_mise_en_oeuvre">
+                                <option value=""> {{ t("Select...") }} </option>
+                                <option value="immediat"> {{ t("Immédiat") }} </option>
+                                <option value="court_terme"> {{ t("Short term (1-3 months)") }} </option>
+                                <option value="moyen_terme"> {{ t("Medium term (3-6 months)") }} </option>
+                                <option value="long_terme">Long terme (> {{ t("6 mois)") }} </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Due date") }} </label>
+                        <input type="date" class="form-control" name="date_echeance">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Associated observation (optional)") }} </label>
+                        <select class="form-select" name="constatation_id">
+                            <option value=""> {{ t("No findings") }} </option>
+                            {% for constatation in audit.constatations %}
+                                <option value="{{ constatation.id }}">{{ constatation.reference }} - {{ constatation.description[:50] }}...</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Associated risk (optional)") }} </label>
+
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label"> {{ t("Filter by mapping") }} </label>
+                                <select class="form-select" id="filtreCartographieRecommandation" onchange="filtrerRisquesRecommandation()">
+                                    <option value="all"> {{ t("All maps") }} </option>
+                                    {% for cartographie in cartographies_list %}
+                                        <option value="{{ cartographie.id }}">{{ cartographie.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label"> {{ t("Look for a risk") }} </label>
+                                <input type="text" class="form-control" id="rechercheRisqueRecommandation" placeholder="{{ t("Reference or title...") }}" onkeyup="filtrerRisquesRecommandation()">
+                            </div>
+                        </div>
+                        
+                        <select class="form-select" name="risque_id" id="selectRisqueRecommandation">
+                            <option value=""> {{ t("No associated risk") }} </option>
+                            {% for risque in risques_list %}
+                                <option value="{{ risque.id }}" 
+                                        data-cartographie="{{ risque.cartographie_id }}"
+                                        data-reference="{{ risque.reference }}"
+                                        data-intitule="{{ risque.intitule }}"
+                                        data-categorie="{{ risque.categorie }}"
+                                        data-niveau="{% if risque.evaluations %}{% set derniere_eval = risque.evaluations|sort(attribute='created_at')|last %}{{ derniere_eval.niveau_risque }}{% else %}Non évalué{% endif %}">
+                                    {{ risque.reference }} - {{ risque.intitule }} 
+                                    {% if risque.evaluations %}
+                                        {% set derniere_eval = risque.evaluations|sort(attribute='created_at')|last %}
+                                        - {{ derniere_eval.niveau_risque }} (Score: {{ derniere_eval.score_risque }})
+                                    {% endif %}
+                                    - {{ risque.cartographie.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <div id="infoRisqueRecommandation" class="mt-2 p-2 bg-light rounded" style="display: none;">
+                            <small>
+                                <strong> {{ t("Selected risk:") }} </strong>
+                                <span id="risqueReferenceRec"></span> - 
+                                <span id="risqueIntituleRec"></span><br>
+                                <span id="risqueCategorieRec"></span> - 
+                                <span id="risqueNiveauRec"></span>
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Responsible (optional)") }} </label>
+                        <select class="form-select" name="responsable_id">
+                            <option value=""> {{ t("Non assigné") }} </option>
+                            {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.username }} - {{ user.role }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                    <button type="submit" class="btn btn-primary"> {{ t("Create the recommendation") }} </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPlanAction" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form action="{{ url_for('nouveau_plan_action', audit_id=audit.id) }}" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title"> {{ t("New Action Plan") }} </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Plan name *") }} </label>
+                        <input type="text" class="form-control" name="nom" required placeholder="{{ t("Nom du plan d") }}'action...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Description") }} </label>
+                        <textarea class="form-control" name="description" rows="3" placeholder="{{ t("Detailed description...") }}"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Start date") }} </label>
+                            <input type="date" class="form-control" name="date_debut">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Expected end date") }} </label>
+                            <input type="date" class="form-control" name="date_fin_prevue">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Associated recommendation (optional)") }} </label>
+                        <select class="form-select" name="recommandation_id">
+                            <option value=""> {{ t("No recommendation") }} </option>
+                            {% for recommandation in audit.recommandations %}
+                                <option value="{{ recommandation.id }}">{{ recommandation.description[:50] }}...</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Associated risk (optional)") }} </label>
+
+                        <div class="row mb-2">
+                            <div class="col-md-6">
+                                <label class="form-label"> {{ t("Filter by mapping") }} </label>
+                                <select class="form-select" id="filtreCartographiePlan" onchange="filtrerRisquesPlan()">
+                                    <option value="all"> {{ t("All maps") }} </option>
+                                    {% for cartographie in cartographies_list %}
+                                        <option value="{{ cartographie.id }}">{{ cartographie.nom }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label"> {{ t("Look for a risk") }} </label>
+                                <input type="text" class="form-control" id="rechercheRisquePlan" placeholder="{{ t("Reference or title...") }}" onkeyup="filtrerRisquesPlan()">
+                            </div>
+                        </div>
+                        
+                        <select class="form-select" name="risque_id" id="selectRisquePlan">
+                            <option value=""> {{ t("Aucun risque") }} </option>
+                            {% for risque in risques_list %}
+                                <option value="{{ risque.id }}" 
+                                        data-cartographie="{{ risque.cartographie_id }}"
+                                        data-reference="{{ risque.reference }}"
+                                        data-intitule="{{ risque.intitule }}"
+                                        data-categorie="{{ risque.categorie }}"
+                                        data-niveau="{% if risque.evaluations %}{% set derniere_eval = risque.evaluations|sort(attribute='created_at')|last %}{{ derniere_eval.niveau_risque }}{% else %}Non évalué{% endif %}">
+                                    {{ risque.reference }} - {{ risque.intitule }} 
+                                    {% if risque.evaluations %}
+                                        {% set derniere_eval = risque.evaluations|sort(attribute='created_at')|last %}
+                                        - {{ derniere_eval.niveau_risque }} (Score: {{ derniere_eval.score_risque }})
+                                    {% endif %}
+                                    - {{ risque.cartographie.nom }}
+                                </option>
+                            {% endfor %}
+                        </select>
+
+                        <div id="infoRisquePlan" class="mt-2 p-2 bg-light rounded" style="display: none;">
+                            <small>
+                                <strong> {{ t("Selected risk:") }} </strong>
+                                <span id="risqueReferencePlan"></span> - 
+                                <span id="risqueIntitulePlan"></span><br>
+                                <span id="risqueCategoriePlan"></span> - 
+                                <span id="risqueNiveauPlan"></span>
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Responsable") }} </label>
+                        <select class="form-select" name="responsable_id">
+                            <option value=""> {{ t("Non assigné") }} </option>
+                            {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.username }} - {{ user.role }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                    <button type="submit" class="btn btn-primary"> {{ t("Create the action plan") }} </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalRapport" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> {{ t("Audit Reports") }} </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('rapport_audit_complet', audit_id=audit.id) }}" class="btn btn-info">
+                        <i class="fas fa-eye me-2"></i> {{ t("View Full Report") }} </a>
+                    <a href="{{ url_for('export_rapport_audit_pdf', audit_id=audit.id) }}" class="btn btn-danger">
+                        <i class="fas fa-file-pdf me-2"></i> {{ t("Exporter en PDF") }} </a>
+                    <button class="btn btn-outline-secondary">
+                        <i class="fas fa-chart-bar me-2"></i> {{ t("Detailed Statistics") }} </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalSelectionRisques" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> {{ t("Select Risks") }} </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label"> {{ t("Filter by mapping") }} </label>
+                        <select class="form-select" id="filtreCartographie">
+                            <option value="all"> {{ t("All maps") }} </option>
+                            {% for cartographie in cartographies_list %}
+                                <option value="{{ cartographie.id }}">{{ cartographie.nom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label"> {{ t("Look for a risk") }} </label>
+                        <input type="text" class="form-control" id="rechercheRisque" placeholder="{{ t("Reference or title...") }}">
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-striped" id="tableauRisques">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll">
+                                </th>
+                                <th> {{ t("Référence") }} </th>
+                                <th> {{ t("Intitulé") }} </th>
+                                <th> {{ t("Cartographie") }} </th>
+                                <th> {{ t("Risk level") }} </th>
+                                <th> {{ t("Score") }} </th>
+                                <th> {{ t("Latest review") }} </th>
+                            </tr>
+                        </thead>
+                        <tbody id="listeRisques">
+                            
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-4" id="risquesSelectionnes" style="display: none;">
+                    <h6> {{ t("Selected risks:") }} </h6>
+                    <div id="listeSelection" class="d-flex flex-wrap gap-2"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                <button type="button" class="btn btn-primary" id="btnAssocierRisques"> {{ t("Associate the selected risks") }} </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalStatutRecommandation" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formStatutRecommandation" method="POST">
+                <div class="modal-header">
+                    <h5 class="modal-title"> {{ t("Change recommendation status") }} </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="recommandationId" name="recommandation_id">
+                    
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Statut") }} </label>
+                        <select class="form-select" id="statutRecommandation" name="statut" required>
+                            <option value="a_traiter"> {{ t("À traiter") }} </option>
+                            <option value="en_cours"> {{ t("En cours") }} </option>
+                            <option value="termine"> {{ t("Terminé") }} </option>
+                            <option value="retarde"> {{ t("Retardé") }} </option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Advancement rate") }} </label>
+                        <input type="range" class="form-range" id="tauxAvancement" name="taux_avancement" min="0" max="100" step="5" value="0">
+                        <div class="d-flex justify-content-between">
+                            <small>0%</small>
+                            <span id="valeurTaux" class="fw-bold">0%</span>
+                            <small>100%</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                    <button type="submit" class="btn btn-primary"> {{ t("To update") }} </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let risquesSelectionnes = new Set();
+    let currentAction = '';
+    let currentElementId = null;
+
+    // Initialiser les tooltips Bootstrap
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Gestion de la sélection des risques
+    document.getElementById('filtreCartographie').addEventListener('change', function() {
+        chargerRisquesParCartographie(this.value);
+    });
+
+    document.getElementById('rechercheRisque').addEventListener('input', function() {
+        filtrerRisques(this.value);
+    });
+
+    // Boutons pour associer des risques aux recommandations
+    document.querySelectorAll('.associer-risques-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            currentAction = 'recommandation';
+            currentElementId = this.dataset.recommandationId;
+            ouvrirModalSelectionRisques();
+        });
+    });
+
+    // Gestion du slider d'avancement
+    const tauxAvancement = document.getElementById('tauxAvancement');
+    if (tauxAvancement) {
+        tauxAvancement.addEventListener('input', function() {
+            document.getElementById('valeurTaux').textContent = this.value + '%';
+        });
+    }
+
+    // Fonction pour ouvrir le modal de sélection des risques
+    function ouvrirModalSelectionRisques() {
+        chargerTousLesRisques();
+        const modal = new bootstrap.Modal(document.getElementById('modalSelectionRisques'));
+        modal.show();
+    }
+
+    // Fonction pour charger tous les risques
+    function chargerTousLesRisques() {
+        fetch('{{ url_for("api_risques_actifs") }}')
+            .then(response => response.json())
+            .then(risques => {
+                afficherRisques(risques);
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                afficherMessageErreur('Erreur lors du chargement des risques');
+            });
+    }
+
+    // Fonction pour charger les risques par cartographie
+    function chargerRisquesParCartographie(cartographieId) {
+        if (cartographieId === 'all') {
+            chargerTousLesRisques();
+            return;
+        }
+
+        fetch(`/api/risques/cartographie/${cartographieId}`)
+            .then(response => response.json())
+            .then(risques => {
+                afficherRisques(risques);
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                afficherMessageErreur('Erreur lors du chargement des risques');
+            });
+    }
+
+    // Fonction pour afficher les risques
+    function afficherRisques(risques) {
+        const tbody = document.getElementById('listeRisques');
+        tbody.innerHTML = '';
+
+        risques.forEach(risque => {
+            const tr = document.createElement('tr');
+            const niveauCouleur = getCouleurNiveauRisque(risque.evaluation?.niveau_risque);
+            
+            tr.innerHTML = `
+                <td>
+                    <input type="checkbox" class="risque-checkbox" value="${risque.id}" 
+                           ${risquesSelectionnes.has(risque.id.toString()) ? 'checked' : ''}>
+                </td>
+                <td><strong>${risque.reference}</strong></td>
+                <td>${risque.intitule}</td>
+                <td>${risque.cartographie_nom || 'N/A'}</td>
+                <td>
+                    <span class="badge bg-${niveauCouleur}">
+                        ${risque.evaluation?.niveau_risque || 'Non évalué'}
+                    </span>
+                </td>
+                <td>${risque.evaluation?.score || 0}</td>
+                <td>
+                    ${risque.evaluation ? 
+                        `Impact: ${risque.evaluation.impact || 'N/A'}, Prob: ${risque.evaluation.probabilite || 'N/A'}` : 
+                        'Aucune évaluation'}
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Ajouter les écouteurs d'événements pour les checkboxes
+        document.querySelectorAll('.risque-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                gererSelectionRisque(this.value, this.checked);
+            });
+        });
+    }
+
+    // Fonction pour gérer la sélection/désélection des risques
+    function gererSelectionRisque(risqueId, estSelectionne) {
+        if (estSelectionne) {
+            risquesSelectionnes.add(risqueId);
+        } else {
+            risquesSelectionnes.delete(risqueId);
+        }
+        mettreAJourListeSelection();
+        document.getElementById('selectAll').checked = 
+            risquesSelectionnes.size === document.querySelectorAll('.risque-checkbox').length;
+    }
+
+    // Fonction pour mettre à jour la liste des risques sélectionnés
+    function mettreAJourListeSelection() {
+        const container = document.getElementById('listeSelection');
+        const parent = document.getElementById('risquesSelectionnes');
+        
+        container.innerHTML = '';
+        
+        if (risquesSelectionnes.size > 0) {
+            parent.style.display = 'block';
+            risquesSelectionnes.forEach(risqueId => {
+                const checkbox = document.querySelector(`.risque-checkbox[value="${risqueId}"]`);
+                if (checkbox) {
+                    const row = checkbox.closest('tr');
+                    const reference = row.cells[1].textContent;
+                    const intitule = row.cells[2].textContent;
+                    
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-primary';
+                    badge.innerHTML = `
+                        ${reference}
+                        <button type="button" class="btn-close btn-close-white ms-1" 
+                                onclick="retirerRisqueSelectionne('${risqueId}')"></button>
+                    `;
+                    container.appendChild(badge);
+                }
+            });
+        } else {
+            parent.style.display = 'none';
+        }
+    }
+
+    window.retirerRisqueSelectionne = function(risqueId) {
+        risquesSelectionnes.delete(risqueId);
+        const checkbox = document.querySelector(`.risque-checkbox[value="${risqueId}"]`);
+        if (checkbox) checkbox.checked = false;
+        mettreAJourListeSelection();
+    };
+
+    document.getElementById('selectAll').addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.risque-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+            gererSelectionRisque(checkbox.value, this.checked);
+        });
+    });
+
+    document.getElementById('btnAssocierRisques').addEventListener('click', function() {
+        if (risquesSelectionnes.size === 0) {
+            alert('Veuillez sélectionner au moins un risque');
+            return;
+        }
+
+        const formData = new FormData();
+        risquesSelectionnes.forEach(risqueId => {
+            formData.append('risque_ids', risqueId);
+        });
+
+        let url = '';
+        if (currentAction === 'recommandation') {
+            url = `{{ url_for('associer_risques_recommandation', audit_id=audit.id, recommandation_id=0) }}`.replace('0', currentElementId);
+        } else if (currentAction === 'plan_action') {
+            url = `{{ url_for('associer_risques_plan_action', audit_id=audit.id, plan_id=0) }}`.replace('0', currentElementId);
+        }
+
+        fetch(url, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                throw new Error('Erreur lors de l\'association');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de l\'association des risques');
+        });
+    });
+
+    function getCouleurNiveauRisque(niveau) {
+        switch(niveau) {
+            case 'Critique': return 'danger';
+            case 'Élevé': return 'warning';
+            case 'Moyen': return 'info';
+            case 'Faible': return 'success';
+            default: return 'secondary';
+        }
+    }
+
+    function filtrerRisques(recherche) {
+        const lignes = document.querySelectorAll('#listeRisques tr');
+        const terme = recherche.toLowerCase();
+        lignes.forEach(ligne => {
+            const texte = ligne.textContent.toLowerCase();
+            ligne.style.display = texte.includes(terme) ? '' : 'none';
+        });
+    }
+
+    function afficherMessageErreur(message) {
+        console.error(message);
+    }
+
+    // Gestion des onglets
+    const triggerTabList = [].slice.call(document.querySelectorAll('#auditTabs button'));
+    triggerTabList.forEach(function (triggerEl) {
+        var tabTrigger = new bootstrap.Tab(triggerEl);
+        triggerEl.addEventListener('click', function (event) {
+            event.preventDefault();
+            tabTrigger.show();
+        });
+    });
+
+    // Gestion des suppressions
+    const deleteForms = document.querySelectorAll('form[onsubmit*="confirm"]');
+    deleteForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const message = this.getAttribute('onsubmit').match(/return confirm\('([^']+)'/)[1];
+            if (!confirm(message)) e.preventDefault();
+        });
+    });
+
+    // Initialiser les filtres pour les formulaires de création
+    initialiserFiltresFormulaires();
+
+    // Gestion des filtres de preuves
+    const filtreConstatation = document.getElementById('filtreConstatation');
+    const recherchePreuve = document.getElementById('recherchePreuve');
+    
+    if (filtreConstatation) {
+        filtreConstatation.addEventListener('change', function() {
+            filtrerPreuves();
+        });
+    }
+    
+    if (recherchePreuve) {
+        recherchePreuve.addEventListener('input', function() {
+            filtrerPreuves();
+        });
+    }
+});
+
+// Fonction pour filtrer les preuves
+function filtrerPreuves() {
+    const filtreConstatation = document.getElementById('filtreConstatation').value;
+    const recherche = document.getElementById('recherchePreuve').value.toLowerCase();
+    const lignes = document.querySelectorAll('#tablePreuves tbody tr');
+    
+    lignes.forEach(ligne => {
+        const constatationId = ligne.getAttribute('data-constatation');
+        const texte = ligne.textContent.toLowerCase();
+        
+        const matchConstatation = filtreConstatation === 'all' || constatationId === filtreConstatation;
+        const matchRecherche = texte.includes(recherche);
+        
+        ligne.style.display = matchConstatation && matchRecherche ? '' : 'none';
+    });
+}
+
+// Fonction pour télécharger toutes les preuves
+function telechargerToutesPreuves() {
+    if (confirm('Voulez-vous télécharger toutes les preuves ?')) {
+        window.open('{{ url_for("download_all_preuves", audit_id=audit.id) }}', '_blank');
+    }
+}
+
+// Fonction pour supprimer une preuve
+function supprimerPreuve(filename, constatationId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer cette preuve ?')) {
+        fetch(`/constatation/${constatationId}/preuve/${filename}/supprimer`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('Erreur lors de la suppression');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors de la suppression');
+        });
+    }
+}
+
+// Fonctions pour les filtres dans les formulaires
+function initialiserFiltresFormulaires() {
+    // Constatation
+    const selectConstatation = document.getElementById('selectRisqueConstatation');
+    if (selectConstatation) {
+        selectConstatation.addEventListener('change', function() {
+            afficherInfoRisque(this, 'infoRisqueConstatation', 'risqueReference', 'risqueIntitule', 'risqueCategorie', 'risqueNiveau');
+        });
+    }
+
+    // Recommandation
+    const selectRecommandation = document.getElementById('selectRisqueRecommandation');
+    if (selectRecommandation) {
+        selectRecommandation.addEventListener('change', function() {
+            afficherInfoRisque(this, 'infoRisqueRecommandation', 'risqueReferenceRec', 'risqueIntituleRec', 'risqueCategorieRec', 'risqueNiveauRec');
+        });
+    }
+
+    // Plan d'action
+    const selectPlan = document.getElementById('selectRisquePlan');
+    if (selectPlan) {
+        selectPlan.addEventListener('change', function() {
+            afficherInfoRisque(this, 'infoRisquePlan', 'risqueReferencePlan', 'risqueIntitulePlan', 'risqueCategoriePlan', 'risqueNiveauPlan');
+        });
+    }
+}
+
+function afficherInfoRisque(selectElement, containerId, refId, intituleId, categorieId, niveauId) {
+    const selectedOption = selectElement.options[selectElement.selectedIndex];
+    const container = document.getElementById(containerId);
+    
+    if (selectedOption.value) {
+        document.getElementById(refId).textContent = selectedOption.getAttribute('data-reference');
+        document.getElementById(intituleId).textContent = selectedOption.getAttribute('data-intitule');
+        document.getElementById(categorieId).textContent = selectedOption.getAttribute('data-categorie');
+        
+        const niveau = selectedOption.getAttribute('data-niveau');
+        const niveauElement = document.getElementById(niveauId);
+        niveauElement.textContent = niveau;
+        niveauElement.className = 'risque-niveau ' + getClasseNiveau(niveau);
+        
+        container.style.display = 'block';
+    } else {
+        container.style.display = 'none';
+    }
+}
+
+function getClasseNiveau(niveau) {
+    switch(niveau) {
+        case 'Critique': return 'risque-critique';
+        case 'Élevé': return 'risque-eleve';
+        case 'Moyen': return 'risque-moyen';
+        case 'Faible': return 'risque-faible';
+        default: return 'risque-non-evalue';
+    }
+}
+
+// Fonctions de filtrage pour chaque formulaire
+function filtrerRisquesConstatation() {
+    const filtreCarto = document.getElementById('filtreCartographieConstatation').value;
+    const recherche = document.getElementById('rechercheRisqueConstatation').value.toLowerCase();
+    filtrerOptionsRisque('selectRisqueConstatation', filtreCarto, recherche);
+}
+
+function filtrerRisquesRecommandation() {
+    const filtreCarto = document.getElementById('filtreCartographieRecommandation').value;
+    const recherche = document.getElementById('rechercheRisqueRecommandation').value.toLowerCase();
+    filtrerOptionsRisque('selectRisqueRecommandation', filtreCarto, recherche);
+}
+
+function filtrerRisquesPlan() {
+    const filtreCarto = document.getElementById('filtreCartographiePlan').value;
+    const recherche = document.getElementById('rechercheRisquePlan').value.toLowerCase();
+    filtrerOptionsRisque('selectRisquePlan', filtreCarto, recherche);
+}
+
+function filtrerOptionsRisque(selectId, filtreCarto, recherche) {
+    const select = document.getElementById(selectId);
+    const options = select.getElementsByTagName('option');
+    
+    for (let i = 0; i < options.length; i++) {
+        const option = options[i];
+        const cartoId = option.getAttribute('data-cartographie');
+        const texte = option.textContent.toLowerCase();
+        
+        const matchCarto = filtreCarto === 'all' || cartoId === filtreCarto;
+        const matchRecherche = texte.includes(recherche);
+        
+        option.style.display = matchCarto && matchRecherche ? '' : 'none';
+    }
+    
+    // Réinitialiser l'affichage des informations si l'option sélectionnée est masquée
+    const selectedOption = select.options[select.selectedIndex];
+    if (selectedOption && selectedOption.style.display === 'none') {
+        select.selectedIndex = 0;
+        // Déclencher l'événement change pour mettre à jour l'affichage
+        const event = new Event('change');
+        select.dispatchEvent(event);
+    }
+}
+// Fonction pour supprimer un fichier
+function deleteFile(filename, confirmationMessage = "Êtes-vous sûr de vouloir supprimer ce fichier ?") {
+    if (!confirm(confirmationMessage)) return;
+    
+    fetch(`/delete/file/${encodeURIComponent(filename)}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload(); // Recharger la page
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Une erreur est survenue');
+    });
+}
+
+// Fonction pour renommer un fichier
+function renameFile(filename) {
+    const newName = prompt('Nouveau nom pour le fichier:', filename);
+    
+    if (newName && newName !== filename) {
+        const formData = new FormData();
+        formData.append('new_name', newName);
+        
+        fetch(`/rename/file/${encodeURIComponent(filename)}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue');
+        });
+    }
+}
+
+// Fonction pour remplacer un fichier
+function replaceFile(filename) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.txt,.pdf,.png,.jpg,.jpeg,.gif,.doc,.docx,.xls,.xlsx,.zip,.rar';
+    
+    input.onchange = function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const formData = new FormData();
+        formData.append('new_file', file);
+        
+        fetch(`/replace/file/${encodeURIComponent(filename)}`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token() }}'
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Erreur: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Une erreur est survenue');
+        });
+    };
+    
+    input.click();
+}
+
+// Fonction pour supprimer une preuve d'une constatation
+function deleteConstatationPreuve(constatationId, filename) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette preuve ?')) return;
+    
+    fetch(`/delete/constatation-preuve/${constatationId}/${encodeURIComponent(filename)}`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Erreur: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Une erreur est survenue');
+    });
+}
+</script>
+
+<style>
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.nav-tabs .nav-link.active {
+    color: #0d6efd;
+    border-bottom: 3px solid #0d6efd;
+    background: transparent;
+}
+
+.progress {
+    height: 8px;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    color: #495057;
+    background-color: #f8f9fa;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.btn-outline-danger {
+    border-color: #dc3545;
+    color: #dc3545;
+}
+
+.btn-outline-danger:hover {
+    background-color: #dc3545;
+    color: white;
+}
+
+.btn-outline-warning {
+    border-color: #ffc107;
+    color: #856404;
+}
+
+.btn-outline-warning:hover {
+    background-color: #ffc107;
+    color: #000;
+}
+
+/* Styles pour les filtres de risques */
+.risque-option {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.risque-info {
+    font-size: 0.85em;
+    color: #666;
+}
+
+.risque-niveau {
+    font-weight: bold;
+}
+
+.risque-critique { color: #dc3545; }
+.risque-eleve { color: #fd7e14; }
+.risque-moyen { color: #ffc107; }
+.risque-faible { color: #198754; }
+
+/* Styles pour les preuves */
+.preview-container {
+    max-width: 100%;
+    max-height: 500px;
+    overflow: auto;
+}
+
+.preview-image {
+    max-width: 100%;
+    height: auto;
+}
+
+.preview-pdf {
+    width: 100%;
+    height: 600px;
+}
+
+/* Animation pour les lignes */
+#constatations .table-hover tbody tr {
+    transition: all 0.3s ease;
+}
+
+#constatations .table-hover tbody tr:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+</style>
+{% endblock %}

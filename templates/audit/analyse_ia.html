@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block title %}Analyse IA - {{ audit.reference }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-robot me-2"></i>
+            Analyse IA - {{ audit.reference }}
+        </h2>
+        <a href="{{ url_for('detail_audit', id=audit.id) }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-cogs me-2"></i> {{ t("Setting up AI analysis") }} </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            <label class="form-label"> {{ t("Analysis type") }} </label>
+                            {{ form.type_analyse(class="form-select") }}
+                            <small class="text-muted"> {{ t("Select the type of analysis to perform") }} </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label"> {{ t("Scope of analysis") }} </label>
+                            {{ form.portee_analyse(class="form-select") }}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label"> {{ t("Level of detail") }} </label>
+                            {{ form.niveau_detail(class="form-select") }}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check mb-2">
+                                {{ form.inclure_exemples(class="form-check-input") }}
+                                <label class="form-check-label"> {{ t("Include concrete examples") }} </label>
+                            </div>
+                            <div class="form-check">
+                                {{ form.generer_actions(class="form-check-input") }}
+                                <label class="form-check-label"> {{ t("Generate immediate actions") }} </label>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-play me-1"></i> {{ t("Start AI analysis") }} </button>
+                    </form>
+                </div>
+            </div>
+
+            {% if audit.analyses_ia %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-history me-2"></i> {{ t("Previous analyzes") }} </h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        {% for analyse in audit.analyses_ia[:3] %}
+                        <a href="{{ url_for('resultat_analyse_ia', audit_id=audit.id, analyse_id=analyse.id) }}" 
+                           class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ analyse.type_analyse|title }}</h6>
+                                <small class="text-muted">{{ analyse.date_analyse|format_datetime }}</small>
+                            </div>
+                            <p class="mb-1">
+                                <span class="badge bg-{{ 'success' if analyse.score_confiance > 70 else 'warning' if analyse.score_confiance > 40 else 'danger' }}">
+                                    Score: {{ analyse.score_confiance|round(1) }}%
+                                </span>
+                            </p>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-database me-2"></i> {{ t("Data available for analysis") }} </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h3 class="text-primary">{{ audit.constatations|length }}</h3>
+                                    <small class="text-muted"> {{ t("Findings") }} </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h3 class="text-warning">{{ audit.recommandations|length }}</h3>
+                                    <small class="text-muted"> {{ t("Recommendations") }} </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h3 class="text-success">{{ audit.plans_action|length }}</h3>
+                                    <small class="text-muted"> {{ t("Action plans") }} </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h3 class="text-info">{{ audit.analyses_ia|length if audit.analyses_ia else 0 }}</h3>
+                                    <small class="text-muted"> {{ t("Analyses IA") }} </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card bg-light">
+                <div class="card-body">
+                    <h6 class="card-title">
+                        <i class="fas fa-info-circle text-primary me-2"></i> {{ t("Information importante") }} </h6>
+                    <p class="card-text small"> {{ t("This feature uses artificial intelligence to analyze your audit data and generate intelligent recommendations.") }} </p>
+                    <div class="alert alert-warning small mb-0">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        <strong> {{ t("Note :") }} </strong> {{ t("AI analyzes are suggestions and must be validated by an auditor.") }} </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.card {
+    border: none;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+}
+
+.list-group-item {
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+}
+
+.list-group-item:first-child {
+    border-top: none;
+}
+</style>
+{% endblock %}

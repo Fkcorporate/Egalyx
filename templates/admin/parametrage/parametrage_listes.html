@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-bars"></i> {{ t("Setting up Drop-Down Lists") }} </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{{ url_for('parametrage_risque') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> {{ t("Return to settings") }} </a>
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-md-5">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-plus"></i> {{ t("New List") }} </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('ajouter_liste_deroulante') }}" id="formListe">
+                        {{ liste_form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ liste_form.nom_technique.label(class="form-label fw-bold") }}
+                            {{ liste_form.nom_technique(class="form-control" + (" is-invalid" if liste_form.nom_technique.errors else "")) }}
+                            {% if liste_form.nom_technique.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in liste_form.nom_technique.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted"> {{ t("Unique name to identify the list (e.g.: risk_categories, risk_types)") }} </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ liste_form.nom_affichage.label(class="form-label fw-bold") }}
+                            {{ liste_form.nom_affichage(class="form-control" + (" is-invalid" if liste_form.nom_affichage.errors else "")) }}
+                            {% if liste_form.nom_affichage.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in liste_form.nom_affichage.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                {{ liste_form.est_multiple(class="form-check-input") }}
+                                {{ liste_form.est_multiple.label(class="form-check-label fw-bold") }}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ liste_form.valeurs.label(class="form-label fw-bold") }}
+                            {{ liste_form.valeurs(class="form-control" + (" is-invalid" if liste_form.valeurs.errors else ""), rows=5, placeholder="{{ t("value|Label displayed") }}") }}
+                            {% if liste_form.valeurs.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in liste_form.valeurs.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted"> {{ t("One line per option.") }} </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ liste_form.valeurs_par_defaut.label(class="form-label fw-bold") }}
+                            {{ liste_form.valeurs_par_defaut(class="form-control", rows=2, placeholder="{{ t("value1") }}") }}
+                            <small class="form-text text-muted"> {{ t("One value per line.") }} </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                {{ liste_form.est_actif(class="form-check-input", checked=True) }}
+                                {{ liste_form.est_actif.label(class="form-check-label fw-bold") }}
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save"></i> {{ t("Create the list") }} </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-7">
+            <div class="card shadow">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-list-ol"></i> {{ t("Configured Lists") }} </h6>
+                </div>
+                <div class="card-body">
+                    {% if listes %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th> {{ t("Nom affiché") }} </th>
+                                    <th> {{ t("Technical name") }} </th>
+                                    <th> {{ t("Options") }} </th>
+                                    <th> {{ t("Multiple") }} </th>
+                                    <th> {{ t("Statut") }} </th>
+                                    <th> {{ t("Actions") }} </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for liste in listes %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ liste.nom_affichage }}</strong>
+                                    </td>
+                                    <td>
+                                        <code>{{ liste.nom_technique }}</code>
+                                    </td>
+                                    <td>
+                                        <div style="max-height: 80px; overflow-y: auto;">
+                                            {% if liste.valeurs %}
+                                                {% for valeur in liste.valeurs %}
+                                                <span class="badge bg-secondary mb-1 me-1">
+                                                    {{ valeur.label|default(valeur.valeur) }}
+                                                </span>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-muted"> {{ t("Aucune") }} </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        {% if liste.est_multiple %}
+                                        <span class="badge bg-warning"> {{ t("Multiple") }} </span>
+                                        {% else %}
+                                        <span class="badge bg-info"> {{ t("Simple") }} </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if liste.est_actif %}
+                                        <span class="badge bg-success"> {{ t("Actif") }} </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary"> {{ t("Inactif") }} </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('editer_liste_deroulante', id=liste.id) }}" 
+                                               class="btn btn-outline-warning"
+                                               title="{{ t("Modifier") }}">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('dupliquer_liste_deroulante', id=liste.id) }}" 
+                                               class="btn btn-outline-info"
+                                               title="{{ t("Dupliquer") }}">
+                                                <i class="fas fa-copy"></i>
+                                            </a>
+                                            <form method="POST" 
+                                                  action="{{ url_for('supprimer_liste_deroulante', id=liste.id) }}"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Supprimer cette liste ?');">
+                                                <button type="submit" class="btn btn-outline-danger" title="{{ t("Supprimer") }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-bars fa-3x mb-3"></i>
+                        <p> {{ t("No list configured") }} </p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle"></i>
+                        <strong> {{ t("Astuce :") }} </strong> {{ t("Les drop-down lists sont utilisées pour les champs de type \"select\", \"multiselect\" et \"radio\".") }} </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation du formulaire
+    document.getElementById('formListe').addEventListener('submit', function(e) {
+        const valeurs = document.querySelector('textarea[name="valeurs"]').value.trim();
+        if (!valeurs) {
+            e.preventDefault();
+            alert('Veuillez saisir au moins une valeur pour la liste');
+            return;
+        }
+        
+        // Vérifier le format
+        const lignes = valeurs.split('\n').filter(l => l.trim());
+        for (const ligne of lignes) {
+            if (ligne.includes('|')) {
+                const parts = ligne.split('|');
+                if (!parts[0].trim()) {
+                    e.preventDefault();
+                    alert('Chaque ligne doit avoir une valeur avant le "|"');
+                    return;
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

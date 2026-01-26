@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Audit {{ audit.reference }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-clipboard-check me-2"></i>
+        Audit {{ audit.reference }}
+    </h2>
+    <div>
+        <a href="{{ url_for('liste_audits') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"> {{ t("General Information") }} </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <strong> {{ t("Titre :") }} </strong> {{ audit.titre }}<br>
+                        <strong> {{ t("Type :") }} </strong> {{ audit.type_audit }}<br>
+                        <strong> {{ t("Statut :") }} </strong> 
+                        <span class="badge bg-{{ 'success' if audit.statut == 'termine' else 'warning' if audit.statut == 'en_cours' else 'secondary' }}">
+                            {{ audit.statut }}
+                        </span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong> {{ t("Dates :") }} </strong> 
+                        {{ audit.date_debut_prevue.strftime('%d/%m/%Y') if audit.date_debut_prevue else 'Non définie' }} 
+                        - 
+                        {{ audit.date_fin_prevue.strftime('%d/%m/%Y') if audit.date_fin_prevue else 'Non définie' }}<br>
+                        <strong> {{ t("Responsible :") }} </strong> {{ audit.responsable.username if audit.responsable else 'Non assigné' }}
+                    </div>
+                </div>
+                
+                {% if audit.description %}
+                <hr>
+                <strong> {{ t("Description :") }} </strong>
+                <p class="mt-2">{{ audit.description }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0"> {{ t("Findings") }} </h5>
+                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modalConstatation">
+                    <i class="fas fa-plus me-1"></i> {{ t("Ajouter") }} </button>
+            </div>
+            <div class="card-body">
+                {% if audit.constatations %}
+                    {% for constatation in audit.constatations %}
+                    <div class="border rounded p-3 mb-3">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6>{{ constatation.reference }} - {{ constatation.type_constatation }}</h6>
+                            <span class="badge bg-{{ 'danger' if constatation.gravite == 'majeure' else 'warning' if constatation.gravite == 'mineure' else 'info' }}">
+                                {{ constatation.gravite or 'Non précisée' }}
+                            </span>
+                        </div>
+                        <p class="mb-2">{{ constatation.description }}</p>
+                        {% if constatation.cause_racine %}
+                        <p class="mb-1"><small><strong> {{ t("Root cause:") }} </strong> {{ constatation.cause_racine }}</small></p>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                <p class="text-muted text-center py-3"> {{ t("No findings for this audit.") }} </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0"> {{ t("Actions") }} </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalRecommandation">
+                        <i class="fas fa-plus me-1"></i> {{ t("Ajouter Recommandation") }} </button>
+                    <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalPlanAction">
+                        <i class="fas fa-plus me-1"></i> {{ t("Create Action Plan") }} </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalConstatation" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> {{ t("New Finding") }} </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('nouvelle_constatation', audit_id=audit.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Description") }} </label>
+                        <textarea name="description" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Type") }} </label>
+                            <select name="type_constatation" class="form-select" required>
+                                <option value=""> {{ t("Select...") }} </option>
+                                <option value="conformite"> {{ t("Conformité") }} </option>
+                                <option value="non_conformite"> {{ t("Non-compliance") }} </option>
+                                <option value="observation"> {{ t("Observation") }} </option>
+                                <option value="recommandation"> {{ t("Recommendation") }} </option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Gravité") }} </label>
+                            <select name="gravite" class="form-select">
+                                <option value=""> {{ t("Select...") }} </option>
+                                <option value="mineure"> {{ t("Minore") }} </option>
+                                <option value="majeure"> {{ t("Majore") }} </option>
+                                <option value="critique"> {{ t("Critique") }} </option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Cause racine") }} </label>
+                        <textarea name="cause_racine" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                    <button type="submit" class="btn btn-primary"> {{ t("Enregistrer") }} </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalRecommandation" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> {{ t("New Recommendation") }} </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('nouvelle_recommandation', audit_id=audit.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Description") }} </label>
+                        <textarea name="description" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Type") }} </label>
+                            <select name="type_recommandation" class="form-select" required>
+                                <option value=""> {{ t("Select...") }} </option>
+                                <option value="corrective"> {{ t("Corrective") }} </option>
+                                <option value="preventive"> {{ t("Préventive") }} </option>
+                                <option value="amelioration"> {{ t("Amélioration") }} </option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Responsable") }} </label>
+                            <select name="responsable_id" class="form-select">
+                                <option value=""> {{ t("Select...") }} </option>
+                                {% for user in users %}
+                                <option value="{{ user.id }}">{{ user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Due date") }} </label>
+                        <input type="date" name="date_echeance" class="form-control">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                    <button type="submit" class="btn btn-primary"> {{ t("Enregistrer") }} </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalPlanAction" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> {{ t("New Action Plan") }} </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('nouveau_plan_action', audit_id=audit.id) }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Nom du plan") }} </label>
+                        <input type="text" name="nom" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Description") }} </label>
+                        <textarea name="description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Start date") }} </label>
+                            <input type="date" name="date_debut" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Expected end date") }} </label>
+                            <input type="date" name="date_fin_prevue" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Responsable") }} </label>
+                        <select name="responsable_id" class="form-select">
+                            <option value=""> {{ t("Select...") }} </option>
+                            {% for user in users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                    <button type="submit" class="btn btn-primary"> {{ t("Créer") }} </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,381 @@
+{% extends "base.html" %}
+
+{% block title %}Super Admin - Gestion des Utilisateurs{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <h1 class="h3 mb-0">
+                <i class="fas fa-users-cog me-2"></i> {{ t("Super Admin - User Management") }} </h1>
+            <p class="text-muted mb-0">
+                <i class="fas fa-crown me-1"></i> {{ t("Global view of all users on all clients") }} </p>
+        </div>
+        <div class="col-auto">
+            <span class="badge bg-warning text-dark px-3 py-2">
+                <i class="fas fa-eye me-1"></i> {{ t("Super Admin View") }} </span>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="fk-card">
+                <div class="fk-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2"></i> {{ t("Filtres par Client") }} </h5>
+                </div>
+                <div class="fk-card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Client") }} </label>
+                            <select class="form-control fk-form-control" id="filterClient">
+                                <option value=""> {{ t("All customers") }} </option>
+                                {% for client in clients %}
+                                <option value="{{ client.id }}">{{ client.nom }} ({{ client.reference }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label"> {{ t("Rôle") }} </label>
+                            <select class="form-control fk-form-control" id="filterRole">
+                                <option value=""> {{ t("All roles") }} </option>
+                                <option value="super_admin"> {{ t("Super Admin") }} </option>
+                                <option value="admin"> {{ t("Customer Administrator") }} </option>
+                                <option value="manager"> {{ t("Manager") }} </option>
+                                <option value="auditeur"> {{ t("Auditeur") }} </option>
+                                <option value="utilisateur"> {{ t("Utilisateur") }} </option>
+                                <option value="consultant"> {{ t("Consultant") }} </option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="fk-card">
+                <div class="fk-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i> {{ t("Global Statistics") }} </h5>
+                </div>
+                <div class="fk-card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="h4 mb-0 text-primary">{{ total_users }}</div>
+                            <small class="text-muted"> {{ t("Total Users") }} </small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 mb-0 text-success">{{ active_users }}</div>
+                            <small class="text-muted"> {{ t("Active Users") }} </small>
+                        </div>
+                        <div class="col-4">
+                            <div class="h4 mb-0 text-info">{{ total_clients }}</div>
+                            <small class="text-muted"> {{ t("Clients") }} </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="fk-card">
+        <div class="fk-card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">
+                <i class="fas fa-users me-2"></i> {{ t("List of all users") }} </h5>
+            <div>
+                <a href="{{ url_for('super_admin_nouveau_client') }}" class="fk-btn fk-btn-outline me-2">
+                    <i class="fas fa-plus-circle me-2"></i> {{ t("New Customer") }} </a>
+                <button class="fk-btn fk-btn-primary" id="exportUsers">
+                    <i class="fas fa-file-export me-2"></i> {{ t("Exporter") }} </button>
+            </div>
+        </div>
+        
+        <div class="fk-card-body">
+            <div class="table-responsive">
+                <table class="table fk-table data-table">
+                    <thead>
+                        <tr>
+                            <th> {{ t("Utilisateur") }} </th>
+                            <th> {{ t("Email") }} </th>
+                            <th> {{ t("Rôle") }} </th>
+                            <th> {{ t("Client") }} </th>
+                            <th> {{ t("Département") }} </th>
+                            <th> {{ t("Statut") }} </th>
+                            <th> {{ t("Création") }} </th>
+                            <th> {{ t("Actions") }} </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr data-client-id="{{ user.client_id }}" data-role="{{ user.role }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-placeholder me-2">
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                             style="width: 32px; height: 32px; font-weight: bold;">
+                                            {{ user.username[:1].upper() }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <strong>{{ user.username }}</strong>
+                                        {% if user.is_client_admin %}
+                                        <span class="badge bg-info ms-1"> {{ t("Admin Client") }} </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                {% set role_badges = {
+                                    'super_admin': 'danger',
+                                    'admin': 'primary',
+                                    'manager': 'success',
+                                    'auditeur': 'warning',
+                                    'utilisateur': 'secondary',
+                                    'consultant': 'info'
+                                } %}
+                                <span class="badge bg-{{ role_badges.get(user.role, 'secondary') }}">
+                                    {{ user.get_role_display_name() }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if user.client %}
+                                <span class="badge bg-dark">
+                                    <i class="fas fa-building me-1"></i>
+                                    {{ user.client.nom }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted"> {{ t("Sans client") }} </span>
+                                {% endif %}
+                            </td>
+                            <td>{{ user.department or '-' }}</td>
+                            <td>
+                                {% if user.is_active %}
+                                <span class="badge bg-success">
+                                    <i class="fas fa-check-circle me-1"></i> {{ t("Actif") }} </span>
+                                {% else %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-times-circle me-1"></i> {{ t("Inactif") }} </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ user.created_at.strftime('%d/%m/%Y') }}</small>
+                            </td>
+                            <td>
+                                {% if user.id != current_user.id %}
+                                <div class="btn-group btn-group-sm">
+                                    {% if user.role != 'super_admin' %}
+                                    <button class="btn btn-outline-primary" onclick="viewUser({{ user.id }})">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="btn btn-outline-warning" onclick="editUser({{ user.id }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    {% if user.role != 'admin' %}
+                                    <button class="btn btn-outline-danger" onclick="deleteUser({{ user.id }})">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                    {% else %}
+                                    <span class="text-muted"> {{ t("Super Admin") }} </span>
+                                    {% endif %}
+                                </div>
+                                {% else %}
+                                <span class="text-muted"> {{ t("Vous") }} </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-4">
+            <div class="fk-card">
+                <div class="fk-card-body text-center">
+                    <h3 class="text-primary">{{ super_admin_count }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Super Admins") }} </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="fk-card">
+                <div class="fk-card-body text-center">
+                    <h3 class="text-success">{{ client_admin_count }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Customer Admins") }} </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="fk-card">
+                <div class="fk-card-body text-center">
+                    <h3 class="text-info">{{ regular_user_count }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Normal Users") }} </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="userModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="userModalTitle"> {{ t("User Details") }} </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="userModalBody">
+                
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Initialiser DataTables
+    const table = $('.data-table').DataTable({
+        language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/fr-FR.json' },
+        pageLength: 25,
+        order: [[0, 'asc']],
+        columnDefs: [
+            { orderable: false, targets: -1 } // Dernière colonne non triable
+        ]
+    });
+    
+    // Filtrage par client
+    $('#filterClient').on('change', function() {
+        table.column(3).search(this.value).draw();
+    });
+    
+    // Filtrage par rôle
+    $('#filterRole').on('change', function() {
+        table.column(2).search(this.value).draw();
+    });
+    
+    // Export des utilisateurs
+    $('#exportUsers').on('click', function() {
+        window.location.href = '/api/export/users/csv';
+    });
+});
+
+// Fonction pour voir les détails d'un utilisateur
+function viewUser(userId) {
+    fetch(`/api/super-admin/user/${userId}/details`)
+        .then(response => response.json())
+        .then(data => {
+            $('#userModalTitle').text(`Détails: ${data.username}`);
+            $('#userModalBody').html(`
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center mb-4">
+                            <div class="avatar-large mb-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center mx-auto" 
+                                     style="width: 80px; height: 80px; font-size: 2rem; font-weight: bold;">
+                                    ${data.username.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <h5>${data.username}</h5>
+                            <span class="badge bg-${data.is_active ? 'success' : 'danger'}">
+                                ${data.is_active ? 'ACTIF' : 'INACTIF'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <table class="table table-sm">
+                            <tr>
+                                <th width="40%"> {{ t("Email:") }} </th>
+                                <td>${data.email}</td>
+                            </tr>
+                            <tr>
+                                <th> {{ t("Rôle:") }} </th>
+                                <td>
+                                    <span class="badge bg-${data.role_color}">
+                                        ${data.role_display}
+                                    </span>
+                                    ${data.is_client_admin ? '<span class="badge bg-info ms-2"> {{ t("Admin Client") }} </span>' : ''}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th> {{ t("Client:") }} </th>
+                                <td>
+                                    ${data.client ? 
+                                        `<span class="badge bg-dark">
+                                            <i class="fas fa-building me-1"></i>
+                                            ${data.client.nom} (${data.client.reference})
+                                        </span>` : 
+                                        '<span class="text-muted"> {{ t("Sans client") }} </span>'}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th> {{ t("Département:") }} </th>
+                                <td>${data.department || '-'}</td>
+                            </tr>
+                            <tr>
+                                <th> {{ t("Créé le:") }} </th>
+                                <td>${new Date(data.created_at).toLocaleDateString('fr-FR')}</td>
+                            </tr>
+                            <tr>
+                                <th> {{ t("Last connection:") }} </th>
+                                <td>${data.last_login ? new Date(data.last_login).toLocaleString('fr-FR') : 'Jamais'}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+                
+                ${data.permissions ? `
+                <div class="mt-4">
+                    <h6> {{ t("Permissions") }} </h6>
+                    <div class="row">
+                        ${Object.entries(data.permissions).map(([key, value]) => `
+                            <div class="col-md-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" ${value ? 'checked' : ''} disabled>
+                                    <label class="form-check-label small">
+                                        ${key.replace('can_', '').replace('_', ' ').toUpperCase()}
+                                    </label>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            `);
+            new bootstrap.Modal(document.getElementById('userModal')).show();
+        });
+}
+
+// Fonction pour éditer un utilisateur
+function editUser(userId) {
+    window.location.href = `/super-admin/user/${userId}/edit`;
+}
+
+// Fonction pour supprimer un utilisateur
+function deleteUser(userId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+        return;
+    }
+    
+    fetch(`/api/super-admin/user/${userId}/delete`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message || 'Erreur lors de la suppression');
+        }
+    });
+}
+</script>
+{% endblock %}

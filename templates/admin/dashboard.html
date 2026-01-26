@@ -1,0 +1,261 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="{{ t("breadcrumb") }}">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}"> {{ t("Dashboard") }} </a></li>
+                    <li class="breadcrumb-item active"> {{ t("Administration") }} </li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-2"> {{ t("Administration Dashboard") }} </h1>
+            <p class="text-muted"> {{ t("User management, permissions and system settings") }} </p>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card card-modern border-start border-primary border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small"> {{ t("Active Users") }} </div>
+                            <div class="h4 mb-0">{{ stats.users_active }}</div>
+                        </div>
+                        <div class="icon-shape bg-primary bg-opacity-10 text-primary rounded-3">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card card-modern border-start border-success border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small"> {{ t("Active Risks") }} </div>
+                            <div class="h4 mb-0">{{ stats.risques_actifs }}</div>
+                        </div>
+                        <div class="icon-shape bg-success bg-opacity-10 text-success rounded-3">
+                            <i class="fas fa-exclamation-triangle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card card-modern border-start border-warning border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small"> {{ t("Audits in progress") }} </div>
+                            <div class="h4 mb-0">{{ stats.audits_en_cours }}</div>
+                        </div>
+                        <div class="icon-shape bg-warning bg-opacity-10 text-warning rounded-3">
+                            <i class="fas fa-clipboard-check fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card card-modern border-start border-info border-4">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <div class="text-muted small"> {{ t("KRIs Monitored") }} </div>
+                            <div class="h4 mb-0">{{ stats.kri_actifs }}</div>
+                        </div>
+                        <div class="icon-shape bg-info bg-opacity-10 text-info rounded-3">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-lg-8 mb-4">
+            <div class="card card-modern">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"> {{ t("User Management") }} </h5>
+                    <a href="{{ url_for('admin_nouvel_utilisateur') }}" class="btn btn-modern-primary btn-sm">
+                        <i class="fas fa-plus me-2"></i> {{ t("Nouvel utilisateur") }} </a>
+                </div>
+                <div class="card-body">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-modern">
+                            <thead>
+                                <tr>
+                                    <th> {{ t("Utilisateur") }} </th>
+                                    <th> {{ t("Rôle") }} </th>
+                                    <th> {{ t("Département") }} </th>
+                                    <th> {{ t("Statut") }} </th>
+                                    <th> {{ t("Last connection") }} </th>
+                                    <th> {{ t("Actions") }} </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ user.username }}</div>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge-modern 
+                                            {% if user.role == 'admin' %}badge-danger
+                                            {% elif user.role == 'manager' %}badge-warning
+                                            {% elif user.role == 'auditeur' %}badge-audit
+                                            {% else %}badge-secondary{% endif %}">
+                                            {{ user.role|title }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.department or '-' }}</td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="status-badge status-active"> {{ t("Actif") }} </span>
+                                        {% else %}
+                                        <span class="status-badge status-inactive"> {{ t("Inactif") }} </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if user.last_login %}
+                                            {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}
+                                            {% else %}
+                                            Jamais
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('admin_editer_utilisateur', id=user.id) }}" 
+                                               class="btn btn-outline-primary" title="{{ t("Éditer") }}">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ url_for('admin_gerer_permissions', id=user.id) }}" 
+                                               class="btn btn-outline-info" title="{{ t("Permissions") }}">
+                                                <i class="fas fa-key"></i>
+                                            </a>
+                                            {% if user.id != current_user.id %}
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#deleteUserModal{{ user.id }}"
+                                                    title="{{ t("Supprimer") }}">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5> {{ t("No users") }} </h5>
+                        <p class="text-muted"> {{ t("Start by creating a user") }} </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4 mb-4">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0"> {{ t("Permissions Templates") }} </h5>
+                </div>
+                <div class="card-body">
+                    {% if permission_templates %}
+                    <div class="list-group list-group-flush">
+                        {% for template in permission_templates %}
+                        <div class="list-group-item border-0 px-0 py-3">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="mb-1">{{ template.name }}</h6>
+                                    <p class="small text-muted mb-2">{{ template.description }}</p>
+                                </div>
+                                <span class="badge-modern badge-secondary">{{ template.role|title }}</span>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline-primary" 
+                                        onclick="appliquerTemplate({{ template.id }})">
+                                    <i class="fas fa-check me-1"></i> {{ t("Appliquer") }} </button>
+                                <a href="{{ url_for('admin_editer_template', id=template.id) }}" 
+                                   class="btn btn-sm btn-outline-secondary">
+                                    <i class="fas fa-cog"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-key fa-3x text-muted mb-3"></i>
+                        <p class="text-muted"> {{ t("No permission template") }} </p>
+                        <a href="{{ url_for('admin_nouveau_template') }}" class="btn btn-modern-primary">
+                            <i class="fas fa-plus me-2"></i> {{ t("Create a template") }} </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% for user in users %}
+{% if user.id != current_user.id %}
+<div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> {{ t("Confirm deletion") }} </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p> {{ t("Are you sure you want to delete the user") }} <strong>{{ user.username }}</strong> ?</p>
+                <p class="text-danger"> {{ t("This action is irreversible.") }} </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                <a href="{{ url_for('admin_supprimer_utilisateur', id=user.id) }}" 
+                   class="btn btn-danger"> {{ t("Supprimer") }} </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function appliquerTemplate(templateId) {
+    // Cette fonction serait implémentée avec AJAX
+    alert('Fonction à implémenter : appliquer le template ' + templateId);
+}
+</script>
+{% endblock %}

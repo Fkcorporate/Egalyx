@@ -1,0 +1,488 @@
+{% extends "base.html" %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-bell me-2"></i> {{ t("Mes Notifications") }} </h2>
+        <div>
+            <button class="btn btn-outline-secondary me-2" id="btnMarquerToutesLues">
+                <i class="fas fa-check-double me-1"></i> {{ t("Tout marquer comme lu") }} </button>
+            <button class="btn btn-danger" id="btnSupprimerToutesLues">
+                <i class="fas fa-trash me-1"></i> {{ t("Delete reads") }} </button>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ notifications|length }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Total notifications") }} </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ notifications|selectattr('est_lue', 'equalto', false)|list|length }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Non lues") }} </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ notifications|selectattr('type_notification', 'equalto', 'echeance_proche')|list|length }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Nearing deadlines") }} </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-danger">{{ notifications|selectattr('type_notification', 'equalto', 'retard')|list|length }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Retards") }} </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Type") }} </label>
+                    <select class="form-select" id="filterType">
+                        <option value=""> {{ t("All types") }} </option>
+                        <option value="nouvelle_constatation"> {{ t("New finding") }} </option>
+                        <option value="nouvelle_recommandation"> {{ t("New recommendation") }} </option>
+                        <option value="nouveau_plan_action"> {{ t("New action plan") }} </option>
+                        <option value="echeance_proche"> {{ t("Nearing deadline") }} </option>
+                        <option value="retard"> {{ t("Retard") }} </option>
+                        <option value="validation_requise"> {{ t("Validation required") }} </option>
+                        <option value="plan_termine"> {{ t("Completed plan") }} </option>
+                        <option value="audit_clos"> {{ t("Audit clos") }} </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Statut") }} </label>
+                    <select class="form-select" id="filterStatut">
+                        <option value=""> {{ t("Tous") }} </option>
+                        <option value="non_lu"> {{ t("Non lu") }} </option>
+                        <option value="lu"> {{ t("Lu") }} </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Période") }} </label>
+                    <select class="form-select" id="filterPeriod">
+                        <option value=""> {{ t("Any period") }} </option>
+                        <option value="today"> {{ t("Aujourd'hui") }} </option>
+                        <option value="week"> {{ t("This week") }} </option>
+                        <option value="month"> {{ t("Ce mois") }} </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Tri") }} </label>
+                    <select class="form-select" id="filterTri">
+                        <option value="date_desc"> {{ t("Plus récent") }} </option>
+                        <option value="date_asc"> {{ t("Plus ancien") }} </option>
+                        <option value="priorite"> {{ t("Priorité") }} </option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-list me-2"></i> {{ t("List of notifications") }} </h5>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="switchGroupes">
+                <label class="form-check-label" for="switchGroupes"> {{ t("Group by date") }} </label>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if notifications %}
+                <div id="notificationsListe">
+                    {% set current_date = None %}
+                    {% for notification in notifications|sort(attribute='created_at', reverse=True) %}
+                        {% set notification_date = notification.created_at.strftime('%Y-%m-%d') %}
+                        
+                        {% if not current_date or current_date != notification_date %}
+                            {% set current_date = notification_date %}
+                            <div class="notification-date-header">
+                                <h6 class="text-muted mb-3 mt-4">
+                                    {% if notification_date == today %}
+                                        Aujourd'hui
+                                    {% elif notification_date == yesterday %}
+                                        Hier
+                                    {% else %}
+                                        {{ notification.created_at.strftime('%d %B %Y') }}
+                                    {% endif %}
+                                </h6>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="notification-item mb-3 {{ 'notification-non-lue' if not notification.est_lue }}"
+                             data-type="{{ notification.type_notification }}"
+                             data-statut="{{ 'non_lu' if not notification.est_lue else 'lu' }}"
+                             data-date="{{ notification_date }}"
+                             data-id="{{ notification.id }}">
+                            <div class="card {{ 'border-primary' if not notification.est_lue }}">
+                                <div class="card-body">
+                                    <div class="d-flex">
+                                        
+                                        <div class="notification-icon me-3">
+                                            {% if notification.type_notification == 'nouvelle_constatation' %}
+                                                <i class="fas fa-exclamation-triangle fa-2x text-warning"></i>
+                                            {% elif notification.type_notification == 'nouvelle_recommandation' %}
+                                                <i class="fas fa-lightbulb fa-2x text-info"></i>
+                                            {% elif notification.type_notification == 'nouveau_plan_action' %}
+                                                <i class="fas fa-tasks fa-2x text-success"></i>
+                                            {% elif notification.type_notification == 'echeance_proche' %}
+                                                <i class="fas fa-clock fa-2x text-warning"></i>
+                                            {% elif notification.type_notification == 'retard' %}
+                                                <i class="fas fa-exclamation-circle fa-2x text-danger"></i>
+                                            {% elif notification.type_notification == 'validation_requise' %}
+                                                <i class="fas fa-check-circle fa-2x text-primary"></i>
+                                            {% else %}
+                                                <i class="fas fa-bell fa-2x text-secondary"></i>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="flex-grow-1">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h6 class="mb-1">
+                                                        {% if not notification.est_lue %}
+                                                        <span class="badge bg-primary me-2"> {{ t("Nouveau") }} </span>
+                                                        {% endif %}
+                                                        {{ notification.titre }}
+                                                    </h6>
+                                                    <p class="mb-1">{{ notification.message }}</p>
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-clock me-1"></i>
+                                                        {{ notification.created_at.strftime('%H:%M') }}
+                                                        {% if notification.entite_type and notification.entite_id %}
+                                                        <span class="ms-2">
+                                                            <i class="fas fa-external-link-alt me-1"></i>
+                                                            {% if notification.entite_type == 'audit' %}
+                                                            <a href="{{ url_for('detail_audit', id=notification.entite_id) }}" class="text-decoration-none"> {{ t("View the audit") }} </a>
+                                                            {% elif notification.entite_type == 'constatation' %}
+                                                            <a href="{{ url_for('detail_audit', id=notification.entite_id) }}#constatations" class="text-decoration-none"> {{ t("See the finding") }} </a>
+                                                            {% elif notification.entite_type == 'recommandation' %}
+                                                            <a href="{{ url_for('detail_audit', id=notification.entite_id) }}#recommandations" class="text-decoration-none"> {{ t("See the recommendation") }} </a>
+                                                            {% elif notification.entite_type == 'plan_action' %}
+                                                            <a href="{{ url_for('detail_plan_action', plan_id=notification.entite_id) }}" class="text-decoration-none"> {{ t("See the map") }} </a>
+                                                            {% endif %}
+                                                        </span>
+                                                        {% endif %}
+                                                    </small>
+                                                </div>
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-outline-secondary" type="button" 
+                                                            data-bs-toggle="dropdown">
+                                                        <i class="fas fa-ellipsis-v"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu">
+                                                        {% if not notification.est_lue %}
+                                                        <li>
+                                                            <a class="dropdown-item marquer-lue" href="#" 
+                                                               data-id="{{ notification.id }}">
+                                                                <i class="fas fa-check me-2"></i> {{ t("Marquer comme lu") }} </a>
+                                                        </li>
+                                                        {% endif %}
+                                                        <li>
+                                                            <a class="dropdown-item" href="#" 
+                                                               onclick="copierLienNotification('{{ notification.id }}')">
+                                                                <i class="fas fa-link me-2"></i> {{ t("Copy link") }} </a>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <a class="dropdown-item text-danger supprimer-notification" href="#" 
+                                                               data-id="{{ notification.id }}">
+                                                                <i class="fas fa-trash me-2"></i> {{ t("Supprimer") }} </a>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-bell-slash fa-3x text-muted mb-3"></i>
+                    <h4> {{ t("No notifications") }} </h4>
+                    <p class="text-muted"> {{ t("You have no notifications at the moment.") }} </p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-cog me-2"></i> {{ t("Notifications preferences") }} </h5>
+        </div>
+        <div class="card-body">
+            <form id="formPreferences">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6> {{ t("Email notifications") }} </h6>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="email_nouvelle_constatation" checked>
+                            <label class="form-check-label" for="email_nouvelle_constatation"> {{ t("New finding") }} </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="email_nouvelle_recommandation" checked>
+                            <label class="form-check-label" for="email_nouvelle_recommandation"> {{ t("New recommendation") }} </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="email_nouveau_plan_action" checked>
+                            <label class="form-check-label" for="email_nouveau_plan_action"> {{ t("New action plan") }} </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="email_echeance_7j" checked>
+                            <label class="form-check-label" for="email_echeance_7j"> {{ t("Due in 7 days") }} </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6> {{ t("In-app notifications") }} </h6>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="app_retard" checked>
+                            <label class="form-check-label" for="app_retard"> {{ t("Late plan") }} </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="app_validation_requise" checked>
+                            <label class="form-check-label" for="app_validation_requise"> {{ t("Validation required") }} </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="app_plan_termine" checked>
+                            <label class="form-check-label" for="app_plan_termine"> {{ t("Action plan completed") }} </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="app_audit_clos" checked>
+                            <label class="form-check-label" for="app_audit_clos"> {{ t("Audit clos") }} </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i> {{ t("Save preferences") }} </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+.notification-item {
+    transition: all 0.3s ease;
+}
+
+.notification-non-lue {
+    border-left: 4px solid #007bff;
+}
+
+.notification-non-lue .card {
+    border-left: 4px solid #007bff !important;
+}
+
+.notification-icon {
+    min-width: 40px;
+}
+
+.notification-date-header {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 10px;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.dropdown-menu {
+    min-width: 200px;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtres
+    const filterType = document.getElementById('filterType');
+    const filterStatut = document.getElementById('filterStatut');
+    const filterPeriod = document.getElementById('filterPeriod');
+    const filterTri = document.getElementById('filterTri');
+    const notificationsItems = document.querySelectorAll('.notification-item');
+    
+    function applyFilters() {
+        const typeValue = filterType.value;
+        const statutValue = filterStatut.value;
+        const periodValue = filterPeriod.value;
+        const triValue = filterTri.value;
+        
+        notificationsItems.forEach(item => {
+            const type = item.dataset.type;
+            const statut = item.dataset.statut;
+            const date = item.dataset.date;
+            
+            let show = true;
+            
+            if (typeValue && type !== typeValue) {
+                show = false;
+            }
+            
+            if (statutValue && statut !== statutValue) {
+                show = false;
+            }
+            
+            if (periodValue) {
+                const today = new Date().toISOString().split('T')[0];
+                const itemDate = new Date(date);
+                
+                if (periodValue === 'today' && date !== today) {
+                    show = false;
+                } else if (periodValue === 'week') {
+                    const diffDays = Math.floor((new Date() - itemDate) / (1000 * 60 * 60 * 24));
+                    if (diffDays > 7) show = false;
+                } else if (periodValue === 'month') {
+                    const diffDays = Math.floor((new Date() - itemDate) / (1000 * 60 * 60 * 24));
+                    if (diffDays > 30) show = false;
+                }
+            }
+            
+            item.style.display = show ? 'block' : 'none';
+        });
+    }
+    
+    filterType.addEventListener('change', applyFilters);
+    filterStatut.addEventListener('change', applyFilters);
+    filterPeriod.addEventListener('change', applyFilters);
+    filterTri.addEventListener('change', applyFilters);
+    
+    // Marquer comme lu
+    document.querySelectorAll('.marquer-lue').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const notificationId = this.dataset.id;
+            
+            fetch(`/notification/${notificationId}/marquer-lue`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        });
+    });
+    
+    // Marquer toutes comme lues
+    document.getElementById('btnMarquerToutesLues').addEventListener('click', function() {
+        fetch('/notifications/marquer-toutes-lues', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+            }
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    });
+    
+    // Supprimer une notification
+    document.querySelectorAll('.supprimer-notification').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const notificationId = this.dataset.id;
+            
+            if (confirm('Supprimer cette notification ?')) {
+                fetch(`/notification/${notificationId}/supprimer`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+                    }
+                }).then(response => {
+                    if (response.ok) {
+                        this.closest('.notification-item').remove();
+                    }
+                });
+            }
+        });
+    });
+    
+    // Supprimer toutes les lues
+    document.getElementById('btnSupprimerToutesLues').addEventListener('click', function() {
+        if (confirm('Supprimer toutes les notifications lues ?')) {
+            fetch('/notifications/supprimer-toutes-lues', {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+                }
+            }).then(response => {
+                if (response.ok) {
+                    location.reload();
+                }
+            });
+        }
+    });
+    
+    // Groupement par date
+    document.getElementById('switchGroupes').addEventListener('change', function() {
+        const dateHeaders = document.querySelectorAll('.notification-date-header');
+        if (this.checked) {
+            dateHeaders.forEach(header => header.style.display = 'block');
+        } else {
+            dateHeaders.forEach(header => header.style.display = 'none');
+        }
+    });
+    
+    // Enregistrer les préférences
+    document.getElementById('formPreferences').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const preferences = {
+            email_nouvelle_constatation: document.getElementById('email_nouvelle_constatation').checked,
+            email_nouvelle_recommandation: document.getElementById('email_nouvelle_recommandation').checked,
+            email_nouveau_plan_action: document.getElementById('email_nouveau_plan_action').checked,
+            email_echeance_7j: document.getElementById('email_echeance_7j').checked,
+            app_retard: document.getElementById('app_retard').checked,
+            app_validation_requise: document.getElementById('app_validation_requise').checked,
+            app_plan_termine: document.getElementById('app_plan_termine').checked,
+            app_audit_clos: document.getElementById('app_audit_clos').checked
+        };
+        
+        fetch('/notifications/preferences', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrf_token]').value
+            },
+            body: JSON.stringify(preferences)
+        }).then(response => {
+            if (response.ok) {
+                alert('Préférences enregistrées avec succès !');
+            }
+        });
+    });
+});
+
+function copierLienNotification(notificationId) {
+    const lien = `${window.location.origin}/notification/${notificationId}`;
+    navigator.clipboard.writeText(lien).then(() => {
+        alert('Lien copié dans le presse-papier !');
+    });
+}
+</script>
+{% endblock %}

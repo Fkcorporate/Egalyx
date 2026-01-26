@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-cogs"></i> {{ t("Setting up Risk Sheets") }} </h1>
+    </div>
+
+    <ul class="nav nav-tabs parametrage-tabs" id="parametrageTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="champs-tab" data-bs-toggle="tab" 
+                    data-bs-target="#champs" type="button" role="tab">
+                <i class="fas fa-list me-1"></i> {{ t("Champs") }} </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="listes-tab" data-bs-toggle="tab" 
+                    data-bs-target="#listes" type="button" role="tab">
+                <i class="fas fa-bars me-1"></i> {{ t("Drop-down lists") }} </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="fichiers-tab" data-bs-toggle="tab" 
+                    data-bs-target="#fichiers" type="button" role="tab">
+                <i class="fas fa-file me-1"></i> {{ t("Fichiers") }} </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="export-tab" data-bs-toggle="tab" 
+                    data-bs-target="#export" type="button" role="tab">
+                <i class="fas fa-download me-1"></i> {{ t("Export/Import") }} </button>
+        </li>
+    </ul>
+
+    <div class="tab-content mt-4" id="parametrageContent">
+        
+        <div class="tab-pane fade show active" id="champs" role="tabpanel">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> {{ t("Management of personalized fields of risk sheets.") }} <a href="{{ url_for('parametrage_champs') }}" class="alert-link"> {{ t("Access field management →") }} </a>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="mb-0"><i class="fas fa-question-circle"></i> {{ t("User Guide") }} </h6>
+                        </div>
+                        <div class="card-body">
+                            <h6> {{ t("How to configure fields:") }} </h6>
+                            <ol class="mb-0">
+                                <li> {{ t("Define it") }} <strong> {{ t("technical name") }} </strong> {{ t("(unique)") }} </li>
+                                <li> {{ t("Choose it") }} <strong> {{ t("field type") }} </strong> {{ t("approprié") }} </li>
+                                <li> {{ t("Organize by") }} <strong> {{ t("section") }} </strong> {{ t("for better readability") }} </li>
+                                <li> {{ t("Define whether the field is") }} <strong> {{ t("obligatoire") }} </strong></li>
+                                <li> {{ t("Utilisez le") }} <strong> {{ t("drag and drop") }} </strong> {{ t("for display order") }} </li>
+                            </ol>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-lightbulb"></i> {{ t("Best practices") }} </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="mb-0">
+                                <li> {{ t("Use technical names without spaces") }} </li>
+                                <li> {{ t("Prefer them") }} <strong> {{ t("drop-down lists") }} </strong> {{ t("for limited choices") }} </li>
+                                <li> {{ t("Ajoutez un") }} <strong> {{ t("help text") }} </strong> {{ t("to guide the user") }} </li>
+                                <li> {{ t("Test fields after creation") }} </li>
+                                <li> {{ t("Limit required fields to what is strictly necessary") }} </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{{ url_for('parametrage_champs') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-tag me-2"></i> {{ t("Manage custom fields") }} </a>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="listes" role="tabpanel">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> {{ t("Management of drop-down lists used in select, multiselect and radio type fields.") }} <a href="{{ url_for('parametrage_listes') }}" class="alert-link"> {{ t("Access list management →") }} </a>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card shadow">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="fas fa-list-ol"></i> {{ t("Types of lists") }} </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="text-center p-3 border rounded">
+                                        <i class="fas fa-caret-square-down fa-3x text-primary mb-3"></i>
+                                        <h5> {{ t("Simple") }} </h5>
+                                        <p class="text-muted"> {{ t("Single selection") }} </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center p-3 border rounded">
+                                        <i class="fas fa-list-check fa-3x text-success mb-3"></i>
+                                        <h5> {{ t("Multiple") }} </h5>
+                                        <p class="text-muted"> {{ t("Multiple selections") }} </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center p-3 border rounded">
+                                        <i class="fas fa-dot-circle fa-3x text-info mb-3"></i>
+                                        <h5> {{ t("Radio") }} </h5>
+                                        <p class="text-muted"> {{ t("Radio buttons") }} </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{{ url_for('parametrage_listes') }}" class="btn btn-warning btn-lg">
+                    <i class="fas fa-bars me-2"></i> {{ t("Manage drop-down lists") }} </a>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="fichiers" role="tabpanel">
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i> {{ t("Configuring file upload settings and managing categories.") }} <a href="{{ url_for('parametrage_fichiers') }}" class="alert-link"> {{ t("Access file configuration →") }} </a>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-file-upload"></i> {{ t("Current configuration") }} </h6>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-sm table-borderless">
+                                <tr>
+                                    <th width="50%"> {{ t("Authorized extensions:") }} </th>
+                                    <td>{{ config_fichiers.extensions|join(', ') }}</td>
+                                </tr>
+                                <tr>
+                                    <th> {{ t("Maximum size:") }} </th>
+                                    <td>{{ config_fichiers.taille_max_mo }} Mo</td>
+                                </tr>
+                                <tr>
+                                    <th> {{ t("Categories available:") }} </th>
+                                    <td>{{ config_fichiers.categories|length }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-shield-alt"></i> {{ t("Sécurité") }} </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="mb-0">
+                                <li> {{ t("Validating extensions") }} </li>
+                                <li> {{ t("File size control") }} </li>
+                                <li> {{ t("Cleaning up file names") }} </li>
+                                <li> {{ t("Secure storage") }} </li>
+                                <li> {{ t("Access permissions") }} </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{{ url_for('parametrage_fichiers') }}" class="btn btn-success btn-lg">
+                    <i class="fas fa-file-upload me-2"></i> {{ t("Manage files") }} </a>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="export" role="tabpanel">
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-success text-white">
+                            <h6 class="mb-0"><i class="fas fa-download"></i> {{ t("Export configuration") }} </h6>
+                        </div>
+                        <div class="card-body">
+                            <p> {{ t("Export the entire configuration in JSON format for backup or transfer.") }} </p>
+                            
+                            <form method="POST" action="{{ url_for('exporter_configuration') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"> {{ t("Items to export:") }} </label>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="export_champs" id="export_champs" checked>
+                                        <label class="form-check-label" for="export_champs"> {{ t("Risk fields") }} </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="export_listes" id="export_listes" checked>
+                                        <label class="form-check-label" for="export_listes"> {{ t("Drop-down lists") }} </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               name="export_config_fichiers" id="export_config_fichiers">
+                                        <label class="form-check-label" for="export_config_fichiers"> {{ t("File configuration") }} </label>
+                                    </div>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-file-export me-1"></i> {{ t("Export configuration") }} </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="card shadow">
+                        <div class="card-header bg-warning text-dark">
+                            <h6 class="mb-0"><i class="fas fa-upload"></i> {{ t("Import a configuration") }} </h6>
+                        </div>
+                        <div class="card-body">
+                            <p> {{ t("Import a configuration from a JSON file.") }} </p>
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <strong> {{ t("Attention :") }} </strong> {{ t("This operation will overwrite the existing configuration.") }} </div>
+                            
+                            <form method="POST" action="{{ url_for('importer_configuration') }}" 
+                                  enctype="multipart/form-data" id="formImport">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"> {{ t("JSON file:") }} </label>
+                                    <input type="file" class="form-control" name="fichier_config" 
+                                           accept=".json" required id="fileInput">
+                                    <small class="form-text text-muted"> {{ t("Select a JSON configuration file") }} </small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold"> {{ t("Import method:") }} </label>
+                                    <select class="form-select" name="mode_import" id="modeImport">
+                                        <option value="fusion"> {{ t("Merge with the existing") }} </option>
+                                        <option value="remplacer"> {{ t("Replace the existing") }} </option>
+                                    </select>
+                                    <small class="form-text text-muted">
+                                        <strong> {{ t("Fusionner :") }} </strong> {{ t("Adds to existing configurations") }} <br>
+                                        <strong> {{ t("Remplacer :") }} </strong> {{ t("Delete everything and import the new one") }} </small>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="fas fa-file-import me-1"></i> {{ t("Import configuration") }} </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Validation de l'import
+    document.getElementById('formImport').addEventListener('submit', function(e) {
+        const fileInput = document.getElementById('fileInput');
+        const modeSelect = document.getElementById('modeImport');
+        
+        if (fileInput.files.length === 0) {
+            e.preventDefault();
+            alert('Veuillez sélectionner un fichier JSON');
+            return;
+        }
+        
+        const file = fileInput.files[0];
+        if (!file.name.endsWith('.json')) {
+            e.preventDefault();
+            alert('Le fichier doit être au format JSON (.json)');
+            return;
+        }
+        
+        if (modeSelect.value === 'remplacer') {
+            if (!confirm('ATTENTION : Vous allez remplacer TOUTE la configuration existante. This action is irreversible. Continuer ?')) {
+                e.preventDefault();
+                return;
+            }
+        }
+    });
+    
+    // Sauvegarde de l'onglet actif
+    const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
+    tabEls.forEach(tab => {
+        tab.addEventListener('shown.bs.tab', function(event) {
+            localStorage.setItem('activeParametrageTab', event.target.id);
+        });
+    });
+    
+    // Restaurer l'onglet actif
+    const activeTabId = localStorage.getItem('activeParametrageTab');
+    if (activeTabId) {
+        const activeTab = document.getElementById(activeTabId);
+        if (activeTab) {
+            const tab = new bootstrap.Tab(activeTab);
+            tab.show();
+        }
+    }
+});
+</script>
+{% endblock %}

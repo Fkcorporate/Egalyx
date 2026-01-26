@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-bullhorn me-2"></i> {{ t("Overall Recommendations for Audit Reports") }} </h2>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#ajouterModal">
+            <i class="fas fa-plus me-1"></i> {{ t("Ajouter une recommandation") }} </button>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ recommandations|length }}</h3>
+                    <small> {{ t("Total Recommendations") }} </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ recommandations|selectattr('est_actif')|list|length }}</h3>
+                    <small> {{ t("Active Recommendations") }} </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ categories|length }}</h3>
+                    <small> {{ t("Catégories") }} </small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body text-center">
+                    <h3 class="mb-0">{{ recommandations|selectattr('type_audit')|list|length }}</h3>
+                    <small> {{ t("Specific recommendations") }} </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th width="40%"> {{ t("Recommendation") }} </th>
+                            <th> {{ t("Catégorie") }} </th>
+                            <th> {{ t("Audit type") }} </th>
+                            <th> {{ t("Priorité") }} </th>
+                            <th> {{ t("Statut") }} </th>
+                            <th> {{ t("Actions") }} </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for reco in recommandations %}
+                        <tr>
+                            <td>
+                                <strong>{{ reco.texte[:100] }}{% if reco.texte|length > 100 %}...{% endif %}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    <i class="far fa-clock me-1"></i>
+                                    Créée le {{ reco.created_at.strftime('%d/%m/%Y') }}
+                                    {% if reco.createur %}
+                                        par {{ reco.createur.username }}
+                                    {% endif %}
+                                </small>
+                            </td>
+                            <td>
+                                {% if reco.categorie %}
+                                <span class="badge bg-info">{{ reco.categorie }}</span>
+                                {% else %}
+                                <span class="text-muted"> {{ t("Uncategorized") }} </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if reco.type_audit %}
+                                <span class="badge bg-secondary">{{ reco.type_audit }}</span>
+                                {% else %}
+                                <span class="text-muted"> {{ t("Tous types") }} </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="progress flex-grow-1 me-2" style="height: 6px;">
+                                        <div class="progress-bar bg-{{ 'success' if reco.priorite >= 4 else 'warning' if reco.priorite >= 3 else 'danger' }}" 
+                                             style="width: {{ reco.priorite * 20 }}%"></div>
+                                    </div>
+                                    <span>{{ reco.priorite }}/5</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'success' if reco.est_actif else 'secondary' }}">
+                                    {{ 'Actif' if reco.est_actif else 'Inactif' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('modifier_recommandation_globale', id=reco.id) }}" 
+                                       class="btn btn-outline-primary">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#supprimerModal{{ reco.id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+
+                                <div class="modal fade" id="supprimerModal{{ reco.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title"> {{ t("Confirm deletion") }} </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p> {{ t("Are you sure you want to remove this recommendation?") }} </p>
+                                                <div class="alert alert-warning">
+                                                    <i class="fas fa-exclamation-triangle me-2"></i> {{ t("This action is irreversible and will affect all future reports.") }} </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <form method="POST" action="{{ url_for('supprimer_recommandation_globale', id=reco.id) }}">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                                                    <button type="submit" class="btn btn-danger"> {{ t("Supprimer") }} </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="ajouterModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> {{ t("Add an overall recommendation") }} </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('ajouter_recommandation_globale') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Text of recommendation *") }} </label>
+                        <textarea class="form-control" name="texte" rows="4" required 
+                                  placeholder="{{ t("Ex: Mettre en place un suivi régulier des plans d") }}'action..."></textarea>
+                        <small class="form-text text-muted"> {{ t("This recommendation will appear in the audit reports.") }} </small>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"> {{ t("Catégorie") }} </label>
+                                <input type="text" class="form-control" name="categorie" 
+                                       placeholder="{{ t("Ex: safety, quality, compliance...") }}">
+                                <small class="form-text text-muted"> {{ t("Optional: allows you to group the recommendations") }} </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label"> {{ t("Specific audit type") }} </label>
+                                <input type="text" class="form-control" name="type_audit" 
+                                       placeholder="{{ t("Ex: internal_audit, security_audit...") }}">
+                                <small class="form-text text-muted"> {{ t("Optional: if empty, applies to all audit types") }} </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label"> {{ t("Priority (1-5)") }} </label>
+                        <div class="d-flex align-items-center">
+                            <input type="range" class="form-range flex-grow-1 me-3" 
+                                   name="priorite" min="1" max="5" value="3">
+                            <span id="prioriteValue">3</span> {{ t("/5") }} </div>
+                        <small class="form-text text-muted"> {{ t("High priority recommendations will appear first") }} </small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                    <button type="submit" class="btn btn-primary"> {{ t("Ajouter") }} </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const prioriteRange = document.querySelector('input[name="priorite"]');
+    const prioriteValue = document.getElementById('prioriteValue');
+    
+    if (prioriteRange && prioriteValue) {
+        prioriteRange.addEventListener('input', function() {
+            prioriteValue.textContent = this.value;
+        });
+    }
+});
+</script>
+{% endblock %}

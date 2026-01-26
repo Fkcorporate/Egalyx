@@ -1,0 +1,435 @@
+{% extends "base.html" %}
+
+{% block title %}Matrice de Maturité - {{ audit.reference }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-table me-2"></i>
+            Matrice de Maturité - {{ audit.reference }}
+        </h2>
+        <div>
+            <a href="{{ url_for('detail_audit', id=audit.id) }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i> {{ t("Back to audit") }} </a>
+            <a href="{{ url_for('dashboard_audit', audit_id=audit.id) }}" class="btn btn-info">
+                <i class="fas fa-chart-line me-1"></i> {{ t("Dashboard") }} </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0"> {{ t("Add a requirement to the matrix") }} </h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('matrice_maturite_audit', audit_id=audit.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="exigence" class="form-label"> {{ t("Regulatory requirement *") }} </label>
+                        <input type="text" class="form-control" id="exigence" name="exigence" 
+                               placeholder="{{ t("Ex: Respect of processing times, Complete documentation...") }}" required>
+                        <div class="form-text"> {{ t("Describe the regulatory or normative requirement") }} </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="niveau_conformite" class="form-label"> {{ t("Compliance level *") }} </label>
+                        <select class="form-select" id="niveau_conformite" name="niveau_conformite" required>
+                            <option value="" selected disabled> {{ t("Select...") }} </option>
+                            <option value="conforme"> {{ t("Conforme") }} </option>
+                            <option value="partiellement_conforme"> {{ t("Partially compliant") }} </option>
+                            <option value="non_conforme"> {{ t("Non-compliant") }} </option>
+                            <option value="non_applicable"> {{ t("Not applicable") }} </option>
+                        </select>
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label for="commentaire" class="form-label"> {{ t("Comments / Comments") }} </label>
+                        <textarea class="form-control" id="commentaire" name="commentaire" rows="2"
+                                  placeholder="{{ t("Comments on the level of compliance...") }}"></textarea>
+                    </div>
+                    <div class="col-md-12 mb-3">
+                        <label for="risques_associes" class="form-label"> {{ t("Associated risks (optional)") }} </label>
+                        <textarea class="form-control" id="risques_associes" name="risques_associes" rows="2" 
+                                  placeholder="{{ t("List the risks associated with this non-compliance...") }}"></textarea>
+                        <div class="form-text"> {{ t("If non-compliant, indicate the risks involved") }} </div>
+                    </div>
+                    <div class="col-md-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i> {{ t("Add to matrix") }} </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"> {{ t("Compliance Matrix") }} </h5>
+            <div>
+                <span class="badge bg-primary">{{ matrices|length }} exigences</span>
+                {% if matrices %}
+                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="exportMatrice()">
+                    <i class="fas fa-download me-1"></i> {{ t("Exporter") }} </button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            {% if matrices %}
+            <div class="table-responsive">
+                <table class="table table-hover" id="matriceTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="25%"> {{ t("Exigence") }} </th>
+                            <th width="15%"> {{ t("Compliance level") }} </th>
+                            <th width="25%"> {{ t("Commentaires") }} </th>
+                            <th width="25%"> {{ t("Associated risks") }} </th>
+                            <th width="10%"> {{ t("Actions") }} </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for matrice in matrices %}
+                        <tr id="matrice-{{ matrice.id }}">
+                            <td>
+                                <strong>{{ matrice.exigence }}</strong>
+                                {% if matrice.niveau_conformite == 'non_conforme' %}
+                                <div class="mt-1">
+                                    <span class="badge bg-danger"> {{ t("Critique") }} </span>
+                                </div>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if matrice.niveau_conformite == 'conforme' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check-circle me-1"></i> {{ t("Conforme") }} </span>
+                                {% elif matrice.niveau_conformite == 'partiellement_conforme' %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-exclamation-circle me-1"></i> {{ t("Partially") }} </span>
+                                {% elif matrice.niveau_conformite == 'non_conforme' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times-circle me-1"></i> {{ t("Non conforme") }} </span>
+                                {% elif matrice.niveau_conformite == 'non_applicable' %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-ban me-1"></i> {{ t("Not applicable") }} </span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if matrice.commentaire %}
+                                    {{ matrice.commentaire|truncate(100) }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if matrice.risques_associes %}
+                                    {{ matrice.risques_associes|truncate(100) }}
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-outline-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editModal{{ matrice.id }}"
+                                            title="{{ t("Modifier") }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <form method="POST" 
+                                          action="{{ url_for('supprimer_matrice_maturite', matrice_id=matrice.id) }}" 
+                                          class="d-inline" 
+                                          onsubmit="return confirmSuppression(event)">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-outline-danger" title="{{ t("Supprimer") }}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <div class="modal fade" id="editModal{{ matrice.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form method="POST" action="{{ url_for('modifier_matrice_maturite', matrice_id=matrice.id) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title"> {{ t("Edit requirement") }} </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t("Close") }}"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label"> {{ t("Exigence *") }} </label>
+                                                <input type="text" class="form-control" name="exigence" 
+                                                       value="{{ matrice.exigence }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label"> {{ t("Compliance level *") }} </label>
+                                                <select class="form-select" name="niveau_conformite" required>
+                                                    <option value="conforme" {% if matrice.niveau_conformite == 'conforme' %}selected{% endif %}> {{ t("Conforme") }} </option>
+                                                    <option value="partiellement_conforme" {% if matrice.niveau_conformite == 'partiellement_conforme' %}selected{% endif %}> {{ t("Partially compliant") }} </option>
+                                                    <option value="non_conforme" {% if matrice.niveau_conformite == 'non_conforme' %}selected{% endif %}> {{ t("Non-compliant") }} </option>
+                                                    <option value="non_applicable" {% if matrice.niveau_conformite == 'non_applicable' %}selected{% endif %}> {{ t("Not applicable") }} </option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label"> {{ t("Commentaires") }} </label>
+                                                <textarea class="form-control" name="commentaire" rows="3">{{ matrice.commentaire or '' }}</textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label class="form-label"> {{ t("Associated risks") }} </label>
+                                                <textarea class="form-control" name="risques_associes" rows="2">{{ matrice.risques_associes or '' }}</textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                                            <button type="submit" class="btn btn-primary"> {{ t("Enregistrer") }} </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row mt-4 g-3">
+                <div class="col-md-3 col-6">
+                    <div class="card border-success border-top border-4 text-center">
+                        <div class="card-body">
+                            <h3 class="text-success mb-0">{{ matrices|selectattr('niveau_conformite', 'equalto', 'conforme')|list|length }}</h3>
+                            <small class="text-muted"> {{ t("Conformes") }} </small>
+                            <div class="mt-2">
+                                <i class="fas fa-check-circle fa-2x text-success"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card border-warning border-top border-4 text-center">
+                        <div class="card-body">
+                            <h3 class="text-warning mb-0">{{ matrices|selectattr('niveau_conformite', 'equalto', 'partiellement_conforme')|list|length }}</h3>
+                            <small class="text-muted"> {{ t("Partially") }} </small>
+                            <div class="mt-2">
+                                <i class="fas fa-exclamation-circle fa-2x text-warning"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card border-danger border-top border-4 text-center">
+                        <div class="card-body">
+                            <h3 class="text-danger mb-0">{{ matrices|selectattr('niveau_conformite', 'equalto', 'non_conforme')|list|length }}</h3>
+                            <small class="text-muted"> {{ t("Non-compliant") }} </small>
+                            <div class="mt-2">
+                                <i class="fas fa-times-circle fa-2x text-danger"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="card border-secondary border-top border-4 text-center">
+                        <div class="card-body">
+                            <h3 class="text-secondary mb-0">{{ matrices|selectattr('niveau_conformite', 'equalto', 'non_applicable')|list|length }}</h3>
+                            <small class="text-muted"> {{ t("Not applicable") }} </small>
+                            <div class="mt-2">
+                                <i class="fas fa-ban fa-2x text-secondary"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% set total_evaluables = matrices|rejectattr('niveau_conformite', 'equalto', 'non_applicable')|list|length %}
+            {% set total_conformes = matrices|selectattr('niveau_conformite', 'equalto', 'conforme')|list|length %}
+            {% if total_evaluables > 0 %}
+            {% set taux_conformite = (total_conformes / total_evaluables * 100)|round(1) %}
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6> {{ t("Overall compliance rate") }} </h6>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar 
+                                    {% if taux_conformite >= 80 %}bg-success
+                                    {% elif taux_conformite >= 50 %}bg-warning
+                                    {% else %}bg-danger{% endif %}" 
+                                    role="progressbar" 
+                                    style="width: {{ taux_conformite }}%">
+                                    {{ taux_conformite }}%
+                                </div>
+                            </div>
+                            <div class="mt-2 text-muted">
+                                <small>{{ total_conformes }} conformes sur {{ total_evaluables }} exigences évaluables</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-table fa-4x text-muted mb-3"></i>
+                <h5> {{ t("No requirements in matrix") }} </h5>
+                <p class="text-muted"> {{ t("Start by adding regulatory requirements above.") }} </p>
+                <div class="mt-3">
+                    <i class="fas fa-arrow-up fa-2x text-primary"></i>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation pour les lignes de la table
+    const tableRows = document.querySelectorAll('#matriceTable tbody tr');
+    tableRows.forEach((row, index) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            row.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+            row.style.opacity = '1';
+            row.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+    
+    // Validation du formulaire
+    const form = document.querySelector('form[method="POST"]');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const exigence = document.getElementById('exigence').value.trim();
+            const niveauConformite = document.getElementById('niveau_conformite').value;
+            
+            if (!exigence) {
+                e.preventDefault();
+                showAlert('Veuillez saisir une exigence.', 'danger');
+                document.getElementById('exigence').focus();
+                return false;
+            }
+            
+            if (!niveauConformite) {
+                e.preventDefault();
+                showAlert('Veuillez sélectionner un niveau de conformité.', 'danger');
+                document.getElementById('niveau_conformite').focus();
+                return false;
+            }
+        });
+    }
+    
+    // Focus sur le premier champ du modal quand il s'ouvre
+    const editModals = document.querySelectorAll('[id^="editModal"]');
+    editModals.forEach(modal => {
+        modal.addEventListener('shown.bs.modal', function() {
+            const input = this.querySelector('input[name="exigence"]');
+            if (input) input.focus();
+        });
+    });
+});
+
+function confirmSuppression(event) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette exigence de la matrice ?')) {
+        event.preventDefault();
+        return false;
+    }
+    return true;
+}
+
+function showAlert(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+function exportMatrice() {
+    // Fonction pour exporter la matrice en CSV
+    let csv = "Exigence;Niveau de conformité;Commentaires;Risques associés\n";
+    
+    document.querySelectorAll('#matriceTable tbody tr').forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 4) {
+            const exigence = cells[0].querySelector('strong')?.textContent || cells[0].textContent;
+            const niveau = cells[1].textContent.trim();
+            const commentaire = cells[2].textContent.trim().replace(';', ',');
+            const risques = cells[3].textContent.trim().replace(';', ',');
+            
+            csv += `"${exigence}";"${niveau}";"${commentaire}";"${risques}"\n`;
+        }
+    });
+    
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `matrice_conformite_audit_{{ audit.reference }}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+</script>
+
+<style>
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.85em;
+    padding: 0.4em 0.8em;
+    border-radius: 20px;
+}
+
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    font-weight: 600;
+    line-height: 25px;
+}
+
+.card.border-top {
+    border-top-width: 4px !important;
+}
+
+#matriceTable tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    transform: scale(1.002);
+    transition: transform 0.2s ease;
+}
+
+.modal-backdrop {
+    z-index: 1040;
+}
+
+.modal {
+    z-index: 1055;
+}
+
+@media (max-width: 768px) {
+    .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-plus"></i> {{ t("New Service") }}
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"> {{ t("Service Information") }} </h5>
+                <small class="text-muted">Direction: {{ direction.nom if direction else 'Non spécifiée' }}</small>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.nom.label(class="form-label") }}
+                        {{ form.nom(class="form-control", placeholder=t("Service Name")) }}
+                        {% for error in form.nom.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows="3", placeholder=t("Description of service...")) }}
+                        {% for error in form.description.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.direction_id.label(class="form-label") }}
+                        {{ form.direction_id(class="form-select") }}
+                        {% for error in form.direction_id.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.responsable_id.label(class="form-label") }}
+                        {{ form.responsable_id(class="form-select") }}
+                        {% for error in form.responsable_id.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                        <small class="form-text text-muted"> {{ t("Select the person responsible for this service") }} </small>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('admin_directions') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> {{ t("Annuler") }}
+                        </a>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-save"></i> {{ t("Create the Service") }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> {{ t("Information") }} </h6>
+            </div>
+            <div class="card-body">
+                <p> {{ t("Services represent organizational units within a department.") }} </p>
+                <p><strong> {{ t("Exemples :") }} </strong></p>
+                <ul>
+                    <li> {{ t("Accounting department") }} </li>
+                    <li> {{ t("Human Resources Department") }} </li>
+                    <li> {{ t("IT Department") }} </li>
+                    <li> {{ t("Quality Department") }} </li>
+                    <li> {{ t("Legal Department") }} </li>
+                </ul>
+                <p> {{ t("Each department can have its own risk maps and processes.") }} </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

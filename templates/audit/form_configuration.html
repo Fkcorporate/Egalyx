@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-cog me-2"></i> {{ t("New Audit Configuration") }} </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('nouvelle_configuration_audit') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.nom_config.label(class="form-label") }}
+                        {{ form.nom_config(class="form-control" + (" is-invalid" if form.nom_config.errors else "")) }}
+                        {% for error in form.nom_config.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.type_audit.label(class="form-label") }}
+                        {{ form.type_audit(class="form-select" + (" is-invalid" if form.type_audit.errors else "")) }}
+                        {% for error in form.type_audit.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.duree_standard.label(class="form-label") }}
+                            {{ form.duree_standard(class="form-control" + (" is-invalid" if form.duree_standard.errors else "")) }}
+                            {% for error in form.duree_standard.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.seuil_gravite_min.label(class="form-label") }}
+                            {{ form.seuil_gravite_min(class="form-control" + (" is-invalid" if form.seuil_gravite_min.errors else "")) }}
+                            {% for error in form.seuil_gravite_min.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.seuil_gravite_max.label(class="form-label") }}
+                        {{ form.seuil_gravite_max(class="form-control" + (" is-invalid" if form.seuil_gravite_max.errors else "")) }}
+                        {% for error in form.seuil_gravite_max.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('configurations_audit') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

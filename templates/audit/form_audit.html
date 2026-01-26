@@ -1,0 +1,771 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-0 fw-bold">
+                        <i class="fas fa-plus-circle me-2 text-primary"></i>
+                        {% if audit %}
+                            Édition • Audit {{ audit.reference }}
+                        {% else %}
+                            Nouvel Audit
+                        {% endif %}
+                    </h2>
+                    <p class="text-muted mb-0 mt-1">
+                        {% if audit %}
+                            Mise à jour des paramètres de l'audit en cours
+                        {% else %}
+                            Créez un nouvel audit avec les paramètres ci-dessous
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{{ url_for('liste_audits') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="fas fa-arrow-left me-2"></i> {{ t('Retour') }}
+                </a>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show border-0 shadow-sm rounded-3" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-triangle' }} me-3 fs-5"></i>
+                                <div>{{ message }}</div>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-transparent border-0 py-4">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                            <i class="fas fa-clipboard-list text-primary fs-4"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title mb-0 fw-bold">
+                                {% if audit %}
+                                    Configuration
+                                {% else %}
+                                    Configuration de l'Audit
+                                {% endif %}
+                            </h5>
+                            <p class="text-muted mb-0"> {{ t('Set main settings') }} </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-4 pt-0">
+                    <form method="POST" action="{{ url_for('nouvel_audit') if not audit else url_for('edit_audit', id=audit.id) }}" class="needs-validation" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row g-4">
+                            
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    {{ form.titre(class="form-control rounded-3" ~ (" is-invalid" if form.titre.errors else ""), 
+                                    placeholder=t('Nom de l\'audit'), id="titre", style="height: 58px;") }}
+                                    <label for="titre" class="fw-medium"> {{ t('Audit Name') }} <span class="text-danger">*</span>
+                                    </label>
+                                    <div class="form-text ms-2"> {{ t('Ex: HR compliance audit Q4 2024') }} </div>
+                                    {% if form.titre.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.titre.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-floating">
+                                    {{ form.description(class="form-control rounded-3", placeholder=t('Description'), id="description", style="height: 100px;") }}
+                                    <label for="description" class="fw-medium"> {{ t('Contexte') }} </label>
+                                    <div class="form-text ms-2"> {{ t('Describe the context and general objectives') }} </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                
+                                <div class="mb-4">
+                                    <label for="type_audit" class="form-label fw-semibold d-flex align-items-center">
+                                        <i class="fas fa-tag me-2 text-primary"></i> {{ t('Audit type') }} <span class="text-danger ms-1">*</span>
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="fas fa-filter text-muted"></i>
+                                        </span>
+                                        {{ form.type_audit(
+                                            class="form-select rounded-end-3" ~ (" is-invalid" if form.type_audit.errors else ""),
+                                            id="type_audit"
+                                        ) }}
+                                    </div>
+                                    {% if form.type_audit.errors %}
+                                        <div class="invalid-feedback d-block">
+                                            {% for error in form.type_audit.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-semibold d-flex align-items-center">
+                                        <i class="fas fa-bullseye me-2 text-primary"></i> {{ t('Périmètre') }} <span class="text-danger ms-1">*</span>
+                                    </label>
+
+                                    <div class="d-flex gap-2 mb-3">
+                                        <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-2 d-flex align-items-center" 
+                                                onclick="setProcessusMode('logigramme')" id="btn-logigramme">
+                                            <i class="fas fa-project-diagram me-2"></i>
+                                            <span> {{ t('Processus') }} </span>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success rounded-pill px-3 py-2 d-flex align-items-center"
+                                                onclick="setProcessusMode('manuel')" id="btn-manuel">
+                                            <i class="fas fa-edit me-2"></i>
+                                            <span> {{ t('Custom') }} </span>
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary rounded-pill px-3 py-2 d-flex align-items-center"
+                                                onclick="setProcessusMode('aucun')" id="btn-aucun">
+                                            <i class="fas fa-globe me-2"></i>
+                                            <span> {{ t('Transversal') }} </span>
+                                        </button>
+                                    </div>
+
+                                    <div id="logigramme_section" class="processus-section">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-sitemap text-muted"></i>
+                                            </span>
+                                            {{ form.processus_id(
+                                                class="form-select rounded-end-3" ~ (" is-invalid" if form.processus_id.errors else ""),
+                                                id="processus_id"
+                                            ) }}
+                                        </div>
+                                        {% if form.processus_id.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.processus_id.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <small class="text-muted mt-2 d-block">
+                                            <i class="fas fa-info-circle me-1"></i> {{ t('Select a modeled process') }}
+                                        </small>
+                                    </div>
+
+                                    <div id="manuel_section" class="processus-section" style="display: none;">
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-pen text-muted"></i>
+                                            </span>
+                                            {% if form.processus_manuel.errors %}
+                                                {{ form.processus_manuel(class="form-control rounded-end-3 is-invalid", 
+                                                                          id="processus_manuel", placeholder=t('Ex: Purchasing cycle, HR process...')) }}
+                                            {% else %}
+                                                {{ form.processus_manuel(class="form-control rounded-end-3", 
+                                                                          id="processus_manuel", placeholder=t('Ex: Purchasing cycle, HR process...')) }}
+                                            {% endif %}
+                                        </div>
+                                        {% if form.processus_manuel.errors %}
+                                            <div class="invalid-feedback d-block">
+                                                {% for error in form.processus_manuel.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <small class="text-muted mt-2 d-block">
+                                            <i class="fas fa-info-circle me-1"></i> {{ t('Define a specific perimeter') }}
+                                        </small>
+                                    </div>
+
+                                    <div id="aucun_section" class="processus-section" style="display: none;">
+                                        <div class="alert alert-light border rounded-3 mb-0">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas fa-info-circle text-secondary me-3 fs-5"></i>
+                                                <div>
+                                                    <p class="mb-0 fw-medium"> {{ t('Transversal audit') }} </p>
+                                                    <small class="text-muted"> {{ t('Without specific process scope') }} </small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-6">
+                                
+                                <div class="mb-4">
+                                    <label for="responsable_id" class="form-label fw-semibold d-flex align-items-center">
+                                        <i class="fas fa-user-check me-2 text-primary"></i> {{ t('Coordinateur') }}
+                                    </label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light border-end-0">
+                                            <i class="fas fa-user text-muted"></i>
+                                        </span>
+                                        {{ form.responsable_id(class="form-select rounded-end-3", id="responsable_id") }}
+                                    </div>
+                                    <small class="text-muted mt-2 d-block">
+                                        <i class="fas fa-info-circle me-1"></i> {{ t('Responsible for coordination') }}
+                                    </small>
+                                </div>
+
+                                {% if audit %}
+                                <div class="row g-3">
+                                    <div class="col-6">
+                                        <label for="statut" class="form-label fw-semibold"> {{ t('État') }} </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-chart-line text-muted"></i>
+                                            </span>
+                                            {{ form.statut(class="form-select rounded-end-3", id="statut") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="sous_statut" class="form-label fw-semibold"> {{ t('Détail') }} </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-chart-bar text-muted"></i>
+                                            </span>
+                                            {{ form.sous_statut(class="form-select rounded-end-3", id="sous_statut") }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <div class="row g-3 mt-2">
+                                    <div class="col-6">
+                                        <label for="date_debut_prevue" class="form-label fw-semibold"> {{ t('Début prévu') }} </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-calendar-alt text-muted"></i>
+                                            </span>
+                                            {{ form.date_debut_prevue(class="form-control rounded-end-3", type="date", id="date_debut_prevue") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="date_fin_prevue" class="form-label fw-semibold"> {{ t('Fin prévue') }} </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-calendar-check text-muted"></i>
+                                            </span>
+                                            {{ form.date_fin_prevue(class="form-control rounded-end-3", type="date", id="date_fin_prevue") }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {% if audit %}
+                                <div class="row g-3 mt-2">
+                                    <div class="col-6">
+                                        <label for="date_debut_reelle" class="form-label fw-semibold"> {{ t('Début réel') }} </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-calendar-day text-muted"></i>
+                                            </span>
+                                            {{ form.date_debut_reelle(class="form-control rounded-end-3", type="date", id="date_debut_reelle") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="date_fin_reelle" class="form-label fw-semibold"> {{ t('Fin réelle') }} </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text bg-light border-end-0">
+                                                <i class="fas fa-calendar-week text-muted"></i>
+                                            </span>
+                                            {{ form.date_fin_reelle(class="form-control rounded-end-3", type="date", id="date_fin_reelle") }}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="col-12">
+                                <div class="card border-0 bg-light rounded-4">
+                                    <div class="card-body p-4">
+                                        <h6 class="fw-bold mb-4 d-flex align-items-center">
+                                            <i class="fas fa-user-shield me-3 fs-5 text-primary"></i> {{ t('Audit Team') }}
+                                        </h6>
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <div class="bg-white rounded-3 p-3 h-100">
+                                                    <div class="vstack gap-2">
+                                                        {% if form.equipe_audit_ids.choices %}
+                                                            {% for value, label in form.equipe_audit_ids.choices %}
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" 
+                                                                       name="equipe_audit_ids" 
+                                                                       value="{{ value }}"
+                                                                       id="equipe_{{ value }}"
+                                                                       {% if value in (form.equipe_audit_ids.data or []) %}checked{% endif %}>
+                                                                <label class="form-check-label d-flex align-items-center" for="equipe_{{ value }}">
+                                                                    <div class="bg-primary bg-opacity-10 rounded-circle p-2 me-2">
+                                                                        <i class="fas fa-user text-primary fs-6"></i>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span class="fw-medium">{{ label.split(' - ')[0] }}</span>
+                                                                        <small class="text-muted d-block">{{ label.split(' - ')[1] if ' - ' in label else '' }}</small>
+                                                                    </div>
+                                                                </label>
+                                                            </div>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            <div class="alert alert-light text-center py-4">
+                                                                <i class="fas fa-users fs-1 text-muted mb-3"></i>
+                                                                <p class="mb-0"> {{ t('No listeners available') }} </p>
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="bg-white rounded-3 p-3 h-100 border">
+                                                    <h6 class="fw-semibold mb-3"> {{ t('Conseils') }} </h6>
+                                                    <ul class="list-unstyled mb-0">
+                                                        <li class="mb-2 d-flex align-items-start">
+                                                            <i class="fas fa-check-circle text-success mt-1 me-2"></i>
+                                                            <small> {{ t('Select 2-4 listeners maximum') }} </small>
+                                                        </li>
+                                                        <li class="mb-2 d-flex align-items-start">
+                                                            <i class="fas fa-check-circle text-success mt-1 me-2"></i>
+                                                            <small> {{ t('Include a sector manager') }} </small>
+                                                        </li>
+                                                        <li class="d-flex align-items-start">
+                                                            <i class="fas fa-check-circle text-success mt-1 me-2"></i>
+                                                            <small> {{ t('Make sure you have complementary skills') }} </small>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="row g-4">
+                                    <div class="col-md-4">
+                                        <label for="portee" class="form-label fw-semibold d-flex align-items-center">
+                                            <i class="fas fa-expand-alt me-2 text-primary"></i> {{ t('Portée') }}
+                                        </label>
+                                        {{ form.portee(class="form-control rounded-3", rows="4", 
+                                          placeholder=t("Délimitation du périmètre d'intervention..."), id="portee") }}
+                                        <small class="text-muted mt-2 d-block">
+                                            <i class="fas fa-info-circle me-1"></i> {{ t('Define audit boundaries') }}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="objectifs" class="form-label fw-semibold d-flex align-items-center">
+                                            <i class="fas fa-bullseye me-2 text-primary"></i> {{ t('Objectifs') }}
+                                        </label>
+                                        {{ form.objectifs(class="form-control rounded-3", rows="4", 
+                                          placeholder=t('Specific objectives to achieve...'), id="objectifs") }}
+                                        <small class="text-muted mt-2 d-block">
+                                            <i class="fas fa-info-circle me-1"></i> {{ t('Expected audit results') }}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="criteres" class="form-label fw-semibold d-flex align-items-center">
+                                            <i class="fas fa-ruler-combined me-2 text-primary"></i> {{ t('Cadre') }}
+                                        </label>
+                                        {{ form.criteres(class="form-control rounded-3", rows="4", 
+                                          placeholder=t('Standards, benchmarks, regulations...'), id="criteres") }}
+                                        <small class="text-muted mt-2 d-block">
+                                            <i class="fas fa-info-circle me-1"></i> {{ t('Applicable evaluation criteria') }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12 pt-4">
+                                <div class="d-flex justify-content-between align-items-center border-top pt-4">
+                                    <a href="{{ url_for('liste_audits') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                                        <i class="fas fa-times me-2"></i> {{ t('Annuler') }}
+                                    </a>
+                                    <button type="submit" class="btn btn-primary rounded-pill px-5 py-2 fw-semibold">
+                                        <i class="fas fa-save me-2"></i>
+                                        {% if audit %}
+                                            Mettre à jour
+                                        {% else %}
+                                            Créer l'audit
+                                        {% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-body p-4">
+                        <h6 class="fw-bold mb-4 d-flex align-items-center">
+                            <i class="fas fa-rocket me-3 fs-5 text-primary"></i> {{ t('Quick start') }}
+                        </h6>
+                        <div class="row g-4">
+                            <div class="col-md-6 col-lg-3">
+                                <div class="text-center p-3">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                        <i class="fas fa-bullseye text-primary fs-3"></i>
+                                    </div>
+                                    <h6 class="fw-semibold mb-2"> {{ t('1. Define the perimeter') }} </h6>
+                                    <p class="text-muted small mb-0"> {{ t('Choose the process or define a specific scope') }} </p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="text-center p-3">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                        <i class="fas fa-calendar-alt text-primary fs-3"></i>
+                                    </div>
+                                    <h6 class="fw-semibold mb-2"> {{ t('2. Plan the dates') }} </h6>
+                                    <p class="text-muted small mb-0"> {{ t('Define the forecast schedule for the audit') }} </p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="text-center p-3">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                        <i class="fas fa-users text-primary fs-3"></i>
+                                    </div>
+                                    <h6 class="fw-semibold mb-2"> {{ t('3. Build the team') }} </h6>
+                                    <p class="text-muted small mb-0"> {{ t('Select competent auditors') }} </p>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-3">
+                                <div class="text-center p-3">
+                                    <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                                        <i class="fas fa-clipboard-check text-primary fs-3"></i>
+                                    </div>
+                                    <h6 class="fw-semibold mb-2"> {{ t('4. Finalize the details') }} </h6>
+                                    <p class="text-muted small mb-0"> {{ t('Specify scope, objectives and framework') }} </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+:root {
+    --bs-primary-rgb: 13, 110, 253;
+}
+
+/* Styles modernes */
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Form controls */
+.form-control, .form-select {
+    border: 1px solid #dee2e6;
+    transition: all 0.3s ease;
+    padding: 0.75rem 1rem;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--bs-primary);
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.1);
+}
+
+.form-floating > .form-control {
+    height: calc(3.5rem + 2px);
+    line-height: 1.25;
+}
+
+.form-floating > .form-control:focus ~ label,
+.form-floating > .form-control:not(:placeholder-shown) ~ label {
+    color: var(--bs-primary);
+    font-weight: 600;
+}
+
+/* Boutons */
+.btn {
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--bs-primary), #0a58ca);
+    border: none;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(var(--bs-primary-rgb), 0.3);
+}
+
+/* Processus sections */
+.processus-section {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.processus-section.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Checkboxes */
+.form-check-input {
+    width: 1.2em;
+    height: 1.2em;
+    margin-top: 0.2em;
+    cursor: pointer;
+}
+
+.form-check-input:checked {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.form-check-input:focus {
+    box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+/* Badges */
+.badge {
+    font-weight: 500;
+}
+
+/* Input group */
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+    color: #6c757d;
+}
+
+/* Typographie */
+.fw-semibold {
+    font-weight: 600;
+}
+
+.text-muted {
+    opacity: 0.8;
+}
+
+/* Layout spacing */
+.g-4 {
+    --bs-gutter-y: 1.5rem;
+    --bs-gutter-x: 1.5rem;
+}
+
+/* Card header */
+.card-header.bg-transparent {
+    background: linear-gradient(to right, rgba(var(--bs-primary-rgb), 0.02), transparent);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialiser la sélection de processus
+    initializeProcessusSelection();
+    
+    // Validation
+    const form = document.querySelector('form.needs-validation');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!validateForm()) {
+                e.preventDefault();
+                e.stopPropagation();
+                showValidationErrors();
+            }
+        }, false);
+    }
+
+    // Date picker enhancements
+    setupDateEnhancements();
+    
+    // Auto-resize textareas
+    setupAutoResize();
+});
+
+function initializeProcessusSelection() {
+    // Check current mode from hidden input or default
+    const modeInput = document.querySelector('input[name="selection_processus"]:checked');
+    let mode = modeInput ? modeInput.value : 'logigramme';
+    
+    // Set active mode
+    setProcessusMode(mode);
+}
+
+function setProcessusMode(mode) {
+    // Hide all sections
+    document.querySelectorAll('.processus-section').forEach(section => {
+        section.style.display = 'none';
+    });
+    
+    // Reset all buttons
+    ['btn-logigramme', 'btn-manuel', 'btn-aucun'].forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.classList.remove('btn-primary');
+            btn.classList.add('btn-outline-primary', 'btn-outline-success', 'btn-outline-secondary');
+        }
+    });
+    
+    // Show selected section and activate button
+    const section = document.getElementById(mode + '_section');
+    const button = document.getElementById('btn-' + mode);
+    
+    if (section) {
+        section.style.display = 'block';
+        section.classList.add('active');
+    }
+    
+    if (button) {
+        button.classList.remove('btn-outline-primary', 'btn-outline-success', 'btn-outline-secondary');
+        button.classList.add('btn-primary');
+    }
+    
+    // Update hidden radio
+    const radio = document.getElementById(mode + '_radio');
+    if (radio) {
+        radio.checked = true;
+    }
+}
+
+function validateForm() {
+    let isValid = true;
+    
+    // Clear previous validation
+    document.querySelectorAll('.is-invalid').forEach(el => {
+        el.classList.remove('is-invalid');
+    });
+    
+    // Validate required fields
+    const requiredFields = [
+        { id: 'titre', message: 'Le nom de l\'audit est requis' },
+        { id: 'type_audit', message: 'Le type d\'audit est requis' }
+    ];
+    
+    requiredFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element && !element.value.trim()) {
+            element.classList.add('is-invalid');
+            isValid = false;
+            
+            // Add error message
+            if (!element.nextElementSibling || !element.nextElementSibling.classList.contains('invalid-feedback')) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'invalid-feedback';
+                errorDiv.textContent = field.message;
+                element.parentNode.appendChild(errorDiv);
+            }
+        }
+    });
+    
+    // Validate processus selection based on mode
+    const logigrammeRadio = document.getElementById('logigramme_radio');
+    const manuelRadio = document.getElementById('manuel_radio');
+    
+    if (logigrammeRadio && logigrammeRadio.checked) {
+        const processusSelect = document.getElementById('processus_id');
+        if (processusSelect && !processusSelect.value) {
+            processusSelect.classList.add('is-invalid');
+            isValid = false;
+        }
+    } else if (manuelRadio && manuelRadio.checked) {
+        const processusManuel = document.getElementById('processus_manuel');
+        if (processusManuel && !processusManuel.value.trim()) {
+            processusManuel.classList.add('is-invalid');
+            isValid = false;
+        }
+    }
+    
+    return isValid;
+}
+
+function showValidationErrors() {
+    // Find first invalid field
+    const firstInvalid = document.querySelector('.is-invalid');
+    if (firstInvalid) {
+        firstInvalid.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+        });
+        firstInvalid.focus();
+    }
+}
+
+function setupDateEnhancements() {
+    const dateDebut = document.getElementById('date_debut_prevue');
+    const dateFin = document.getElementById('date_fin_prevue');
+    
+    if (dateDebut && dateFin) {
+        dateDebut.addEventListener('change', function() {
+            if (this.value && !dateFin.value) {
+                const startDate = new Date(this.value);
+                startDate.setDate(startDate.getDate() + 30);
+                
+                const year = startDate.getFullYear();
+                const month = String(startDate.getMonth() + 1).padStart(2, '0');
+                const day = String(startDate.getDate()).padStart(2, '0');
+                
+                dateFin.value = `${year}-${month}-${day}`;
+            }
+        });
+    }
+}
+
+function setupAutoResize() {
+    const textareas = document.querySelectorAll('textarea.form-control');
+    textareas.forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+        textarea.dispatchEvent(new Event('input'));
+    });
+}
+
+// Add shake animation CSS
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+        20%, 40%, 60%, 80% { transform: translateX(5px); }
+    }
+    
+    .shake-animation {
+        animation: shake 0.5s ease-in-out;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

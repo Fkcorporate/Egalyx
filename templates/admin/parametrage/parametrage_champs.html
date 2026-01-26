@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-tag"></i> {{ t("Setting up Custom Fields") }} </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{{ url_for('parametrage_risque') }}" class="btn btn-outline-secondary me-2">
+                <i class="fas fa-arrow-left"></i> {{ t("Return to settings") }} </a>
+        </div>
+    </div>
+
+    <div class="row">
+        
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h6 class="mb-0"><i class="fas fa-plus"></i> {{ t("New Field") }} </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('ajouter_champ_risque') }}" id="formChamp">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.nom_technique.label(class="form-label fw-bold") }}
+                            {{ form.nom_technique(class="form-control" + (" is-invalid" if form.nom_technique.errors else ""), placeholder="{{ t("ex: financial_impact") }}") }}
+                            {% if form.nom_technique.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.nom_technique.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted"> {{ t("Unique name without spaces.") }} </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.nom_affichage.label(class="form-label fw-bold") }}
+                            {{ form.nom_affichage(class="form-control" + (" is-invalid" if form.nom_affichage.errors else ""), placeholder="{{ t("e.g. Financial Impact") }}") }}
+                            {% if form.nom_affichage.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.nom_affichage.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.type_champ.label(class="form-label fw-bold") }}
+                            {{ form.type_champ(class="form-select" + (" is-invalid" if form.type_champ.errors else "")) }}
+                            {% if form.type_champ.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.type_champ.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.section.label(class="form-label fw-bold") }}
+                                {{ form.section(class="form-select") }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.ordre_affichage.label(class="form-label fw-bold") }}
+                                {{ form.ordre_affichage(class="form-control", type="number", min="0", value="0") }}
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.est_obligatoire(class="form-check-input") }}
+                                    {{ form.est_obligatoire.label(class="form-check-label fw-bold") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.est_actif(class="form-check-input", checked=True) }}
+                                    {{ form.est_actif.label(class="form-check-label fw-bold") }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.aide_texte.label(class="form-label fw-bold") }}
+                            {{ form.aide_texte(class="form-control", rows="2", placeholder="{{ t("Texte d") }}'aide pour l'utilisateur...") }}
+                        </div>
+                        
+                        <div class="mb-3" id="valeurs-container" style="display: none;">
+                            {{ form.valeurs_possibles.label(class="form-label fw-bold") }}
+                            {{ form.valeurs_possibles(class="form-control", rows="3", placeholder="{{ t("One value per line\nOption 1\nOption 2\nOption 3") }}") }}
+                            <small class="form-text text-muted"> {{ t("Options for multiple drop-down lists and checkboxes.") }} </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.regex_validation.label(class="form-label fw-bold") }}
+                            {{ form.regex_validation(class="form-control", placeholder="ex: ^[A-Za-z0-9\s]+$") }}
+                            <small class="form-text text-muted"> {{ t("Regular expression for validation (optional).") }} </small>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-save"></i> {{ t("Create the field") }} </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            
+            <ul class="nav nav-tabs parametrage-tabs mb-3" id="champsTabs" role="tablist">
+                {% for section_name in ['general', 'analyse', 'evaluation', 'documentation', 'personnalise'] %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if loop.first %}active{% endif %}" 
+                            id="{{ section_name }}-tab" 
+                            data-bs-toggle="tab" 
+                            data-bs-target="#{{ section_name }}"
+                            type="button" role="tab">
+                        {% if section_name == 'general' %}
+                            <i class="fas fa-info-circle me-1"></i> Général
+                        {% elif section_name == 'analyse' %}
+                            <i class="fas fa-search me-1"></i> Analyse
+                        {% elif section_name == 'evaluation' %}
+                            <i class="fas fa-chart-bar me-1"></i> Évaluation
+                        {% elif section_name == 'documentation' %}
+                            <i class="fas fa-file me-1"></i> Documentation
+                        {% else %}
+                            <i class="fas fa-tags me-1"></i> Personnalisé
+                        {% endif %}
+                        <span class="badge bg-secondary ms-1">{{ champs_par_section[section_name]|length }}</span>
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+
+            <div class="tab-content" id="champsTabContent">
+                {% for section_name, champs_section in champs_par_section.items() %}
+                <div class="tab-pane fade {% if loop.first %}show active{% endif %}" 
+                     id="{{ section_name }}" role="tabpanel">
+                    
+                    {% if champs_section %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="50px"></th>
+                                    <th> {{ t("Nom affiché") }} </th>
+                                    <th> {{ t("Type") }} </th>
+                                    <th> {{ t("Obligatoire") }} </th>
+                                    <th> {{ t("Statut") }} </th>
+                                    <th> {{ t("Actions") }} </th>
+                                </tr>
+                            </thead>
+                            <tbody class="sortable-list" data-section="{{ section_name }}">
+                                {% for champ in champs_section %}
+                                <tr class="sortable-item" data-id="{{ champ.id }}">
+                                    <td>
+                                        <i class="fas fa-arrows-alt drag-handle" title="{{ t("Swipe to reorder") }}"></i>
+                                    </td>
+                                    <td>
+                                        <strong>{{ champ.nom_affichage }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            <code>{{ champ.nom_technique }}</code>
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info">{{ champ.type_champ }}</span>
+                                        <br>
+                                        <small class="text-muted">Ordre: {{ champ.ordre_affichage }}</small>
+                                    </td>
+                                    <td>
+                                        {% if champ.est_obligatoire %}
+                                        <span class="badge bg-danger"> {{ t("Oui") }} </span>
+                                        {% else %}
+                                        <span class="badge bg-success"> {{ t("Non") }} </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if champ.est_actif %}
+                                        <span class="badge bg-success"> {{ t("Actif") }} </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary"> {{ t("Inactif") }} </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('editer_champ_risque', champ_id=champ.id) }}"
+                                            class="btn btn-outline-warning"
+                                               title="{{ t("Modifier") }}">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <form method="POST" 
+                                                  action="{{ url_for('supprimer_champ_risque', id=champ.id) }}"
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Supprimer ce champ ?');">
+                                                <button type="submit" class="btn btn-outline-danger" title="{{ t("Supprimer") }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-tag fa-3x mb-3"></i>
+                        <p> {{ t("No fields in this section") }} </p>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="alert alert-info mt-3">
+                <i class="fas fa-info-circle"></i>
+                <strong> {{ t("Information:") }} </strong>
+                <ul class="mb-0 mt-2">
+                    <li> {{ t("The fields are organized by section to structure the risk sheet") }} </li>
+                    <li> {{ t("You can drag and drop fields to change their display order") }} </li>
+                    <li> {{ t("Inactive fields will not appear in forms") }} </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Afficher/masquer le champ des valeurs selon le type
+    const typeChampSelect = document.querySelector('select[name="type_champ"]');
+    const valeursContainer = document.getElementById('valeurs-container');
+    
+    function toggleValeursContainer() {
+        const typesAvecValeurs = ['select', 'multiselect', 'radio', 'checkbox'];
+        if (typesAvecValeurs.includes(typeChampSelect.value)) {
+            valeursContainer.style.display = 'block';
+        } else {
+            valeursContainer.style.display = 'none';
+        }
+    }
+    
+    typeChampSelect.addEventListener('change', toggleValeursContainer);
+    toggleValeursContainer(); // Initialiser au chargement
+    
+    // Glisser-déposer pour réorganiser
+    const sortableLists = document.querySelectorAll('.sortable-list');
+    sortableLists.forEach(list => {
+        new Sortable(list, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            handle: '.drag-handle',
+            onEnd: function(evt) {
+                const items = evt.from.querySelectorAll('.sortable-item');
+                const order = Array.from(items).map(item => item.dataset.id);
+                const section = evt.from.dataset.section;
+                
+                // Envoyer la nouvelle ordre au serveur
+                fetchWithCSRF('/parametrage/champs/reorganiser', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        order: order,
+                        section: section 
+                    })
+                }).then(response => {
+                    if (!response.ok) {
+                        showToast('Erreur lors de la réorganisation', 'error');
+                    } else {
+                        showToast('Ordre des champs mis à jour', 'success');
+                        
+                        // Mettre à jour les numéros d'ordre
+                        items.forEach((item, index) => {
+                            const ordreSpan = item.querySelector('.text-muted small');
+                            if (ordreSpan) {
+                                ordreSpan.textContent = `Ordre: ${index}`;
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    });
+    
+    // Validation du formulaire
+    document.getElementById('formChamp').addEventListener('submit', function(e) {
+        const nomTechnique = document.querySelector('input[name="nom_technique"]').value.trim();
+        const nomAffichage = document.querySelector('input[name="nom_affichage"]').value.trim();
+        
+        if (!nomTechnique || !nomAffichage) {
+            e.preventDefault();
+            alert('Veuillez remplir le nom technique et le nom d\'affichage');
+            return;
+        }
+        
+        // Vérifier le format du nom technique
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(nomTechnique)) {
+            e.preventDefault();
+            alert('Le nom technique doit commencer par une lettre ou underscore et ne contenir que des lettres, chiffres et underscores');
+            return;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,1477 @@
+        
+        {% extends "base.html" %}
+
+        {% block title %}Gérer les permissions - {{ user.username }}{% endblock %}
+
+        {% block content %}
+        <div class="container-fluid py-4">
+            <div class="row">
+                <div class="col-12">
+                    <nav aria-label="{{ t("breadcrumb") }}">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}"> {{ t("Dashboard") }} </a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}"> {{ t("Administration") }} </a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('admin_utilisateurs') }}"> {{ t("Users") }} </a></li>
+                            <li class="breadcrumb-item active">Permissions de {{ user.username }}</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-2"> {{ t("Manage Permissions") }} </h1>
+                    <p class="text-muted mb-4">Définissez les permissions pour {{ user.username }}</p>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card card-modern">
+                        <div class="card-body">
+                            
+                            {% if session.get('sync_message') %}
+                            <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+                                <i class="fas fa-sync-alt me-2"></i>{{ session.pop('sync_message') }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endif %}
+
+                            {% if user.client and user.client.formule %}
+                            <div class="alert alert-info mb-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fas fa-layer-group fa-2x text-info"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">Formule : {{ user.client.formule.nom }}</h6>
+                                        <p class="mb-1">
+                                            <span class="badge bg-{{ 'success' if user.client.formule.code == 'enterprise' else 'warning' if user.client.formule.code == 'premium' else 'info' }}">
+                                                {{ user.client.formule.code|upper }}
+                                            </span>
+                                            • {{ user.client.formule.get_features_list()|length }} features 
+                                            • {{ user.client.formule.get_modules_list()|length }} modules
+                                        </p>
+                                        <p class="mb-0 small">
+                                            <i class="fas fa-users me-1"></i>Limite utilisateurs : 
+                                            {{ stats.total_users }}/{{ stats.max_users }}
+                                        </p>
+                                    </div>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ url_for('super_admin_client_detail', id=user.client.id) }}" 
+                                        class="btn btn-sm btn-outline-primary" 
+                                        {% if current_user.role != 'super_admin' %}disabled{% endif %}>
+                                            <i class="fas fa-external-link-alt me-1"></i> {{ t("See the customer") }} </a>
+                                        <a href="{{ url_for('admin_sync_permissions', user_id=user.id) }}" 
+                                        class="btn btn-sm btn-outline-success" 
+                                        onclick="return confirm('Synchroniser les permissions avec la formule actuelle ?')">
+                                            <i class="fas fa-sync-alt me-1"></i> {{ t("Synchroniser") }} </a>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                            {% set problematic_permissions = namespace(count=0) %}
+                            {% for category_name, category_perms in all_permissions.items() %}
+                                {% for perm_key, perm_data in category_perms.items() %}
+                                    {% if user.permissions.get(perm_key, false) and not perm_data.allowed %}
+                                        {% set problematic_permissions.count = problematic_permissions.count + 1 %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endfor %}
+                            
+                            {% if problematic_permissions.count > 0 %}
+                            <div class="alert alert-warning alert-dismissible fade show mb-4" role="alert">
+                                <div class="d-flex align-items-center">
+                                    <i class="fas fa-exclamation-triangle fa-2x text-warning me-3"></i>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1"> {{ t("Permissions not conforming to the formula") }} </h6>
+                                        <p class="mb-0">{{ problematic_permissions.count }} permission(s) activée(s) ne sont pas incluses dans votre formule actuelle.</p>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-warning" onclick="fixProblematicPermissions()">
+                                        <i class="fas fa-wrench me-1"></i> {{ t("Correct automatically") }} </button>
+                                </div>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                            {% endif %}
+                            
+                            <form method="POST" action="" id="permissionsForm">
+                                {{ form.hidden_tag() }}
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-tachometer-alt text-primary me-2"></i> {{ t("Dashboard") }} </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.visualisation.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="tableau_bord"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                                        Gestion des Risques
+                                        {% if user.client and user.client.formule %}
+                                            {% set carto_module = user.client.formule.modules.get('cartographie', false) %}
+                                            {% if not carto_module %}
+                                            <span class="badge bg-warning ms-2" data-bs-toggle="tooltip" 
+                                                title="Module 'Cartographie des risques' non inclus dans votre formule">
+                                                <i class="fas fa-lock me-1"></i> {{ t("Restricted module") }} </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.cartographie_risques.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="cartographie"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-chart-line text-success me-2"></i>
+                                        Indicateurs KRI
+                                        {% if user.client and user.client.formule %}
+                                            {% set kri_module = user.client.formule.modules.get('suivi_kri', false) %}
+                                            {% if not kri_module %}
+                                            <span class="badge bg-warning ms-2" data-bs-toggle="tooltip" 
+                                                title="Module 'Suivi KRI' non inclus dans votre formule">
+                                                <i class="fas fa-lock me-1"></i> {{ t("Restricted module") }} </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.kri.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="suivi_kri"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-clipboard-check text-warning me-2"></i>
+                                        Audit & Conformité
+                                        {% if user.client and user.client.formule %}
+                                            {% set audit_module = user.client.formule.modules.get('audit_interne', false) %}
+                                            {% if not audit_module %}
+                                            <span class="badge bg-warning ms-2" data-bs-toggle="tooltip" 
+                                                title="Module 'Audit interne' non inclus dans votre formule">
+                                                <i class="fas fa-lock me-1"></i> {{ t("Restricted module") }} </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.audit.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="audit_interne"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-tasks text-info me-2"></i>
+                                        Plans d'action
+                                        {% if user.client and user.client.formule %}
+                                            {% set plans_module = user.client.formule.modules.get('plans_action', false) %}
+                                            {% if not plans_module %}
+                                            <span class="badge bg-warning ms-2" data-bs-toggle="tooltip" 
+                                                title="Module 'Plans d'action' non inclus dans votre formule">
+                                                <i class="fas fa-lock me-1"></i> {{ t("Restricted module") }} </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.plans_action.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="plans_action"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-book text-info me-2"></i>
+                                        Veille Règlementaire
+                                        {% if user.client and user.client.formule %}
+                                            {% set veille_module = user.client.formule.modules.get('veille_reglementaire', false) %}
+                                            {% if not veille_module %}
+                                            <span class="badge bg-warning ms-2" data-bs-toggle="tooltip" 
+                                                title="Module 'Veille règlementaire' non inclus dans votre formule">
+                                                <i class="fas fa-lock me-1"></i> {{ t("Restricted module") }} </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.veille.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="veille_reglementaire"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-project-diagram text-info me-2"></i>
+                                        Processus & Logigrammes
+                                        {% if user.client and user.client.formule %}
+                                            {% set processus_module = user.client.formule.modules.get('gestion_processus', false) %}
+                                            {% if not processus_module %}
+                                            <span class="badge bg-warning ms-2" data-bs-toggle="tooltip" 
+                                                title="Module 'Gestion des processus' non inclus dans votre formule">
+                                                <i class="fas fa-lock me-1"></i> {{ t("Restricted module") }} </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.processus.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="gestion_processus"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-sitemap text-success me-2"></i> {{ t("Directions et Services") }} </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.administration.items() %}
+                                        {% if perm_key in ['can_view_departments', 'can_manage_departments', 'can_access_all_departments'] %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="administration"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-users text-primary me-2"></i> {{ t("User management") }} </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.administration.items() %}
+                                        {% if perm_key in ['can_view_users_list', 'can_edit_users', 'can_manage_users'] %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="administration"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-cogs text-secondary me-2"></i> {{ t("Administration") }} </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.administration.items() %}
+                                        {% if perm_key in ['can_manage_settings', 'can_manage_permissions', 'can_delete_data', 'can_archive_data', 'can_export_data'] %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="administration"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-sliders-h text-info me-2"></i>
+                                        Paramétrage
+                                        {% if user.client and user.client.formule %}
+                                            {% set param_module = user.client.formule.modules.get('reporting_avance', false) %}
+                                            {% if not param_module %}
+                                            <span class="badge bg-warning ms-2" data-bs-toggle="tooltip" 
+                                                title="Module 'Reporting avancé' non inclus dans votre formule">
+                                                <i class="fas fa-lock me-1"></i> {{ t("Restricted module") }} </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.parametrage.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="parametrage"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-robot text-purple me-2"></i>
+                                        Analyse IA
+                                        {% if user.client and user.client.formule %}
+                                            {% set ia_module = user.client.formule.modules.get('analyse_ia', false) %}
+                                            {% if not ia_module %}
+                                            <span class="badge bg-warning ms-2" data-bs-toggle="tooltip" 
+                                                title="Module 'Analyse IA' non inclus dans votre formule">
+                                                <i class="fas fa-lock me-1"></i> {{ t("Restricted module") }} </span>
+                                            {% endif %}
+                                        {% endif %}
+                                    </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.analyse_ia.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="analyse_ia"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                {% if current_user.role == 'super_admin' %}
+                                <div class="permission-category mb-4">
+                                    <h5 class="mb-3 border-bottom pb-2">
+                                        <i class="fas fa-server text-danger me-2"></i> {{ t("System administration") }} </h5>
+                                    <div class="row">
+                                        {% for perm_key, perm_data in all_permissions.systeme.items() %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="permission-item">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="form-check form-switch me-3">
+                                                        <input class="form-check-input" 
+                                                            type="checkbox" 
+                                                            name="{{ perm_key }}" 
+                                                            id="{{ perm_key }}"
+                                                            {% if not perm_data.allowed %}disabled{% endif %}
+                                                            {% if user.permissions.get(perm_key, false) and perm_data.allowed %}checked{% endif %}
+                                                            data-permission="{{ perm_key }}"
+                                                            data-module="systeme"
+                                                            onchange="togglePermission(this)">
+                                                        <label class="form-check-label {% if not perm_data.allowed %}text-muted{% endif %}" 
+                                                            for="{{ perm_key }}">
+                                                            {{ perm_data.label }}
+                                                        </label>
+                                                    </div>
+                                                    {% if not perm_data.allowed %}
+                                                    <span class="badge bg-warning ms-2" 
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ perm_data.reason }}">
+                                                        <i class="fas fa-lock"></i>
+                                                    </span>
+                                                    {% endif %}
+                                                </div>
+                                                {% if perm_data.reason %}
+                                                <small class="text-muted d-block mt-1">
+                                                    <i class="fas fa-info-circle me-1"></i>{{ perm_data.reason }}
+                                                </small>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+
+                                <div class="mt-4">
+                                    <button type="submit" class="btn btn-modern-primary" id="submitPermissions">
+                                        <i class="fas fa-save me-2"></i> {{ t("Save permissions") }} </button>
+                                    <a href="{{ url_for('admin_editer_utilisateur', id=user.id) }}" 
+                                    class="btn btn-secondary">
+                                        <i class="fas fa-arrow-left me-2"></i> {{ t("Retour") }} </a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-4">
+                    <div class="card card-modern">
+                        <div class="card-header">
+                            <h5 class="mb-0"> {{ t("Summary of permissions") }} </h5>
+                        </div>
+                        <div class="card-body">
+                            
+                            <div class="mb-4 text-center">
+                                <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" 
+                                    style="width: 80px; height: 80px;">
+                                    <i class="fas fa-user fa-2x text-primary"></i>
+                                </div>
+                                <h5>{{ user.username }}</h5>
+                                <p class="text-muted mb-2">
+                                    {{ user.email }}
+                                    <br>
+                                    <span class="badge bg-{{ 'danger' if user.role == 'admin' else 'warning' if user.role == 'manager' else 'info' }}">
+                                        {{ user.get_role_display_name() }}
+                                    </span>
+                                </p>
+                                {% if user.client %}
+                                <p class="small">
+                                    <i class="fas fa-building me-1"></i>
+                                    {{ user.client.nom }} ({{ user.client.reference }})
+                                </p>
+                                {% endif %}
+                            </div>
+
+                            {% if user.client and user.client.formule %}
+                            <div class="mb-4">
+                                <h6> {{ t("Active formula:") }} </h6>
+                                <div class="p-3 bg-light rounded">
+                                    <h5 class="mb-1">{{ user.client.formule.nom }}</h5>
+                                    <div class="mb-2">
+                                        <span class="badge bg-{{ 'success' if user.client.formule.code == 'enterprise' else 'warning' if user.client.formule.code == 'premium' else 'info' }}">
+                                            {{ user.client.formule.code|upper }}
+                                        </span>
+                                    </div>
+
+                                    <h6 class="mt-3 mb-2"> {{ t("Modules included:") }} </h6>
+                                    <div class="mb-3">
+                                        {% set modules = user.client.formule.get_modules_list() %}
+                                        {% if modules %}
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            {% for module in modules %}
+                                            <span class="badge bg-success">{{ module }}</span>
+                                            {% endfor %}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted small"> {{ t("No specific module") }} </span>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="mt-3">
+                                        <h6> {{ t("Formula check:") }} </h6>
+                                        {% set has_issues = namespace(value=false) %}
+
+                                        {% set problematic_list = [] %}
+                                        {% for category_name, category_perms in all_permissions.items() %}
+                                            {% for perm_key, perm_data in category_perms.items() %}
+                                                {% if user.permissions.get(perm_key, false) and not perm_data.allowed %}
+                                                    {% set _ = problematic_list.append(perm_data.label) %}
+                                                    {% set has_issues.value = true %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                        
+                                        {% if has_issues.value %}
+                                        <div class="alert alert-warning small mt-2">
+                                            <i class="fas fa-exclamation-triangle me-1"></i>
+                                            <strong> {{ t("Inconsistencies detected:") }} </strong>
+                                            <ul class="mb-0 mt-1 ps-3">
+                                                {% for problem in problematic_list %}
+                                                <li>{{ problem }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% else %}
+                                        <div class="alert alert-success small mt-2">
+                                            <i class="fas fa-check-circle me-1"></i> {{ t("All permissions conform to the formula") }} </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                {% if current_user.role == 'super_admin' %}
+                                <hr>
+                                <div class="text-center">
+                                    <a href="{{ url_for('super_admin_editer_formule', id=user.client.formule.id) }}" 
+                                    class="btn btn-sm btn-outline-info w-100">
+                                        <i class="fas fa-edit me-1"></i> {{ t("Edit the formula") }} </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            
+                            <hr>
+
+                            <div class="mb-3">
+                                <h6> {{ t("Enabled permissions:") }} </h6>
+                                <div style="max-height: 200px; overflow-y: auto;" class="p-2 bg-light rounded">
+                                    {% set enabled_count = namespace(value=0) %}
+                                    {% set enabled_activable_count = namespace(value=0) %}
+                                    {% set enabled_restricted_count = namespace(value=0) %}
+                                    
+                                    {% for category_name, category_perms in all_permissions.items() %}
+                                        {% for perm_key, perm_data in category_perms.items() %}
+                                            {% if user.permissions.get(perm_key, false) %}
+                                                {% set enabled_count.value = enabled_count.value + 1 %}
+                                                {% if perm_data.allowed %}
+                                                    {% set enabled_activable_count.value = enabled_activable_count.value + 1 %}
+                                                {% else %}
+                                                    {% set enabled_restricted_count.value = enabled_restricted_count.value + 1 %}
+                                                {% endif %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endfor %}
+                                    
+                                    {% if enabled_count.value == 0 %}
+                                    <p class="text-muted text-center small py-2 mb-0">
+                                        <i class="fas fa-info-circle me-1"></i> {{ t("No permissions enabled") }} </p>
+                                    {% else %}
+                                    <div class="mb-2 small">
+                                        <span class="badge bg-success">{{ enabled_activable_count.value }} perm. conformes</span>
+                                        {% if enabled_restricted_count.value > 0 %}
+                                        <span class="badge bg-warning">{{ enabled_restricted_count.value }} perm. non conformes</span>
+                                        {% endif %}
+                                        <span class="badge bg-info">{{ enabled_count.value }} total</span>
+                                    </div>
+
+                                    <div class="permission-summary-list">
+                                        {% for category_name, category_perms in all_permissions.items() %}
+                                            {% for perm_key, perm_data in category_perms.items() %}
+                                                {% if user.permissions.get(perm_key, false) %}
+                                                <div class="permission-summary-item {% if not perm_data.allowed %}permission-restricted{% endif %}">
+                                                    <div class="d-flex align-items-center">
+                                                        
+                                                        {% if perm_data.allowed %}
+                                                            <i class="fas fa-check-circle text-success me-2" 
+                                                            data-bs-toggle="tooltip" 
+                                                            title="{{ t("Permission according to the formula") }}"></i>
+                                                        {% else %}
+                                                            <i class="fas fa-exclamation-triangle text-warning me-2"
+                                                            data-bs-toggle="tooltip" 
+                                                            title="{{ perm_data.reason or 'Permission non conforme' }}"></i>
+                                                        {% endif %}
+                                                        
+                                                        <div class="flex-grow-1">
+                                                            <small>{{ perm_data.label }}</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endfor %}
+                                    </div>
+
+                                    <div class="mt-2 pt-2 border-top">
+                                        <div class="row small">
+                                            <div class="col-6">
+                                                <i class="fas fa-check-circle text-success me-1"></i>
+                                                <span>Conformes: {{ enabled_activable_count.value }}</span>
+                                            </div>
+                                            <div class="col-6">
+                                                {% if enabled_restricted_count.value > 0 %}
+                                                <i class="fas fa-exclamation-triangle text-warning me-1"></i>
+                                                <span>Non conformes: {{ enabled_restricted_count.value }}</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mt-2 small text-muted">
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <span> {{ t("Permission according to the formula") }} </span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                                        <span> {{ t("Permission enabled but not compliant") }} </span>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-shield-alt text-primary me-2"></i>
+                                        <span> {{ t("Permission required for role") }} </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <h6> {{ t("Quick actions:") }} </h6>
+                                <div class="btn-group-vertical w-100">
+                                    <button type="button" class="btn btn-outline-primary btn-sm mb-2"
+                                            onclick="selectAllAllowedPermissions()">
+                                        <i class="fas fa-check-square me-1"></i> {{ t("Select all allowed permissions") }} </button>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm mb-2"
+                                            onclick="deselectAllPermissions()">
+                                        <i class="fas fa-square me-1"></i> {{ t("Deselect all") }} </button>
+                                    
+                                    {% if user.client and user.client.formule %}
+                                    <button type="button" class="btn btn-outline-success btn-sm mb-2"
+                                            onclick="applyFormuleTemplate('{{ user.client.formule.code }}')">
+                                        <i class="fas fa-layer-group me-1"></i>Template {{ user.client.formule.nom }}
+                                    </button>
+                                    {% endif %}
+
+                                    <button type="button" class="btn btn-outline-info btn-sm mb-2"
+                                            onclick="applyRolePermissions('{{ user.role }}')">
+                                        <i class="fas fa-user-tag me-1"></i>Permissions {{ user.get_role_display_name() }}
+                                    </button>
+                                    
+                                    {% if user.client and user.client.formule %}
+                                    <button type="button" class="btn btn-outline-warning btn-sm"
+                                            onclick="forceSyncPermissions()">
+                                        <i class="fas fa-sync-alt me-1"></i> {{ t("Force synchronization") }} </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="alert alert-warning small mt-3">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                <strong> {{ t("Important :") }} </strong>
+                                <ul class="mb-0 mt-1 ps-3">
+                                    <li> {{ t("Grayed permissions are not included in the formula") }} </li>
+                                    <li> {{ t("Non-compliant permissions will be automatically disabled") }} </li>
+                                    <li> {{ t("Only the Super Admin can modify system permissions") }} </li>
+                                    <li> {{ t("Formula modifications automatically impact permissions") }} </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="syncConfirmModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"> {{ t("Synchronizing permissions") }} </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p> {{ t("Are you sure you want to sync permissions with the current plan?") }} </p>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i> {{ t("This action will automatically disable permissions not included in the formula.") }} </div>
+                        <div id="syncChangesPreview"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                        <button type="button" class="btn btn-primary" onclick="confirmSync()"> {{ t("Synchronize") }} </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endblock %}
+
+        {% block scripts %}
+        <script>
+        // ============================================
+        // FONCTIONS DE GESTION DES PERMISSIONS
+        // ============================================
+
+        // Variable globale pour suivre les changements
+        let permissionChanges = {
+            allowed: [],
+            restricted: []
+        };
+
+        // Toggle une permission
+        function togglePermission(checkbox) {
+            const permission = checkbox.dataset.permission;
+            const isAllowed = !checkbox.disabled;
+            const isChecked = checkbox.checked;
+            
+            if (isAllowed) {
+                console.log(`Permission ${permission} ${isChecked ? 'activée' : 'désactivée'}`);
+            } else {
+                // Empêcher l'activation si non autorisée
+                checkbox.checked = false;
+                alert(`Cette permission n'est pas autorisée par votre formule : ${checkbox.nextElementSibling.textContent.trim()}`);
+            }
+        }
+
+        // Sélectionner seulement les permissions autorisées
+        function selectAllAllowedPermissions() {
+            let selectedCount = 0;
+            document.querySelectorAll('input[type="checkbox"]:not(:disabled)').forEach(checkbox => {
+                checkbox.checked = true;
+                selectedCount++;
+            });
+            showToast(`${selectedCount} permissions autorisées sélectionnées`, 'success');
+        }
+
+        // Désélectionner tout
+        function deselectAllPermissions() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            showToast('Toutes permissions désélectionnées', 'info');
+        }
+
+        // Appliquer template selon la formule
+        function applyFormuleTemplate(formuleCode) {
+            // Templates selon la formule
+            const templates = {
+                'standard': [
+                    'can_view_dashboard', 'can_view_reports', 'can_export_data',
+                    'can_manage_risks', 'can_validate_risks', 'can_manage_kri',
+                    'can_manage_audit', 'can_view_departments',
+                    'can_view_users_list'
+                ],
+                'premium': [
+                    'can_view_dashboard', 'can_view_reports', 'can_export_data',
+                    'can_manage_risks', 'can_validate_risks', 'can_manage_kri',
+                    'can_manage_audit', 'can_confirm_evaluations', 'can_manage_regulatory',
+                    'can_manage_logigram', 'can_view_departments', 'can_manage_departments',
+                    'can_view_users_list', 'can_edit_users', 'can_manage_users',
+                    'can_manage_settings', 'can_manage_permissions', 'can_archive_data',
+                    'can_manage_lists', 'can_manage_fields', 'can_manage_files', 'can_manage_templates',
+                    'can_use_ia_analysis'
+                ],
+                'enterprise': [
+                    'can_view_dashboard', 'can_view_reports', 'can_export_data',
+                    'can_manage_risks', 'can_validate_risks', 'can_manage_kri',
+                    'can_manage_audit', 'can_confirm_evaluations', 'can_manage_regulatory',
+                    'can_manage_logigram', 'can_manage_users', 'can_manage_settings',
+                    'can_delete_data', 'can_manage_permissions', 'can_archive_data',
+                    'can_view_departments', 'can_manage_departments', 'can_access_all_departments',
+                    'can_view_users_list', 'can_edit_users', 'can_manage_lists',
+                    'can_manage_fields', 'can_manage_files', 'can_manage_templates',
+                    'can_use_ia_analysis'
+                ]
+            };
+            
+            // Désélectionner tout d'abord
+            deselectAllPermissions();
+            
+            // Sélectionner les permissions du template
+            if (templates[formuleCode]) {
+                let appliedCount = 0;
+                templates[formuleCode].forEach(perm => {
+                    const checkbox = document.getElementById(perm);
+                    if (checkbox && !checkbox.disabled) {
+                        checkbox.checked = true;
+                        appliedCount++;
+                    }
+                });
+                showToast(`Template ${formuleCode} appliqué (${appliedCount} permissions)`, 'success');
+            } else {
+                showToast('Template non disponible pour cette formule', 'warning');
+            }
+        }
+
+        // Appliquer les permissions selon le rôle
+        function applyRolePermissions(role) {
+            // Permissions par défaut selon le rôle
+            const rolePermissions = {
+                'admin': [
+                    'can_view_dashboard', 'can_view_reports', 'can_export_data',
+                    'can_manage_risks', 'can_validate_risks', 'can_manage_kri',
+                    'can_manage_audit', 'can_confirm_evaluations', 'can_manage_regulatory',
+                    'can_manage_logigram', 'can_view_departments', 'can_manage_departments',
+                    'can_view_users_list', 'can_edit_users', 'can_manage_users',
+                    'can_manage_settings', 'can_manage_permissions', 'can_archive_data',
+                    'can_manage_lists', 'can_manage_fields', 'can_manage_files', 'can_manage_templates'
+                ],
+                'manager': [
+                    'can_view_dashboard', 'can_view_reports', 'can_export_data',
+                    'can_manage_risks', 'can_validate_risks', 'can_manage_kri',
+                    'can_manage_audit', 'can_view_departments', 'can_view_users_list'
+                ],
+                'utilisateur': [
+                    'can_view_dashboard', 'can_view_reports', 'can_view_departments',
+                    'can_view_users_list'
+                ],
+                'auditeur': [
+                    'can_view_dashboard', 'can_view_reports', 'can_manage_audit',
+                    'can_view_departments', 'can_view_users_list'
+                ],
+                'compliance': [
+                    'can_view_dashboard', 'can_view_reports', 'can_export_data',
+                    'can_manage_regulatory', 'can_view_departments', 'can_view_users_list'
+                ]
+            };
+            
+            if (rolePermissions[role]) {
+                // D'abord tout désélectionner
+                deselectAllPermissions();
+                
+                let appliedCount = 0;
+                rolePermissions[role].forEach(perm => {
+                    const checkbox = document.getElementById(perm);
+                    if (checkbox && !checkbox.disabled) {
+                        checkbox.checked = true;
+                        appliedCount++;
+                    }
+                });
+                
+                showToast(`Permissions ${role} appliquées (${appliedCount} permissions)`, 'success');
+            } else {
+                showToast('Template non disponible pour ce rôle', 'warning');
+            }
+        }
+
+        // Corriger les permissions problématiques
+        function fixProblematicPermissions() {
+            // Désactiver toutes les permissions non autorisées
+            let fixedCount = 0;
+            document.querySelectorAll('input[type="checkbox"]:checked:disabled').forEach(checkbox => {
+                checkbox.checked = false;
+                fixedCount++;
+            });
+            
+            if (fixedCount > 0) {
+                showToast(`${fixedCount} permissions non conformes corrigées`, 'success');
+                
+                // Mettre à jour l'interface
+                const alert = document.querySelector('.alert-warning');
+                if (alert) {
+                    alert.style.display = 'none';
+                }
+            } else {
+                showToast('Aucune permission problématique à corriger', 'info');
+            }
+        }
+
+        // Forcer la synchronisation
+        function forceSyncPermissions() {
+            const modal = new bootstrap.Modal(document.getElementById('syncConfirmModal'));
+            
+            // Calculer les changements
+            const changes = {
+                toDisable: [],
+                toEnable: []
+            };
+            
+            // Identifier les permissions problématiques
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                const isChecked = checkbox.checked;
+                const isAllowed = !checkbox.disabled;
+                const label = checkbox.nextElementSibling.textContent.trim();
+                
+                if (isChecked && !isAllowed) {
+                    changes.toDisable.push(label);
+                } else if (!isChecked && isAllowed && checkbox.id.includes('can_manage')) {
+                    // Suggestions d'activation pour les permissions admin
+                    changes.toEnable.push(label);
+                }
+            });
+            
+            // Afficher le preview
+            const previewDiv = document.getElementById('syncChangesPreview');
+            let previewHtml = '';
+            
+            if (changes.toDisable.length > 0) {
+                previewHtml += '<h6> {{ t("Permissions to disable:") }} </h6><ul class="small">';
+                changes.toDisable.forEach(item => {
+                    previewHtml += `<li><i class="fas fa-times text-danger me-2"></i>${item}</li>`;
+                });
+                previewHtml += '</ul>';
+            }
+            
+            if (changes.toEnable.length > 0) {
+                previewHtml += '<h6> {{ t("Activation suggestions:") }} </h6><ul class="small">';
+                changes.toEnable.forEach(item => {
+                    previewHtml += `<li><i class="fas fa-plus text-success me-2"></i>${item}</li>`;
+                });
+                previewHtml += '</ul>';
+            }
+            
+            if (previewHtml === '') {
+                previewHtml = '<p class="text-success"> {{ t("All permissions are already compliant.") }} </p>';
+            }
+            
+            previewDiv.innerHTML = previewHtml;
+            
+            // Afficher le modal
+            modal.show();
+        }
+
+        // Confirmer la synchronisation
+        function confirmSync() {
+            // Désactiver les permissions non autorisées
+            fixProblematicPermissions();
+            
+            // Soumettre le formulaire
+            document.getElementById('permissionsForm').submit();
+        }
+
+        // ============================================
+        // VALIDATION ET SOUMISSION
+        // ============================================
+
+        // Vérifier avant soumission
+        document.getElementById('permissionsForm').addEventListener('submit', function(e) {
+            // Compter les permissions activées mais non autorisées
+            let restrictedEnabled = 0;
+            let restrictedList = [];
+            
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                if (checkbox.disabled) {
+                    restrictedEnabled++;
+                    restrictedList.push(checkbox.nextElementSibling.textContent.trim());
+                }
+            });
+            
+            if (restrictedEnabled > 0) {
+                e.preventDefault();
+                
+                // Créer la liste des permissions problématiques
+                let permissionList = restrictedList.map(p => `• ${p}`).join('\n');
+                
+                const confirmed = confirm(
+                    `⚠️ ATTENTION - PERMISSIONS NON AUTORISÉES\n\n` +
+                    `${restrictedEnabled} permission(s) activée(s) ne sont pas incluses dans votre formule :\n\n${permissionList}\n\n` +
+                    `Ces permissions seront automatiquement désactivées.\n\n` +
+                    `Continuer ?`
+                );
+                
+                if (confirmed) {
+                    // Désactiver les permissions non autorisées
+                    document.querySelectorAll('input[type="checkbox"]:checked:disabled').forEach(checkbox => {
+                        checkbox.checked = false;
+                    });
+                    
+                    // Soumettre le formulaire
+                    setTimeout(() => {
+                        this.submit();
+                    }, 100);
+                }
+            }
+        });
+
+        // ============================================
+        // UTILITAIRES
+        // ============================================
+
+        // Afficher des notifications
+        function showToast(message, type = 'info') {
+            const toastHtml = `
+                <div class="toast align-items-center text-bg-${type} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">${message}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `;
+            
+            const toastContainer = document.querySelector('.toast-container');
+            if (!toastContainer) {
+                const container = document.createElement('div');
+                container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+                document.body.appendChild(container);
+            }
+            
+            const container = document.querySelector('.toast-container');
+            container.insertAdjacentHTML('beforeend', toastHtml);
+            
+            const toastElement = container.lastElementChild;
+            const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+            toast.show();
+        }
+
+        // Initialiser les tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tooltips Bootstrap
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            
+            // Vérifier les permissions problématiques au chargement
+            const problematicCheckboxes = document.querySelectorAll('input[type="checkbox"]:checked:disabled');
+            if (problematicCheckboxes.length > 0) {
+                // Ajouter une classe pour surligner
+                problematicCheckboxes.forEach(checkbox => {
+                    const parent = checkbox.closest('.permission-item');
+                    if (parent) {
+                        parent.classList.add('has-problem');
+                    }
+                });
+            }
+            
+            // Initialiser la validation en temps réel
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.disabled && this.checked) {
+                        this.checked = false;
+                        showToast('Cette permission n\'est pas autorisée par votre formule', 'warning');
+                    }
+                });
+            });
+        });
+        </script>
+
+        <style>
+        /* Styles pour les permissions */
+        .permission-item {
+            padding: 0.75rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+            border: 1px solid #e9ecef;
+        }
+
+        .permission-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .permission-item.has-problem {
+            background-color: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        .form-check-input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .form-check-input:disabled + .form-check-label {
+            opacity: 0.7;
+        }
+
+        /* Styles pour les badges de restriction */
+        .badge.bg-warning {
+            font-size: 0.7em;
+            padding: 0.2em 0.4em;
+            cursor: help;
+        }
+
+        /* Catégories de permissions */
+        .permission-category {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .permission-category:hover {
+            background: #f1f3f5;
+            border-color: #dee2e6;
+        }
+
+        .permission-category h5 {
+            color: #495057;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .permission-category h5 i {
+            width: 24px;
+            text-align: center;
+        }
+
+        /* Liste des permissions dans le résumé */
+        .permission-summary-list {
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .permission-summary-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid #f1f3f5;
+        }
+
+        .permission-summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .permission-summary-item.permission-restricted {
+            background-color: #fff3cd;
+            border-radius: 4px;
+        }
+
+        /* Animation pour les changements */
+        @keyframes highlight {
+            0% { background-color: #fff3cd; }
+            100% { background-color: transparent; }
+        }
+
+        .highlight {
+            animation: highlight 2s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .permission-category {
+                padding: 1rem;
+            }
+            
+            .permission-category .row > div {
+                margin-bottom: 0.5rem;
+            }
+        }
+
+        /* Card moderne */
+        .card-modern {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .card-modern .card-header {
+            background: #fff;
+            border-bottom: 1px solid #e9ecef;
+            padding: 1.25rem 1.5rem;
+        }
+
+        .card-modern .card-body {
+            padding: 1.5rem;
+        }
+
+        /* Boutons d'actions rapides */
+        .btn-group-vertical .btn {
+            text-align: left;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s ease;
+        }
+
+        .btn-group-vertical .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Badge de statut de module */
+        .badge-module-restricted {
+            font-size: 0.65em;
+            padding: 0.15em 0.4em;
+        }
+        </style>
+        {% endblock %}

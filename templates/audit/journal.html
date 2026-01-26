@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}Journal d'Audit - {{ audit.reference }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-history me-2"></i>
+            Journal d'Audit - {{ audit.reference }}
+        </h2>
+        <div>
+            <a href="{{ url_for('detail_audit', id=audit.id) }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+            <a href="{{ url_for('export_journal_audit', audit_id=audit.id) }}" class="btn btn-primary">
+                <i class="fas fa-download me-1"></i> {{ t("Exporter") }} </a>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Action type") }} </label>
+                    <select class="form-select" id="filterAction">
+                        <option value=""> {{ t("All actions") }} </option>
+                        <option value="creation_audit"> {{ t("Audit Creation") }} </option>
+                        <option value="modification_audit"> {{ t("Audit change") }} </option>
+                        <option value="creation_constatation"> {{ t("Creation of finding") }} </option>
+                        <option value="modification_constatation"> {{ t("Modification of finding") }} </option>
+                        <option value="creation_recommandation"> {{ t("Creation of recommendation") }} </option>
+                        <option value="modification_recommandation"> {{ t("Change of recommendation") }} </option>
+                        <option value="creation_plan_action"> {{ t("Creating an action plan") }} </option>
+                        <option value="modification_plan_action"> {{ t("Modification of action plan") }} </option>
+                        <option value="upload_fichier"> {{ t("File upload") }} </option>
+                        <option value="changement_statut"> {{ t("Change of status") }} </option>
+                        <option value="validation"> {{ t("Validation") }} </option>
+                        <option value="commentaire"> {{ t("Commentaire") }} </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Utilisateur") }} </label>
+                    <select class="form-select" id="filterUser">
+                        <option value=""> {{ t("All users") }} </option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Période") }} </label>
+                    <select class="form-select" id="filterPeriod">
+                        <option value=""> {{ t("Any period") }} </option>
+                        <option value="today"> {{ t("Aujourd'hui") }} </option>
+                        <option value="week"> {{ t("This week") }} </option>
+                        <option value="month"> {{ t("Ce mois") }} </option>
+                        <option value="quarter"> {{ t("Ce trimestre") }} </option>
+                        <option value="year"> {{ t("Cette année") }} </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Recherche") }} </label>
+                    <input type="text" class="form-control" id="filterSearch" placeholder="{{ t("To research...") }}">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ journal_entries|length }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Total shares") }} </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ journal_entries|selectattr('action', 'equalto', 'creation_constatation')|list|length }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Findings created") }} </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ journal_entries|selectattr('action', 'equalto', 'modification')|list|length }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Changes") }} </p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3>{{ users|length }}</h3>
+                    <p class="text-muted mb-0"> {{ t("Active users") }} </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-stream me-2"></i> {{ t("Chronology of actions") }} </h5>
+            <span class="badge bg-primary">
+                Dernière mise à jour : {{ audit.updated_at.strftime('%d/%m/%Y %H:%M') }}
+            </span>
+        </div>
+        <div class="card-body">
+            {% if journal_entries %}
+            <div class="timeline">
+                {% for entry in journal_entries %}
+                <div class="timeline-item" 
+                     data-action="{{ entry.action }}"
+                     data-user="{{ entry.utilisateur_id }}"
+                     data-date="{{ entry.created_at.strftime('%Y-%m-%d') }}">
+                    <div class="timeline-marker {{ 
+                        'bg-success' if 'creation' in entry.action 
+                        else 'bg-warning' if 'modification' in entry.action 
+                        else 'bg-danger' if 'suppression' in entry.action 
+                        else 'bg-info' if 'validation' in entry.action 
+                        else 'bg-primary'
+                    }}"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-header">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ entry.utilisateur.username }}</strong>
+                                    <span class="text-muted ms-2">
+                                        {{ entry.action|replace('_', ' ')|title }}
+                                    </span>
+                                </div>
+                                <div class="text-muted">
+                                    <small>{{ entry.created_at.strftime('%d/%m/%Y %H:%M') }}</small>
+                                    <span class="badge bg-secondary ms-2">
+                                        {{ entry.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="timeline-body mt-2">
+                            {% if entry.details %}
+                                {% if entry.action == 'creation_constatation' %}
+                                    <p>
+                                        <strong> {{ t("Finding:") }} </strong> {{ entry.details.reference }}<br>
+                                        <small class="text-muted">
+                                            Type: {{ entry.details.type }}, 
+                                            Gravité: {{ entry.details.gravite }}
+                                        </small>
+                                    </p>
+                                {% elif entry.action == 'creation_recommandation' %}
+                                    <p>
+                                        <strong> {{ t("Recommendation created") }} </strong><br>
+                                        <small class="text-muted">{{ entry.details.description[:100] }}...</small>
+                                    </p>
+                                {% elif entry.action == 'modification_audit' %}
+                                    <div class="alert alert-light">
+                                        <small>
+                                            <strong> {{ t("Changes made:") }} </strong>
+                                            <ul class="mb-0">
+                                                {% if entry.details.ancien_etat.titre != entry.details.nouvel_etat.titre %}
+                                                <li>Titre modifié : "{{ entry.details.ancien_etat.titre }}" → "{{ entry.details.nouvel_etat.titre }}"</li>
+                                                {% endif %}
+                                                {% if entry.details.ancien_etat.statut != entry.details.nouvel_etat.statut %}
+                                                <li>Statut modifié : {{ entry.details.ancien_etat.statut }} → {{ entry.details.nouvel_etat.statut }}</li>
+                                                {% endif %}
+                                            </ul>
+                                        </small>
+                                    </div>
+                                {% elif entry.action == 'changement_statut' %}
+                                    <p>
+                                        <i class="fas fa-exchange-alt me-1"></i>
+                                        <strong> {{ t("Change of status:") }} </strong><br>
+                                        <span class="badge bg-secondary">{{ entry.details.ancien_statut }}</span>
+                                        <i class="fas fa-arrow-right mx-2"></i>
+                                        <span class="badge bg-{{ 'success' if entry.details.nouveau_statut == 'termine' else 'warning' }}">
+                                            {{ entry.details.nouveau_statut }}
+                                        </span>
+                                    </p>
+                                {% elif entry.action == 'upload_fichier' %}
+                                    <p>
+                                        <i class="fas fa-file-upload me-1"></i>
+                                        <strong> {{ t("File uploaded:") }} </strong> {{ entry.details.fichier }}<br>
+                                        <small class="text-muted">{{ entry.details.constatation }}</small>
+                                    </p>
+                                {% elif entry.action == 'commentaire' %}
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-comment me-2"></i>
+                                        <strong> {{ t("Comment :") }} </strong><br>
+                                        {{ entry.details.contenu }}
+                                    </div>
+                                {% else %}
+                                    <pre class="mb-0" style="font-size: 0.8rem;">{{ entry.details|tojson(indent=2) }}</pre>
+                                {% endif %}
+                            {% else %}
+                                <p class="text-muted mb-0"><em> {{ t("No details available") }} </em></p>
+                            {% endif %}
+                            
+                            {% if entry.signature %}
+                            <div class="timeline-signature mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-signature me-1"></i>
+                                    Signé par : {{ entry.signature }}
+                                </small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if journal_entries|length > 50 %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item disabled">
+                        <a class="page-link" href="#"> {{ t("Précédent") }} </a>
+                    </li>
+                    <li class="page-item active">
+                        <a class="page-link" href="#">1</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">2</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#">3</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="#"> {{ t("Suivant") }} </a>
+                    </li>
+                </ul>
+            </nav>
+            {% endif %}
+            
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                <h4> {{ t("No action recorded") }} </h4>
+                <p class="text-muted"> {{ t("The audit log is empty at the moment.") }} </p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-user-clock me-2"></i> {{ t("Activity by user") }} </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartUtilisateurs" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i> {{ t("Distribution of shares") }} </h6>
+                </div>
+                <div class="card-body">
+                    <canvas id="chartActions" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding: 20px 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 30px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e9ecef;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+    padding-left: 60px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: 22px;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 3px solid white;
+    z-index: 2;
+    box-shadow: 0 0 0 3px var(--bs-light);
+}
+
+.timeline-content {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.timeline-header {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+}
+
+.timeline-signature {
+    border-top: 1px dashed #e9ecef;
+    padding-top: 10px;
+    margin-top: 10px;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtres
+    const filterAction = document.getElementById('filterAction');
+    const filterUser = document.getElementById('filterUser');
+    const filterPeriod = document.getElementById('filterPeriod');
+    const filterSearch = document.getElementById('filterSearch');
+    const timelineItems = document.querySelectorAll('.timeline-item');
+    
+    function applyFilters() {
+        const actionValue = filterAction.value;
+        const userValue = filterUser.value;
+        const periodValue = filterPeriod.value;
+        const searchValue = filterSearch.value.toLowerCase();
+        
+        timelineItems.forEach(item => {
+            const action = item.dataset.action;
+            const user = item.dataset.user;
+            const date = item.dataset.date;
+            const text = item.textContent.toLowerCase();
+            
+            let show = true;
+            
+            if (actionValue && !action.includes(actionValue)) {
+                show = false;
+            }
+            
+            if (userValue && user !== userValue) {
+                show = false;
+            }
+            
+            if (periodValue) {
+                const itemDate = new Date(date);
+                const today = new Date();
+                const diffDays = Math.floor((today - itemDate) / (1000 * 60 * 60 * 24));
+                
+                if (periodValue === 'today' && diffDays > 0) show = false;
+                if (periodValue === 'week' && diffDays > 7) show = false;
+                if (periodValue === 'month' && diffDays > 30) show = false;
+                if (periodValue === 'quarter' && diffDays > 90) show = false;
+                if (periodValue === 'year' && diffDays > 365) show = false;
+            }
+            
+            if (searchValue && !text.includes(searchValue)) {
+                show = false;
+            }
+            
+            item.style.display = show ? 'block' : 'none';
+        });
+    }
+    
+    filterAction.addEventListener('change', applyFilters);
+    filterUser.addEventListener('change', applyFilters);
+    filterPeriod.addEventListener('change', applyFilters);
+    filterSearch.addEventListener('input', applyFilters);
+    
+    // Graphique des utilisateurs
+    {% if journal_entries %}
+    const ctx1 = document.getElementById('chartUtilisateurs').getContext('2d');
+    const userActivity = {{ user_activity|tojson if user_activity else {} }};
+    
+    new Chart(ctx1, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(userActivity),
+            datasets: [{
+                label: 'Nombre d\'actions',
+                data: Object.values(userActivity),
+                backgroundColor: '#007bff'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+    
+    // Graphique des actions
+    const ctx2 = document.getElementById('chartActions').getContext('2d');
+    const actionTypes = {{ action_types|tojson if action_types else {} }};
+    
+    new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(actionTypes).map(a => a.replace('_', ' ').toUpperCase()),
+            datasets: [{
+                data: Object.values(actionTypes),
+                backgroundColor: [
+                    '#28a745', // création
+                    '#ffc107', // modification
+                    '#dc3545', // suppression
+                    '#0dcaf0', // upload
+                    '#6c757d'  // autres
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    {% endif %}
+});
+
+// Fonction timeago simple
+document.querySelectorAll('.timeago').forEach(el => {
+    const date = new Date(el.dataset.time);
+    const now = new Date();
+    const diff = Math.floor((now - date) / 1000);
+    
+    if (diff < 60) {
+        el.textContent = 'à l\'instant';
+    } else if (diff < 3600) {
+        el.textContent = `il y a ${Math.floor(diff / 60)} min`;
+    } else if (diff < 86400) {
+        el.textContent = `il y a ${Math.floor(diff / 3600)} h`;
+    } else if (diff < 2592000) {
+        el.textContent = `il y a ${Math.floor(diff / 86400)} j`;
+    } else {
+        el.textContent = `il y a ${Math.floor(diff / 2592000)} mois`;
+    }
+});
+</script>
+{% endblock %}

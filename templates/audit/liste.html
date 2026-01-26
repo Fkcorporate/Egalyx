@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}Programme d'Audit - FabriceKonan Corporate{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h4 mb-2">
+                <i class="fas fa-clipboard-check me-2" style="color: var(--fk-warning);"></i> {{ t("Internal Audit Program") }} </h2>
+            <nav aria-label="{{ t("breadcrumb") }}">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}"> {{ t("Dashboard") }} </a></li>
+                    <li class="breadcrumb-item active"> {{ t("Audit") }} </li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ url_for('nouvel_audit') }}" class="fk-btn fk-btn-primary">
+                <i class="fas fa-plus-circle me-2"></i> {{ t("New Audit") }} </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="fk-card">
+                <div class="fk-card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-primary bg-opacity-10 p-3 me-3">
+                                <i class="fas fa-clipboard-list text-primary fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h3 class="mb-1">{{ audits|length }}</h3>
+                            <p class="text-muted mb-0"> {{ t("Scheduled audits") }} </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="fk-card">
+                <div class="fk-card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-info bg-opacity-10 p-3 me-3">
+                                <i class="fas fa-play-circle text-info fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h3 class="mb-1">{{ audits|selectattr("statut", "equalto", "en_cours")|list|length }}</h3>
+                            <p class="text-muted mb-0"> {{ t("En cours") }} </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="fk-card">
+                <div class="fk-card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-success bg-opacity-10 p-3 me-3">
+                                <i class="fas fa-check-circle text-success fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h3 class="mb-1">{{ audits|selectattr("statut", "equalto", "termine")|list|length }}</h3>
+                            <p class="text-muted mb-0"> {{ t("Terminés") }} </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="fk-card">
+                <div class="fk-card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-circle bg-warning bg-opacity-10 p-3 me-3">
+                                <i class="fas fa-exclamation-triangle text-warning fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            {% set total_constatations = [] %}
+                            {% for audit in audits %}
+                                {% for constatation in audit.constatations %}
+                                    {% set _ = total_constatations.append(constatation) %}
+                                {% endfor %}
+                            {% endfor %}
+                            <h3 class="mb-1">{{ total_constatations|length }}</h3>
+                            <p class="text-muted mb-0"> {{ t("Findings") }} </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="fk-card">
+                <div class="fk-card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-list-check me-2"></i>
+                        <h5 class="mb-0"> {{ t("Scheduled Audits") }} </h5>
+                    </div>
+                    <span class="fk-badge fk-badge-primary">
+                        {{ audits|length }} audit{% if audits|length > 1 %}s{% endif %}
+                    </span>
+                </div>
+                
+                <div class="fk-card-body">
+                    {% if audits %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th> {{ t("Référence") }} </th>
+                                    <th> {{ t("Titre") }} </th>
+                                    <th> {{ t("Type") }} </th>
+                                    <th> {{ t("Processus") }} </th>
+                                    <th> {{ t("Statut") }} </th>
+                                    <th> {{ t("Période") }} </th>
+                                    <th> {{ t("Findings") }} </th>
+                                    <th class="text-end"> {{ t("Actions") }} </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for audit in audits %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ audit.reference }}</div>
+                                        <small class="text-muted">Créé le {{ audit.created_at.strftime('%d/%m/%Y') if audit.created_at else 'N/A' }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold mb-1">{{ audit.titre }}</div>
+                                        {% if audit.description %}
+                                        <small class="text-muted">{{ audit.description|truncate(80) }}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ audit.type_audit|replace('_', ' ')|title }}</span>
+                                    </td>
+                                    <td>
+                                        {{ audit.processus.nom if audit.processus else 'Non spécifié' }}
+                                    </td>
+                                    <td>
+                                        {% if audit.statut == 'planifie' %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-clock me-1"></i> {{ t("Planifié") }} </span>
+                                        {% elif audit.statut == 'en_cours' %}
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-play me-1"></i> {{ t("En Cours") }} </span>
+                                        {% elif audit.statut == 'termine' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i> {{ t("Terminé") }} </span>
+                                        {% elif audit.statut == 'annule' %}
+                                        <span class="badge bg-danger">
+                                            <i class="fas fa-ban me-1"></i> {{ t("Annulé") }} </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if audit.date_debut_prevue %}
+                                        <div class="text-nowrap">
+                                            <i class="fas fa-calendar-alt me-1 text-muted"></i>
+                                            {{ audit.date_debut_prevue.strftime('%d/%m/%Y') }}
+                                        </div>
+                                        <div class="text-nowrap">
+                                            <i class="fas fa-calendar-check me-1 text-muted"></i>
+                                            {{ audit.date_fin_prevue.strftime('%d/%m/%Y') }}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted"> {{ t("Unplanned") }} </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="badge bg-warning text-dark me-2">{{ audit.constatations|length }}</span>
+                                            <span class="text-muted">constatation{% if audit.constatations|length > 1 %}s{% endif %}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex justify-content-end gap-2">
+                                            <a href="{{ url_for('detail_audit', id=audit.id) }}" 
+                                               class="btn btn-sm btn-outline-primary"
+                                               title="{{ t("See details") }}">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('generer_rapport_audit', id=audit.id) }}" 
+                                               class="btn btn-sm btn-outline-danger"
+                                               title="{{ t("Download the report") }}">
+                                                <i class="fas fa-file-pdf"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="fas fa-clipboard-check fa-4x text-muted opacity-25"></i>
+                        </div>
+                        <h4 class="mb-3"> {{ t("No scheduled audit") }} </h4>
+                        <p class="text-muted mb-4"> {{ t("Start by planning your first audit to assess the compliance of your processes.") }} </p>
+                        <a href="{{ url_for('nouvel_audit') }}" class="fk-btn fk-btn-primary">
+                            <i class="fas fa-plus-circle me-2"></i> {{ t("Schedule an audit") }} </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                {% if audits %}
+                <div class="fk-card-body border-top">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-2"></i>
+                                {{ audits|length }} audit{% if audits|length > 1 %}s{% endif %} programmé{% if audits|length > 1 %}s{% endif %}
+                            </small>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <a href="{{ url_for('rapports_audit') }}" class="fk-btn fk-btn-outline">
+                                <i class="fas fa-chart-bar me-2"></i> {{ t("View reports") }} </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles simples pour compléter */
+.fk-card {
+    transition: all 0.3s ease;
+}
+
+.fk-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12);
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f8fafc;
+}
+</style>
+{% endblock %}

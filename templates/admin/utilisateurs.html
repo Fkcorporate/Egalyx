@@ -1,0 +1,330 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="{{ t("breadcrumb") }}">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}"> {{ t("Dashboard") }} </a></li>
+                    {% if current_user.role != 'super_admin' and current_client %}
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}"> {{ t("Administration") }} </a></li>
+                    <li class="breadcrumb-item active">
+                        Utilisateurs - {{ current_client.reference }}
+                    </li>
+                    {% else %}
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}"> {{ t("Administration") }} </a></li>
+                    <li class="breadcrumb-item active"> {{ t("Users") }} </li>
+                    {% endif %}
+                </ol>
+            </nav>
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-2"> {{ t("User Management") }} </h1>
+                    <p class="text-muted mb-0">
+                        {% if readonly_mode %}
+                        <i class="fas fa-eye me-1 text-info"></i>Vue lecture seule
+                        {% elif current_client %}
+                        Client: {{ current_client.reference }} - {{ current_client.nom }}
+                        {% else %}
+                        Liste complète des utilisateurs
+                        {% endif %}
+                    </p>
+                </div>
+
+                {% if not readonly_mode and current_user.has_permission('can_edit_users') %}
+                <a href="{{ url_for('admin_nouvel_utilisateur') }}" class="btn btn-modern-primary btn-sm">
+                    <i class="fas fa-plus me-2"></i> {{ t("Nouvel utilisateur") }} </a>
+                {% endif %}
+            </div>
+
+            {% if readonly_mode %}
+            <div class="alert alert-info mb-4">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-info-circle me-3 fa-2x"></i>
+                    <div>
+                        <h6 class="mb-1"> {{ t("Read-only mode") }} </h6>
+                        <p class="mb-0">{{ t("Vous pouvez consulter la liste des utilisateurs de votre organisation.
+                            Seul l'administrateur client peut les modifier.") }}</p>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card card-modern">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        {% if readonly_mode %}Liste des utilisateurs{% else %}Tous les utilisateurs{% endif %}
+                        <span class="badge bg-secondary ms-2">{{ users|length }}</span>
+                    </h5>
+                    
+                    {% if not readonly_mode and current_user.has_permission('can_edit_users') %}
+                    <a href="{{ url_for('admin_nouvel_utilisateur') }}" class="btn btn-modern-primary btn-sm">
+                        <i class="fas fa-plus me-2"></i> {{ t("Nouvel utilisateur") }} </a>
+                    {% endif %}
+                </div>
+                
+                <div class="card-body">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-modern">
+                            <thead>
+                                <tr>
+                                    <th> {{ t("Utilisateur") }} </th>
+                                    <th> {{ t("Rôle") }} </th>
+                                    <th> {{ t("Département") }} </th>
+                                    <th> {{ t("Statut") }} </th>
+                                    <th> {{ t("Last connection") }} </th>
+                                    <th> {{ t("Créé le") }} </th>
+                                    <th> {{ t("Actions") }} </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-sm bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <i class="fas fa-user"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ user.username }}</div>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                                {% if user.id == current_user.id %}
+                                                <span class="badge bg-success ms-2"> {{ t("Vous") }} </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge-modern 
+                                            {% if user.role == 'admin' %}badge-danger
+                                            {% elif user.role == 'manager' %}badge-warning
+                                            {% elif user.role == 'auditeur' %}badge-audit
+                                            {% else %}badge-secondary{% endif %}">
+                                            {{ user.get_role_display_name() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.department or '-' }}</td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="status-badge status-active"> {{ t("Actif") }} </span>
+                                        {% else %}
+                                        <span class="status-badge status-inactive"> {{ t("Inactif") }} </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if user.last_login %}
+                                            {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}
+                                            {% else %}
+                                            Jamais
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ user.created_at.strftime('%d/%m/%Y') }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            
+                                            <a href="{{ url_for('admin_editer_utilisateur', id=user.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="{{ t("Éditer") }}"
+                                               {% if readonly_mode %}disabled onclick="return false;"{% endif %}>
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+
+                                            <a href="{{ url_for('admin_gerer_permissions', id=user.id) }}" 
+                                               class="btn btn-outline-info" 
+                                               title="{{ t("Permissions") }}"
+                                               {% if readonly_mode or not current_user.has_permission('can_manage_permissions') %}disabled onclick="return false;"{% endif %}>
+                                                <i class="fas fa-key"></i>
+                                            </a>
+
+                                            {% if user.id != current_user.id %}
+                                                {% if readonly_mode %}
+                                                <button class="btn btn-outline-secondary" disabled title="{{ t("Not allowed") }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                                {% else %}
+                                                <button type="button" 
+                                                        class="btn btn-outline-danger" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#deleteUserModal{{ user.id }}"
+                                                        title="{{ t("Supprimer") }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                                {% endif %}
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                {% if not readonly_mode and user.id != current_user.id %}
+                                <div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title"> {{ t("Confirm deletion") }} </h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p> {{ t("Are you sure you want to delete the user") }} <strong>{{ user.username }}</strong> ?</p>
+                                                <p class="text-danger"> {{ t("This action is irreversible.") }} </p>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"> {{ t("Annuler") }} </button>
+                                                <form action="{{ url_for('admin_supprimer_utilisateur', id=user.id) }}" method="POST" style="display: inline;">
+                                                    {% if csrf_token %}
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                    {% endif %}
+                                                    <button type="submit" class="btn btn-danger"> {{ t("Supprimer") }} </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <h4>{{ users|selectattr('is_active')|list|length }}</h4>
+                                <small class="text-muted"> {{ t("Active users") }} </small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4>{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</h4>
+                                <small class="text-muted"> {{ t("Administrators") }} </small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4>{{ users|selectattr('role', 'equalto', 'manager')|list|length }}</h4>
+                                <small class="text-muted"> {{ t("Managers") }} </small>
+                            </div>
+                            <div class="col-md-3">
+                                <h4>{{ users|selectattr('role', 'equalto', 'auditeur')|list|length }}</h4>
+                                <small class="text-muted"> {{ t("Auditeurs") }} </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5> {{ t("No users") }} </h5>
+                        <p class="text-muted">
+                            {% if readonly_mode %}
+                            Aucun utilisateur dans votre organisation.
+                            {% else %}
+                            Commencez par créer un utilisateur
+                            {% endif %}
+                        </p>
+                        {% if not readonly_mode %}
+                        <a href="{{ url_for('admin_nouvel_utilisateur') }}" class="btn btn-modern-primary">
+                            <i class="fas fa-plus me-2"></i> {{ t("Create a user") }} </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.badge-modern {
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+.badge-modern.badge-danger { background-color: #dc3545; color: white; }
+.badge-modern.badge-warning { background-color: #ffc107; color: black; }
+.badge-modern.badge-audit { background-color: #0dcaf0; color: white; }
+.badge-modern.badge-secondary { background-color: #6c757d; color: white; }
+
+.status-badge {
+    padding: 0.25em 0.6em;
+    border-radius: 10px;
+    font-size: 0.75em;
+    font-weight: 600;
+}
+
+.status-active {
+    background-color: #d1e7dd;
+    color: #0f5132;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #842029;
+}
+
+.card-modern {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.table-modern th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table-modern td {
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+.avatar-sm {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Désactiver les liens en mode lecture seule
+document.addEventListener('DOMContentLoaded', function() {
+    {% if readonly_mode %}
+    // Désactiver tous les liens d'action
+    document.querySelectorAll('.btn-group a, .btn-group button').forEach(btn => {
+        if (!btn.classList.contains('disabled')) {
+            btn.classList.add('disabled');
+        }
+    });
+    
+    // Message au survol des boutons désactivés
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    {% endif %}
+    
+    // Confirmation avant suppression
+    document.querySelectorAll('.btn-outline-danger').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

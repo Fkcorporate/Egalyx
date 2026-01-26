@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+
+{% block title %}Diagramme de Gantt - {{ plan.nom }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-chart-gantt me-2"></i>
+            Diagramme de Gantt - {{ plan.nom }}
+        </h2>
+        <div>
+            <a href="{{ url_for('detail_plan_action', plan_id=plan.id) }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+            <button class="btn btn-primary" onclick="imprimerGantt()">
+                <i class="fas fa-print me-1"></i> {{ t("Imprimer") }} </button>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3">
+                    <strong> {{ t("Plan :") }} </strong> {{ plan.nom }}
+                </div>
+                <div class="col-md-3">
+                    <strong> {{ t("Statut :") }} </strong>
+                    <span class="badge bg-{{ 
+                        'success' if plan.statut == 'termine' 
+                        else 'warning' if plan.statut == 'en_cours' 
+                        else 'danger' if plan.statut == 'retarde' 
+                        else 'secondary' 
+                    }}">
+                        {{ plan.statut|replace('_', ' ')|title }}
+                    </span>
+                </div>
+                <div class="col-md-3">
+                    <strong> {{ t("Progress:") }} </strong> 
+                    <div class="progress" style="height: 20px; width: 100px; display: inline-block;">
+                        <div class="progress-bar bg-success" style="width: {{ plan.progression_reelle }}%">
+                            {{ plan.progression_reelle }}%
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <strong> {{ t("Responsible :") }} </strong>
+                    {% if plan.responsable %}
+                        {{ plan.responsable.username }}
+                    {% else %}
+                        <span class="text-muted"> {{ t("Non assigné") }} </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Période") }} </label>
+                    <select class="form-select" id="periodeGantt">
+                        <option value="auto"> {{ t("Automatique") }} </option>
+                        <option value="3m"> {{ t("3 mois") }} </option>
+                        <option value="6m"> {{ t("6 mois") }} </option>
+                        <option value="1a"> {{ t("1 an") }} </option>
+                        <option value="personnalise"> {{ t("Custom") }} </option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Afficher") }} </label>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="showProgress" checked>
+                        <label class="form-check-label" for="showProgress"> {{ t("Progression") }} </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="showDependencies" checked>
+                        <label class="form-check-label" for="showDependencies"> {{ t("Dépendances") }} </label>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Filter by manager") }} </label>
+                    <select class="form-select" id="filterResponsable">
+                        <option value=""> {{ t("Tous") }} </option>
+                        {% for user in users %}
+                        <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label"> {{ t("Actions") }} </label>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-primary" onclick="exporterGantt()">
+                            <i class="fas fa-download me-1"></i> {{ t("Exporter") }} </button>
+                        <button class="btn btn-outline-info" onclick="actualiserGantt()">
+                            <i class="fas fa-sync me-1"></i> {{ t("Actualiser") }} </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-project-diagram me-2"></i> {{ t("Planning") }} </h5>
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <span class="badge bg-success me-2"><i class="fas fa-square"></i> {{ t("Terminé") }} </span>
+                    <span class="badge bg-warning me-2"><i class="fas fa-square"></i> {{ t("En cours") }} </span>
+                    <span class="badge bg-danger me-2"><i class="fas fa-square"></i> {{ t("En retard") }} </span>
+                    <span class="badge bg-secondary me-2"><i class="fas fa-square"></i> {{ t("À faire") }} </span>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" onclick="zoomIn()">
+                    <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary mx-1" onclick="zoomOut()">
+                    <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" onclick="resetZoom()">
+                    <i class="fas fa-expand"></i>
+                </button>
+            </div>
+        </div>
+        <div class="card-body">
+            <div id="gantt-container" style="overflow-x: auto;">
+                <table class="table table-bordered gantt-table" id="ganttTable">
+                    <thead>
+                        <tr>
+                            <th style="min-width: 250px;"> {{ t("Tâche") }} </th>
+                            <th style="min-width: 100px;"> {{ t("Responsable") }} </th>
+                            {% set date_debut = plan.date_debut or plan.sous_actions|map(attribute='date_debut')|select|first|default(datetime.utcnow().date()) %}
+                            {% set date_fin = plan.date_fin_prevue or plan.sous_actions|map(attribute='date_fin_prevue')|select|last|default(datetime.utcnow().date() + timedelta(days=30)) %}
+                            {% set nb_jours = (date_fin - date_debut).days + 1 %}
+                            
+                            {% for i in range(nb_jours) %}
+                                {% set current_date = date_debut + timedelta(days=i) %}
+                                <th class="gantt-date-header" style="min-width: 30px;">
+                                    <small>{{ current_date.strftime('%d') }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ current_date.strftime('%b') }}</small>
+                                </th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr class="gantt-plan-principal">
+                            <td>
+                                <strong>{{ plan.nom }}</strong>
+                                <br>
+                                <small class="text-muted">
+                                    {{ plan.date_debut.strftime('%d/%m/%Y') if plan.date_debut else '?' }} 
+                                    - 
+                                    {{ plan.date_fin_prevue.strftime('%d/%m/%Y') if plan.date_fin_prevue else '?' }}
+                                </small>
+                            </td>
+                            <td>
+                                {% if plan.responsable %}
+                                <span class="badge bg-info">{{ plan.responsable.username }}</span>
+                                {% endif %}
+                            </td>
+                            {% for i in range(nb_jours) %}
+                                {% set current_date = date_debut + timedelta(days=i) %}
+                                <td class="gantt-cell">
+                                    {% if plan.date_debut and plan.date_fin_prevue %}
+                                        {% if current_date > {{ t("= plan.date_debut and current_date") }} <= plan.date_fin_prevue %}
+                                            {% set progression_jour = ((current_date - plan.date_debut).days / (plan.date_fin_prevue - plan.date_debut).days * 100)|int %}
+                                            <div class="gantt-bar" style="background-color: 
+                                                {% if plan.statut == 'termine' %}#28a745
+                                                {% elif plan.statut == 'en_cours' %}#ffc107
+                                                {% elif plan.statut == 'retarde' %}#dc3545
+                                                {% else %}#6c757d{% endif %};
+                                                width: {{ progression_jour }}%">
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+
+                        {% for sous_action in plan.sous_actions %}
+                        <tr class="gantt-sous-action" data-responsable="{{ sous_action.responsable_id or '' }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="me-2">
+                                        {% if sous_action.statut == 'termine' %}
+                                        <i class="fas fa-check-circle text-success"></i>
+                                        {% elif sous_action.statut == 'en_cours' %}
+                                        <i class="fas fa-play-circle text-warning"></i>
+                                        {% elif sous_action.statut == 'retarde' %}
+                                        <i class="fas fa-exclamation-circle text-danger"></i>
+                                        {% else %}
+                                        <i class="fas fa-clock text-secondary"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div>{{ sous_action.description|truncate(50) }}</div>
+                                        <small class="text-muted">
+                                            {{ sous_action.pourcentage_realisation }}% 
+                                            | {{ sous_action.date_debut.strftime('%d/%m/%Y') if sous_action.date_debut else '?' }}
+                                            - {{ sous_action.date_fin_prevue.strftime('%d/%m/%Y') if sous_action.date_fin_prevue else '?' }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if sous_action.responsable %}
+                                <span class="badge bg-secondary">{{ sous_action.responsable.username }}</span>
+                                {% endif %}
+                            </td>
+                            {% for i in range(nb_jours) %}
+                                {% set current_date = date_debut + timedelta(days=i) %}
+                                <td class="gantt-cell">
+                                    {% if sous_action.date_debut and sous_action.date_fin_prevue %}
+                                        {% if current_date > {{ t("= sub_action.date_debut and current_date") }} <= sous_action.date_fin_prevue %}
+                                            {% set progression_jour = ((current_date - sous_action.date_debut).days / (sous_action.date_fin_prevue - sous_action.date_debut).days * 100)|int %}
+                                            <div class="gantt-bar" style="background-color: 
+                                                {% if sous_action.statut == 'termine' %}#28a745
+                                                {% elif sous_action.statut == 'en_cours' %}#ffc107
+                                                {% elif sous_action.statut == 'retarde' %}#dc3545
+                                                {% else %}#6c757d{% endif %};
+                                                width: {{ progression_jour }}%;
+                                                opacity: {{ sous_action.pourcentage_realisation / 100 }}">
+                                                {% if current_date == date_debut + timedelta(days=((sous_action.date_fin_prevue - sous_action.date_debut).days // 2)) %}
+                                                <span class="gantt-bar-text">{{ sous_action.pourcentage_realisation }}%</span>
+                                                {% endif %}
+                                            </div>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i> {{ t("Plan statistics") }} </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h4>{{ plan.sous_actions|length }}</h4>
+                            <small class="text-muted"> {{ t("Sub-actions") }} </small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-success">{{ plan.sous_actions|selectattr('statut', 'equalto', 'termine')|list|length }}</h4>
+                            <small class="text-muted"> {{ t("Terminées") }} </small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-warning">{{ plan.sous_actions|selectattr('statut', 'equalto', 'en_cours')|list|length }}</h4>
+                            <small class="text-muted"> {{ t("En cours") }} </small>
+                        </div>
+                        <div class="col-md-3">
+                            <h4 class="text-danger">{{ plan.sous_actions|selectattr('statut', 'equalto', 'retarde')|list|length }}</h4>
+                            <small class="text-muted"> {{ t("En retard") }} </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i> {{ t("Critical deadlines") }} </h6>
+                </div>
+                <div class="card-body">
+                    {% set aujourdhui = datetime.utcnow().date() %}
+                    {% set echeances_critiques = [] %}
+                    
+                    {% for sous_action in plan.sous_actions if sous_action.date_fin_prevue %}
+                        {% set jours_restants = (sous_action.date_fin_prevue - aujourdhui).days %}
+                        {% if jours_restants <= 7 and sous_action.statut != 'termine' %}
+                            {% set _ = echeances_critiques.append({
+                                'description': sous_action.description,
+                                'date': sous_action.date_fin_prevue,
+                                'jours': jours_restants,
+                                'statut': sous_action.statut
+                            }) %}
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if echeances_critiques %}
+                        <div class="list-group list-group-flush">
+                            {% for echeance in echeances_critiques|sort(attribute='jours') %}
+                            <div class="list-group-item list-group-item-{{ 'danger' if echeance.jours < 0 else 'warning' }}">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ echeance.description[:30] }}...</strong><br>
+                                        <small>{{ echeance.date.strftime('%d/%m/%Y') }}</small>
+                                    </div>
+                                    <span class="badge bg-{{ 'danger' if echeance.jours < 0 else 'warning' }}">
+                                        {% if echeance.jours < 0 %}
+                                        Retard de {{ -echeance.jours }} j
+                                        {% else %}
+                                        J-{{ echeance.jours }}
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0 text-center"> {{ t("No critical deadline") }} </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.gantt-table {
+    font-size: 0.85rem;
+}
+
+.gantt-date-header {
+    text-align: center;
+    background-color: #f8f9fa;
+    border-left: 1px solid #dee2e6;
+}
+
+.gantt-cell {
+    position: relative;
+    height: 40px;
+    padding: 2px;
+    border-left: 1px solid #dee2e6;
+}
+
+.gantt-bar {
+    height: 20px;
+    border-radius: 3px;
+    position: absolute;
+    top: 10px;
+    left: 2px;
+    transition: all 0.3s ease;
+}
+
+.gantt-bar:hover {
+    transform: scaleY(1.2);
+    z-index: 10;
+}
+
+.gantt-bar-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.gantt-plan-principal {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+.gantt-sous-action:hover {
+    background-color: rgba(108, 117, 125, 0.05);
+}
+
+#gantt-container {
+    max-height: 600px;
+    overflow-y: auto;
+}
+
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+</style>
+
+<script>
+let zoomLevel = 1;
+
+function zoomIn() {
+    zoomLevel = Math.min(zoomLevel * 1.2, 3);
+    document.getElementById('gantt-container').style.transform = `scale(${zoomLevel})`;
+}
+
+function zoomOut() {
+    zoomLevel = Math.max(zoomLevel / 1.2, 0.5);
+    document.getElementById('gantt-container').style.transform = `scale(${zoomLevel})`;
+}
+
+function resetZoom() {
+    zoomLevel = 1;
+    document.getElementById('gantt-container').style.transform = 'scale(1)';
+}
+
+function filtrerParResponsable() {
+    const responsableId = document.getElementById('filterResponsable').value;
+    const sousActions = document.querySelectorAll('.gantt-sous-action');
+    
+    sousActions.forEach(row => {
+        if (!responsableId || row.dataset.responsable === responsableId) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function actualiserGantt() {
+    // Pour l'instant, on recharge la page
+    location.reload();
+}
+
+function exporterGantt() {
+    // Créer un canvas pour l'export
+    const container = document.getElementById('gantt-container');
+    html2canvas(container).then(canvas => {
+        const link = document.createElement('a');
+        link.download = `gantt-${Date.now()}.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+}
+
+function imprimerGantt() {
+    window.print();
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter by responsable
+    document.getElementById('filterResponsable').addEventListener('change', filtrerParResponsable);
+    
+    // Tooltips pour les barres
+    document.querySelectorAll('.gantt-bar').forEach(bar => {
+        bar.addEventListener('mouseenter', function(e) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'gantt-tooltip';
+            tooltip.textContent = this.parentElement.parentElement.querySelector('td').textContent;
+            tooltip.style.position = 'absolute';
+            tooltip.style.background = 'rgba(0,0,0,0.8)';
+            tooltip.style.color = 'white';
+            tooltip.style.padding = '5px';
+            tooltip.style.borderRadius = '3px';
+            tooltip.style.zIndex = '1000';
+            tooltip.style.top = (e.clientY - 30) + 'px';
+            tooltip.style.left = (e.clientX) + 'px';
+            document.body.appendChild(tooltip);
+            
+            this.addEventListener('mouseleave', function() {
+                tooltip.remove();
+            });
+        });
+    });
+    
+    // Aujourd'hui dans le Gantt
+    const aujourdhui = new Date();
+    const dateHeaders = document.querySelectorAll('.gantt-date-header');
+    dateHeaders.forEach((header, index) => {
+        const dateText = header.querySelector('small').textContent;
+        // Simple check - dans un cas réel, il faudrait parser la date
+        if (index === Math.floor(dateHeaders.length / 2)) {
+            header.style.backgroundColor = '#ffc107';
+            header.style.color = '#000';
+        }
+    });
+});
+</script>
+{% endblock %}

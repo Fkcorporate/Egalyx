@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="{{ t("breadcrumb") }}">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}"> {{ t("Dashboard") }} </a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}"> {{ t("Administration") }} </a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_utilisateurs') }}"> {{ t("Users") }} </a></li>
+                    <li class="breadcrumb-item active">Éditer {{ user.username }}</li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-2">Éditer Utilisateur : {{ user.username }}</h1>
+            <p class="text-muted mb-4"> {{ t("Edit user information") }} </p>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"> {{ t("Edit form") }} </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"> {{ t("Username *") }} </label>
+                                {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else ""), required=true) }}
+                                {% if form.username.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.username.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"> {{ t("Email *") }} </label>
+                                {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), type="email", required=true) }}
+                                {% if form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.email.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"> {{ t("Rôle *") }} </label>
+                                {{ form.role(class="form-select" + (" is-invalid" if form.role.errors else ""), required=true) }}
+                                {% if form.role.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.role.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"> {{ t("Département") }} </label>
+                                {{ form.department(class="form-control") }}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"> {{ t("New Password") }} </label>
+                                {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
+                                {% if form.password.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.password.errors[0] }}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted"> {{ t("Leave blank to not change the password") }} </small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"> {{ t("Confirm password") }} </label>
+                                {{ form.confirm_password(class="form-control" + (" is-invalid" if form.confirm_password.errors else "")) }}
+                                {% if form.confirm_password.errors %}
+                                <div class="invalid-feedback">
+                                    {{ form.confirm_password.errors[0] }}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label"> {{ t("Permissions template") }} </label>
+                                {{ form.template_permissions(class="form-select") }}
+                                <small class="text-muted"> {{ t("Optional: apply a permissions model") }} </small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check pt-4">
+                                    {{ form.is_active(class="form-check-input") }}
+                                    <label class="form-check-label">
+                                        <strong>{{ form.is_active.label.text }}</strong>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 d-flex justify-content-between">
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i> {{ t("To update") }} </button>
+                                <a href="{{ url_for('admin_utilisateurs') }}" class="btn btn-secondary"> {{ t("Annuler") }} </a>
+                            </div>
+                            <a href="{{ url_for('admin_supprimer_utilisateur', id=user.id) }}" 
+                               class="btn btn-danger"
+                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible.')">
+                                <i class="fas fa-trash me-1"></i> {{ t("Supprimer") }} </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> {{ t("Informations") }} </h5>
+                </div>
+                <div class="card-body">
+                    <p><strong> {{ t("ID :") }} </strong> {{ user.id }}</p>
+                    <p><strong> {{ t("Créé le :") }} </strong> {{ user.created_at.strftime('%d/%m/%Y à %H:%M') }}</p>
+                    <p><strong> {{ t("Last update:") }} </strong> 
+                        {% if user.updated_at %}
+                        {{ user.updated_at.strftime('%d/%m/%Y %H:%M') }}
+                        {% else %}
+                        Non disponible
+                        {% endif %}
+                    </p>
+                    <p><strong> {{ t("Last connection:") }} </strong> 
+                        {% if user.last_login %}
+                        {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}
+                        {% else %}
+                        Jamais connecté
+                        {% endif %}
+                    </p>
+                    <p><strong> {{ t("Statut :") }} </strong> 
+                        {% if user.is_active %}
+                        <span class="badge bg-success"> {{ t("Actif") }} </span>
+                        {% else %}
+                        <span class="badge bg-danger"> {{ t("Inactif") }} </span>
+                        {% endif %}
+                    </p>
+                    <p><strong> {{ t("Client :") }} </strong> 
+                        {% if user.client %}
+                        {{ user.client.nom }} ({{ user.client.reference }})
+                        {% else %}
+                        Non assigné
+                        {% endif %}
+                    </p>
+                    <hr>
+                    
+                    <h6> {{ t("Current permissions:") }} </h6>
+                    {% if user.permissions %}
+                    <div class="mb-2">
+                        {% for key, value in user.permissions.items() %}
+                            {% if value %}
+                            <span class="badge bg-primary mb-1">{{ key|replace('can_', '')|replace('_', ' ')|title }}</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted"><small> {{ t("No specific permissions set") }} </small></p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-bolt me-2"></i> {{ t("Quick Actions") }} </h5>
+                </div>
+                <div class="card-body">
+                    <a href="{{ url_for('admin_gerer_permissions', id=user.id) }}" 
+                       class="btn btn-outline-primary btn-sm w-100 mb-2">
+                        <i class="fas fa-key me-1"></i> {{ t("Manage permissions") }} </a>
+                    <button class="btn btn-outline-warning btn-sm w-100 mb-2"
+                            onclick="toggleUserStatus({{ user.id }})">
+                        {% if user.is_active %}
+                        <i class="fas fa-user-slash me-1"></i> Désactiver l'utilisateur
+                        {% else %}
+                        <i class="fas fa-user-check me-1"></i> Activer l'utilisateur
+                        {% endif %}
+                    </button>
+                    <a href="{{ url_for('admin_utilisateurs') }}" 
+                       class="btn btn-outline-secondary btn-sm w-100">
+                        <i class="fas fa-arrow-left me-1"></i> {{ t("Back to list") }} </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleUserStatus(userId) {
+    if (confirm('Êtes-vous sûr de vouloir changer le statut de cet utilisateur ?')) {
+        fetch('/admin/utilisateur/' + userId + '/toggle', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Erreur : ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Erreur réseau : ' + error.message);
+        });
+    }
+}
+</script>
+{% endblock %}

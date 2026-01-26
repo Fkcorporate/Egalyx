@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-cogs me-2"></i> {{ t("Audit Settings") }} </h2>
+    <div>
+        <a href="{{ url_for('init_configurations_audit') }}" class="btn btn-outline-warning me-2">
+            <i class="fas fa-magic me-1"></i> {{ t("Initialiser") }} </a>
+        <a href="{{ url_for('nouvelle_configuration_audit') }}" class="btn btn-primary me-2">
+            <i class="fas fa-plus me-1"></i> {{ t("New Configuration") }} </a>
+        <a href="{{ url_for('nouveau_template_constatation') }}" class="btn btn-success">
+            <i class="fas fa-plus me-1"></i> {{ t("New Template") }} </a>
+    </div>
+</div>
+
+<div class="row">
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"> {{ t("Audit Settings") }} </h5>
+            </div>
+            <div class="card-body">
+                {% if configurations %}
+                    {% for config in configurations %}
+                    <div class="border rounded p-3 mb-3">
+                        <h6>{{ config.nom_config }}</h6>
+                        <p class="mb-1"><strong> {{ t("Type:") }} </strong> {{ config.type_audit }}</p>
+                        <p class="mb-1"><strong> {{ t("Standard duration:") }} </strong> {{ config.duree_standard }} jours</p>
+                        <p class="mb-0"><strong> {{ t("Severity thresholds:") }} </strong> {{ config.seuil_gravite_min }} - {{ config.seuil_gravite_max }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-cogs fa-3x text-muted mb-3"></i>
+                        <p class="text-muted"> {{ t("No configuration available.") }} </p>
+                        <a href="{{ url_for('init_configurations_audit') }}" class="btn btn-warning">
+                            <i class="fas fa-magic me-1"></i> {{ t("Initialize configurations") }} </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0"> {{ t("Findings Templates") }} </h5>
+            </div>
+            <div class="card-body">
+                {% if templates_constatations %}
+                    {% for template in templates_constatations %}
+                    <div class="border rounded p-3 mb-3">
+                        <h6>{{ template.reference }} - {{ template.titre }}</h6>
+                        <p class="mb-1"><strong> {{ t("Type:") }} </strong> {{ template.type_constatation }}</p>
+                        <p class="mb-1"><strong> {{ t("Gravité:") }} </strong> {{ template.gravite_defaut }}</p>
+                        <p class="mb-0 text-muted">{{ template.description|truncate(100) }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <p class="text-muted"> {{ t("No templates available.") }} </p>
+                        <a href="{{ url_for('nouveau_template_constatation') }}" class="btn btn-success">
+                            <i class="fas fa-plus me-1"></i> {{ t("Create a template") }} </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="card-title mb-0"><i class="fas fa-info-circle me-2"></i> {{ t("Informations") }} </h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6> {{ t("Audit Settings") }} </h6>
+                <p class="text-muted">{{ t("Les configurations permettent de standardiser les paramètres des audits 
+                    (durée, seuils de gravité, etc.) selon leur type.") }}</p>
+            </div>
+            <div class="col-md-6">
+                <h6> {{ t("Findings Templates") }} </h6>
+                <p class="text-muted">{{ t("Les templates accélèrent la création de constatations en proposant 
+                    des formulations standards pour les situations récurrentes.") }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

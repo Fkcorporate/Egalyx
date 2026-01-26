@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-tasks me-2"></i> {{ t("Audit Action Plans") }} </h2>
+    <div>
+        <a href="{{ url_for('liste_audits') }}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left me-1"></i> {{ t("Back to audits") }} </a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-primary">{{ stats.total }}</h3>
+                <p class="text-muted mb-0"> {{ t("Total Plans") }} </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-warning">{{ stats.en_cours }}</h3>
+                <p class="text-muted mb-0"> {{ t("En Cours") }} </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-success">{{ stats.termines }}</h3>
+                <p class="text-muted mb-0"> {{ t("Terminés") }} </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <h3 class="text-danger">{{ stats.retardes }}</h3>
+                <p class="text-muted mb-0"> {{ t("En Retard") }} </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if plans_action %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th> {{ t("Nom du Plan") }} </th>
+                        <th> {{ t("Audit") }} </th>
+                        <th> {{ t("Responsable") }} </th>
+                        <th> {{ t("Dates") }} </th>
+                        <th> {{ t("Statut") }} </th>
+                        <th> {{ t("Actions") }} </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans_action %}
+                    <tr>
+                        <td>
+                            <strong>{{ plan.nom }}</strong>
+                            {% if plan.description %}
+                            <br><small class="text-muted">{{ plan.description|truncate(100) }}</small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('detail_audit', id=plan.audit.id) }}" class="text-decoration-none">
+                                {{ plan.audit.reference }} - {{ plan.audit.titre|truncate(50) }}
+                            </a>
+                        </td>
+                        <td>
+                            {% if plan.responsable %}
+                            {{ plan.responsable.username }}
+                            {% else %}
+                            <span class="text-muted"> {{ t("Non assigné") }} </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if plan.date_debut %}
+                            Début: {{ plan.date_debut.strftime('%d/%m/%Y') }}<br>
+                            {% endif %}
+                            {% if plan.date_fin_prevue %}
+                            Fin prévue: {{ plan.date_fin_prevue.strftime('%d/%m/%Y') }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if plan.statut == 'en_attente' %}
+                            <span class="badge bg-secondary"> {{ t("En attente") }} </span>
+                            {% elif plan.statut == 'en_cours' %}
+                            <span class="badge bg-warning"> {{ t("En cours") }} </span>
+                            {% elif plan.statut == 'termine' %}
+                            <span class="badge bg-success"> {{ t("Terminé") }} </span>
+                            {% elif plan.statut == 'retarde' %}
+                            <span class="badge bg-danger"> {{ t("Retardé") }} </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('detail_plan_action', plan_id=plan.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye"></i> {{ t("Voir") }} </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4">
+            <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+            <p class="text-muted"> {{ t("No action plans created at this time.") }} </p>
+            <p class="text-muted"> {{ t("Action plans are created from the details of an audit.") }} </p>
+            <a href="{{ url_for('liste_audits') }}" class="btn btn-primary">
+                <i class="fas fa-clipboard-list me-1"></i> {{ t("View audits") }} </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

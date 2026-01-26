@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-edit"></i> Éditer le champ : {{ champ.nom_affichage }}
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{{ url_for('parametrage_risque') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> {{ t("Return to settings") }} </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-edit"></i> {{ t("Editing the field") }} </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.nom_technique.label(class="form-label fw-bold") }}
+                                {{ form.nom_technique(class="form-control", readonly=true) }}
+                                <small class="form-text text-muted"> {{ t("The technical name cannot be changed") }} </small>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.nom_affichage.label(class="form-label fw-bold") }}
+                                {{ form.nom_affichage(class="form-control" + (" is-invalid" if form.nom_affichage.errors else "")) }}
+                                {% if form.nom_affichage.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.nom_affichage.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                {{ form.type_champ.label(class="form-label fw-bold") }}
+                                {{ form.type_champ(class="form-select" + (" is-invalid" if form.type_champ.errors else "")) }}
+                                {% if form.type_champ.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.type_champ.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.section.label(class="form-label fw-bold") }}
+                                {{ form.section(class="form-select" + (" is-invalid" if form.section.errors else "")) }}
+                            </div>
+                            <div class="col-md-4">
+                                {{ form.ordre_affichage.label(class="form-label fw-bold") }}
+                                {{ form.ordre_affichage(class="form-control" + (" is-invalid" if form.ordre_affichage.errors else "")) }}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.est_obligatoire(class="form-check-input") }}
+                                    {{ form.est_obligatoire.label(class="form-check-label fw-bold") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    {{ form.est_actif(class="form-check-input") }}
+                                    {{ form.est_actif.label(class="form-check-label fw-bold") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.aide_texte.label(class="form-label fw-bold") }}
+                            {{ form.aide_texte(class="form-control", rows=2) }}
+                            <small class="form-text text-muted"> {{ t("Help text that will be displayed below the field") }} </small>
+                        </div>
+
+                        {% if form.type_champ.data in ['select', 'multiselect', 'radio'] %}
+                        <div class="mb-3">
+                            {{ form.valeurs_possibles.label(class="form-label fw-bold") }}
+                            {{ form.valeurs_possibles(class="form-control", rows=5) }}
+                            <small class="form-text text-muted"> {{ t("One value per line.") }} </small>
+                        </div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            {{ form.regex_validation.label(class="form-label fw-bold") }}
+                            {{ form.regex_validation(class="form-control") }}
+                            <small class="form-text text-muted"> {{ t("Regular expression to validate the entry (optional)") }} </small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('parametrage_risque') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> {{ t("Annuler") }} </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ t("Save changes") }} </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> {{ t("Informations") }} </h6>
+                </div>
+                <div class="card-body">
+                    <h6> {{ t("Field details") }} </h6>
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <th> {{ t("Technical name:") }} </th>
+                            <td><code>{{ champ.nom_technique }}</code></td>
+                        </tr>
+                        <tr>
+                            <th> {{ t("Créé le:") }} </th>
+                            <td>{{ champ.created_at.strftime('%d/%m/%Y à %H:%M') if champ.created_at else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th> {{ t("Modifié le:") }} </th>
+                            <td>{{ champ.updated_at.strftime('%d/%m/%Y à %H:%M') if champ.updated_at else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th> {{ t("Use:") }} </th>
+                            <td>
+                                {% set usage = champ.champs_personnalises|length if champ.champs_personnalises else 0 %}
+                                <span class="badge bg-{% if usage > 0 %}primary{% else %}secondary{% endif %}">
+                                    {{ usage }} risque(s)
+                                </span>
+                            </td>
+                        </tr>
+                    </table>
+
+                    <div class="alert alert-warning mt-3">
+                        <small>
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong> {{ t("Attention :") }} </strong> {{ t("Changing the field type may affect existing values.") }} </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

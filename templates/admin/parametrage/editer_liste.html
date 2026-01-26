@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+        <h1 class="h2">
+            <i class="fas fa-edit"></i> Éditer la liste : {{ liste.nom_affichage }}
+        </h1>
+        <div class="btn-toolbar mb-2 mb-md-0">
+            <a href="{{ url_for('parametrage_listes') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> {{ t("Back to lists") }} </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="mb-0"><i class="fas fa-edit"></i> {{ t("Editing the list") }} </h6>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.nom_technique.label(class="form-label fw-bold") }}
+                                {{ form.nom_technique(class="form-control") }}
+                                {% if form.nom_technique.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.nom_technique.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.nom_affichage.label(class="form-label fw-bold") }}
+                                {{ form.nom_affichage(class="form-control") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                {{ form.est_multiple(class="form-check-input") }}
+                                {{ form.est_multiple.label(class="form-check-label fw-bold") }}
+                            </div>
+                            <div class="form-check form-switch">
+                                {{ form.est_actif(class="form-check-input") }}
+                                {{ form.est_actif.label(class="form-check-label fw-bold") }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.valeurs.label(class="form-label fw-bold") }}
+                            {{ form.valeurs(class="form-control", rows=8, placeholder="{{ t("value|Label displayed\nor simply value") }}") }}
+                            <small class="form-text text-muted"> {{ t("One value per line.") }} </small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.valeurs_par_defaut.label(class="form-label fw-bold") }}
+                            {{ form.valeurs_par_defaut(class="form-control", rows=3) }}
+                            <small class="form-text text-muted"> {{ t("Values ​​selected by default (one per line)") }} </small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('parametrage_listes') }}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> {{ t("Annuler") }} </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> {{ t("Enregistrer") }} </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> {{ t("Informations") }} </h6>
+                </div>
+                <div class="card-body">
+                    <h6> {{ t("Détails") }} </h6>
+                    <table class="table table-sm table-borderless">
+                        <tr>
+                            <th> {{ t("Créé le:") }} </th>
+                            <td>{{ liste.created_at.strftime('%d/%m/%Y %H:%M') if liste.created_at else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th> {{ t("Modifié le:") }} </th>
+                            <td>{{ liste.updated_at.strftime('%d/%m/%Y %H:%M') if liste.updated_at else 'N/A' }}</td>
+                        </tr>
+                        <tr>
+                            <th> {{ t("Number of values:") }} </th>
+                            <td>{{ liste.valeurs|length if liste.valeurs else 0 }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

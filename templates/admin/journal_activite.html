@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="{{ t("breadcrumb") }}">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}"> {{ t("Dashboard") }} </a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('admin_dashboard') }}"> {{ t("Administration") }} </a></li>
+                    <li class="breadcrumb-item active"> {{ t("Activity Log") }} </li>
+                </ol>
+            </nav>
+            <h1 class="h3 mb-2"> {{ t("Activity Log") }} </h1>
+            <p class="text-muted"> {{ t("History of user actions") }} </p>
+        </div>
+    </div>
+
+    <div class="card-modern">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"> {{ t("Recent Activities") }} </h5>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="window.location.reload()">
+                        <i class="fas fa-sync-alt me-1"></i> {{ t("Actualiser") }} </button>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if activites %}
+            <div class="table-responsive">
+                <table class="table table-modern">
+                    <thead>
+                        <tr>
+                            <th> {{ t("Date/Heure") }} </th>
+                            <th> {{ t("Utilisateur") }} </th>
+                            <th> {{ t("Action") }} </th>
+                            <th> {{ t("Description") }} </th>
+                            <th> {{ t("Entité") }} </th>
+                            <th> {{ t("IP") }} </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for activite in activites %}
+                        <tr>
+                            <td>
+                                <small class="text-muted">{{ activite.date_creation.strftime('%d/%m/%Y') }}</small><br>
+                                <span class="small">{{ activite.date_creation.strftime('%H:%M:%S') }}</span>
+                            </td>
+                            <td>
+                                <strong>{{ activite.utilisateur.username }}</strong><br>
+                                <small class="text-muted">{{ activite.utilisateur.role }}</small>
+                            </td>
+                            <td>
+                                <span class="badge-modern 
+                                    {% if activite.action == 'connexion' %}badge-success
+                                    {% elif activite.action == 'creation' %}badge-primary
+                                    {% elif activite.action == 'modification' %}badge-warning
+                                    {% elif activite.action == 'suppression' %}badge-danger
+                                    {% else %}badge-secondary{% endif %}">
+                                    {{ activite.action|replace('_', ' ')|title }}
+                                </span>
+                            </td>
+                            <td>{{ activite.description }}</td>
+                            <td>
+                                {% if activite.entite_type %}
+                                <span class="small">
+                                    {{ activite.entite_type|title }} 
+                                    {% if activite.entite_id %}#{{ activite.entite_id }}{% endif %}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code class="small">{{ activite.ip_address }}</code>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                <h5> {{ t("No activity recorded") }} </h5>
+                <p class="text-muted"> {{ t("The activity log will appear here") }} </p>
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-footer text-muted small">
+            <i class="fas fa-info-circle me-1"></i> {{ t("Viewing the last 100 activities") }} </div>
+    </div>
+</div>
+{% endblock %}

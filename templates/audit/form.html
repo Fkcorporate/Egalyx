@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Nouvel Audit{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-clipboard-check me-2"></i> {{ t("New Audit") }} </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('nouvel_audit') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.titre.label(class="form-label") }}
+                            {{ form.titre(class="form-control" + (" is-invalid" if form.titre.errors else "")) }}
+                            {% for error in form.titre.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.type_audit.label(class="form-label") }}
+                            {{ form.type_audit(class="form-select" + (" is-invalid" if form.type_audit.errors else "")) }}
+                            {% for error in form.type_audit.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows=4) }}
+                        {% for error in form.description.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.processus_id.label(class="form-label") }}
+                            {{ form.processus_id(class="form-select" + (" is-invalid" if form.processus_id.errors else "")) }}
+                            {% for error in form.processus_id.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.responsable_id.label(class="form-label") }}
+                            {{ form.responsable_id(class="form-select" + (" is-invalid" if form.responsable_id.errors else "")) }}
+                            {% for error in form.responsable_id.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.date_debut_prevue.label(class="form-label") }}
+                            {{ form.date_debut_prevue(class="form-control" + (" is-invalid" if form.date_debut_prevue.errors else ""), type="date") }}
+                            {% for error in form.date_debut_prevue.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.date_fin_prevue.label(class="form-label") }}
+                            {{ form.date_fin_prevue(class="form-control" + (" is-invalid" if form.date_fin_prevue.errors else ""), type="date") }}
+                            {% for error in form.date_fin_prevue.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.portee.label(class="form-label") }}
+                        {{ form.portee(class="form-control" + (" is-invalid" if form.portee.errors else ""), rows=3) }}
+                        {% for error in form.portee.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.objectifs.label(class="form-label") }}
+                        {{ form.objectifs(class="form-control" + (" is-invalid" if form.objectifs.errors else ""), rows=3) }}
+                        {% for error in form.objectifs.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        {{ form.criteres.label(class="form-label") }}
+                        {{ form.criteres(class="form-control" + (" is-invalid" if form.criteres.errors else ""), rows=3) }}
+                        {% for error in form.criteres.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('liste_audits') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left me-1"></i> {{ t("Retour") }} </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

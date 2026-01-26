@@ -1,0 +1,296 @@
+
+{% extends "base.html" %}
+
+{% block title %}Liste des Utilisateurs - Vue Lecture Seule{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="{{ t("breadcrumb") }}">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}"> {{ t("Dashboard") }} </a></li>
+                    <li class="breadcrumb-item active"> {{ t("Users") }} </li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-0"> {{ t("List of Users") }} </h1>
+                    <p class="text-muted mb-0">{{ role_display }}</p>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-info me-3">
+                        <i class="fas fa-eye me-1"></i> {{ t("Read Only View") }} </span>
+                    <span class="badge bg-secondary">
+                        {{ users|length }} utilisateur(s)
+                    </span>
+                </div>
+            </div>
+
+            <div class="alert alert-info mb-4">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <i class="fas fa-info-circle fa-2x"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-1"> {{ t("Read-only mode") }} </h6>
+                        <p class="mb-0">
+                            Vous pouvez consulter la liste des utilisateurs de votre organisation, 
+                            mais vous ne pouvez pas les modifier, supprimer ou créer de nouveaux utilisateurs.
+                            <br>
+                            <small class="text-muted"> {{ t("Only the client administrator has these permissions.") }} </small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-modern">
+                <div class="card-body">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-modern table-hover">
+                            <thead>
+                                <tr>
+                                    <th> {{ t("Utilisateur") }} </th>
+                                    <th> {{ t("Rôle") }} </th>
+                                    <th> {{ t("Département") }} </th>
+                                    <th> {{ t("Email") }} </th>
+                                    <th> {{ t("Statut") }} </th>
+                                    <th> {{ t("Créé le") }} </th>
+                                    <th> {{ t("Last connection") }} </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar-circle-sm me-3">
+                                                <span class="avatar-initials bg-primary text-white">
+                                                    {{ user.username[:2]|upper }}
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <strong>{{ user.username }}</strong>
+                                                {% if user.id == current_user.id %}
+                                                <span class="badge bg-success ms-2"> {{ t("Vous") }} </span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge-modern 
+                                            {% if user.role == 'admin' %}badge-danger
+                                            {% elif user.role == 'manager' %}badge-warning
+                                            {% elif user.role == 'auditeur' %}badge-info
+                                            {% else %}badge-secondary{% endif %}">
+                                            {{ user.get_role_display_name() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if user.department %}
+                                        <span class="text-muted">{{ user.department }}</span>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ user.email }}</small>
+                                    </td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="badge bg-success"> {{ t("Actif") }} </span>
+                                        {% else %}
+                                        <span class="badge bg-danger"> {{ t("Inactif") }} </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ user.created_at|format_date if user.created_at else '-' }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {% if user.last_login %}
+                                            {{ user.last_login|format_datetime }}
+                                            {% else %}
+                                            <span class="text-warning"> {{ t("Never logged in") }} </span>
+                                            {% endif %}
+                                        </small>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center p-3">
+                                        <h5 class="mb-1">{{ users|selectattr('is_active')|list|length }}</h5>
+                                        <small class="text-muted"> {{ t("Actifs") }} </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center p-3">
+                                        <h5 class="mb-1">{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</h5>
+                                        <small class="text-muted"> {{ t("Administrators") }} </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center p-3">
+                                        <h5 class="mb-1">{{ users|selectattr('role', 'equalto', 'manager')|list|length }}</h5>
+                                        <small class="text-muted"> {{ t("Managers") }} </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center p-3">
+                                        <h5 class="mb-1">{{ users|selectattr('role', 'equalto', 'auditeur')|list|length }}</h5>
+                                        <small class="text-muted"> {{ t("Auditeurs") }} </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5> {{ t("No users") }} </h5>
+                        <p class="text-muted"> {{ t("No users are available at the moment.") }} </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card card-modern mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0">
+                        <i class="fas fa-shield-alt me-2"></i> {{ t("Permissions information") }} </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6> {{ t("What you can do:") }} </h6>
+                            <ul class="list-unstyled small">
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i> {{ t("View user list") }} </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i> {{ t("View their information") }} </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check text-success me-2"></i> {{ t("View their status and role") }} </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6> {{ t("What you can't do:") }} </h6>
+                            <ul class="list-unstyled small">
+                                <li class="mb-2">
+                                    <i class="fas fa-times text-danger me-2"></i> {{ t("Edit users") }} </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-times text-danger me-2"></i> {{ t("Create new users") }} </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-times text-danger me-2"></i> {{ t("Delete users") }} </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-times text-danger me-2"></i> {{ t("Change permissions") }} </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-warning mt-3 mb-0">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                            <div>
+                                <strong> {{ t("Need to edit a user?") }} </strong>
+                                <p class="mb-0"> {{ t("Contact your organization's tenant administrator for any changes.") }} </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.avatar-circle-sm {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.avatar-initials {
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.badge-modern {
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 600;
+    border-radius: 4px;
+}
+
+.badge-modern.badge-danger { background-color: #dc3545; color: white; }
+.badge-modern.badge-warning { background-color: #ffc107; color: black; }
+.badge-modern.badge-info { background-color: #0dcaf0; color: white; }
+.badge-modern.badge-success { background-color: #198754; color: white; }
+.badge-modern.badge-secondary { background-color: #6c757d; color: white; }
+
+.table-modern {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(0, 0, 0, 0.02);
+    --bs-table-hover-bg: rgba(0, 0, 0, 0.04);
+}
+
+.table-modern th {
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+}
+
+.table-modern td {
+    border-bottom: 1px solid #e9ecef;
+    vertical-align: middle;
+}
+
+.card-modern {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+}
+
+.card-modern .card-body {
+    padding: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .avatar-circle-sm {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .avatar-initials {
+        font-size: 0.75rem;
+    }
+}
+</style>
+{% endblock %}

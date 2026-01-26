@@ -1,0 +1,835 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Audit - {{ audit.reference }} - FabriceKonan Corporate{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-2">
+                <i class="fas fa-chart-line me-2" style="color: var(--fk-warning);"></i>
+                Dashboard Audit - {{ audit.reference }}
+            </h1>
+            <nav aria-label="{{ t("breadcrumb") }}">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}"> {{ t("Dashboard") }} </a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('liste_audits') }}"> {{ t("Audits") }} </a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('detail_audit', id=audit.id) }}">{{ audit.reference }}</a></li>
+                    <li class="breadcrumb-item active"> {{ t("Dashboard") }} </li>
+                </ol>
+            </nav>
+        </div>
+        <div class="btn-toolbar">
+            <div class="btn-group me-2">
+                <a href="{{ url_for('detail_audit', id=audit.id) }}" class="fk-btn fk-btn-outline">
+                    <i class="fas fa-arrow-left me-2"></i> {{ t("Return audit") }} </a>
+            </div>
+            <div class="btn-group me-2">
+                <a href="{{ url_for('matrice_maturite_audit', audit_id=audit.id) }}" class="fk-btn fk-btn-outline">
+                    <i class="fas fa-table me-2"></i> {{ t("Matrice") }} </a>
+            </div>
+            <div class="btn-group me-2">
+                <a href="{{ url_for('journal_audit', audit_id=audit.id) }}" class="fk-btn fk-btn-outline">
+                    <i class="fas fa-history me-2"></i> {{ t("Journal") }} </a>
+            </div>
+            <div class="btn-group">
+                <a href="{{ url_for('analyse_ia_audit', audit_id=audit.id) }}" class="fk-btn fk-btn-primary">
+                    <i class="fas fa-robot me-2"></i> {{ t("Analyse IA") }} </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="fk-card mb-4" style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%); border-left: 4px solid var(--fk-warning);">
+        <div class="fk-card-body d-flex align-items-center">
+            <div class="flex-shrink-0 me-3">
+                <i class="fas fa-chart-pie fa-2x" style="color: var(--fk-warning);"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h5 class="mb-1"> {{ t("Audit Dashboard") }} </h5>
+                <p class="mb-0 text-muted"> {{ t("Visualize performance, key metrics, and risks associated with the audit") }} <strong>{{ audit.reference }}</strong>.
+                    Suivez en temps réel la progression des constatations et recommandations.
+                </p>
+            </div>
+            <div class="flex-shrink-0">
+                <span class="fk-badge fk-badge-warning">
+                    {{ stats.score_global|round|int }}/100
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-xl-8 col-lg-7 mb-4">
+            <div class="fk-card h-100">
+                <div class="fk-card-header d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i> {{ t("Overall Performance Score") }} </h5>
+                        <small class="text-muted"> {{ t("Audit maturity indicator") }} </small>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="me-3">
+                            <small class="text-muted"> {{ t("État :") }} </small>
+                            <span class="badge bg-{{ stats.couleur_progression }} ms-1">
+                                {% if stats.score_global >= 80 %}
+                                    EXCELLENT
+                                {% elif stats.score_global >= 50 %}
+                                    SATISFAISANT
+                                {% else %}
+                                    À AMÉLIORER
+                                {% endif %}
+                            </span>
+                        </span>
+                    </div>
+                </div>
+                <div class="fk-card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 text-center">
+                            <div class="position-relative mx-auto" style="width: 140px; height: 140px;">
+                                
+                                <svg width="140" height="140" viewBox="0 0 140 140" class="score-svg">
+                                    
+                                    <circle cx="70" cy="70" r="60" stroke="#e9ecef" stroke-width="12" fill="none"/>
+                                    
+                                    <circle cx="70" cy="70" r="60" stroke="var(--bs-{{ stats.couleur_progression }})" 
+                                            stroke-width="12" fill="none" stroke-linecap="round"
+                                            stroke-dasharray="{{ stats.score_global * 3.77 }} 377"
+                                            transform="rotate(-90 70 70)"/>
+                                </svg>
+                                
+                                <div class="position-absolute top-50 start-50 translate-middle text-center">
+                                    <h2 class="mb-0 text-{{ stats.couleur_progression }} fw-bold">{{ stats.score_global|round|int }}</h2>
+                                    <small class="text-muted"> {{ t("/100") }} </small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            
+                            <div class="mb-4">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span class="fw-medium"> {{ t("Overall progress") }} </span>
+                                    <span class="text-{{ stats.couleur_progression }} fw-bold">{{ stats.progression_globale|round|int }}%</span>
+                                </div>
+                                <div class="progress" style="height: 10px;">
+                                    <div class="progress-bar bg-{{ stats.couleur_progression }}" 
+                                         style="width: {{ stats.progression_globale }}%"
+                                         role="progressbar">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-center p-3 bg-primary bg-opacity-5 rounded">
+                                        <div class="text-primary mb-1">
+                                            <i class="fas fa-exclamation-triangle fa-lg"></i>
+                                        </div>
+                                        <h4 class="mb-1">{{ stats.progression_globale|round|int }}%</h4>
+                                        <small class="text-muted"> {{ t("Findings processed") }} </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-center p-3 bg-warning bg-opacity-5 rounded">
+                                        <div class="text-warning mb-1">
+                                            <i class="fas fa-check-circle fa-lg"></i>
+                                        </div>
+                                        <h4 class="mb-1">{{ stats.taux_realisation_recommandations|round|int }}%</h4>
+                                        <small class="text-muted"> {{ t("Recommendations made") }} </small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="text-center p-3 bg-success bg-opacity-5 rounded">
+                                        <div class="text-success mb-1">
+                                            <i class="fas fa-tasks fa-lg"></i>
+                                        </div>
+                                        <h4 class="mb-1">{{ stats.taux_realisation_plans|round|int }}%</h4>
+                                        <small class="text-muted"> {{ t("Plans made") }} </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-xl-4 col-lg-5 mb-4">
+            <div class="fk-card h-100">
+                <div class="fk-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i> {{ t("Key Information") }} </h5>
+                </div>
+                <div class="fk-card-body">
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <i class="fas fa-clipboard-list text-primary"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <small class="text-muted d-block"> {{ t("Audit type") }} </small>
+                                <span class="fw-medium">{{ audit.type_audit|title }}</span>
+                            </div>
+                        </div>
+                        <div class="list-group-item d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <i class="fas fa-calendar-alt text-warning"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <small class="text-muted d-block"> {{ t("Planned dates") }} </small>
+                                <span class="fw-medium">
+                                    {% if audit.date_debut_prevue %}
+                                        {{ audit.date_debut_prevue.strftime('%d/%m/%Y') }} - 
+                                        {{ audit.date_fin_prevue.strftime('%d/%m/%Y') if audit.date_fin_prevue else 'N/A' }}
+                                    {% else %}
+                                        Non définies
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="list-group-item d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <i class="fas fa-user-tie text-success"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <small class="text-muted d-block"> {{ t("Responsable") }} </small>
+                                <span class="fw-medium">
+                                    {% if audit.responsable %}
+                                        {{ audit.responsable.username }}
+                                    {% else %}
+                                        Non assigné
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="list-group-item d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <i class="fas fa-bug text-danger"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <small class="text-muted d-block"> {{ t("Associated risks") }} </small>
+                                <span class="fw-medium">{{ stats.risques_associes }}</span>
+                            </div>
+                        </div>
+                        <div class="list-group-item d-flex align-items-center">
+                            <div class="flex-shrink-0 me-3">
+                                <i class="fas fa-history text-info"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <small class="text-muted d-block"> {{ t("Overall Status") }} </small>
+                                <span class="badge bg-{{ 'success' if audit.statut == 'clos' else 'warning' if audit.statut == 'en_cours' else 'secondary' }}">
+                                    {{ audit.statut|replace('_', ' ')|title }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        {% set plans_termines = [] %}
+        {% for plan in audit.plans_action %}
+            {% if plan.statut == 'termine' %}
+                {% set _ = plans_termines.append(plan) %}
+            {% endif %}
+        {% endfor %}
+        
+        {% set plans_termines_count = plans_termines|length %}
+        
+        {% set risques_associes_ids = [] %}
+        
+        {# Risques via les recommandations #}
+        {% for reco in audit.recommandations %}
+            {% if reco.risque_id %}
+                {% if reco.risque_id not in risques_associes_ids %}
+                    {% set _ = risques_associes_ids.append(reco.risque_id) %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        
+        {# Risques via les plans d'action #}
+        {% for plan in audit.plans_action %}
+            {% if plan.risque_id %}
+                {% if plan.risque_id not in risques_associes_ids %}
+                    {% set _ = risques_associes_ids.append(plan.risque_id) %}
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+        
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 mb-4">
+            <a href="{{ url_for('detail_audit', id=audit.id) }}#constatations" class="text-decoration-none">
+                <div class="fk-card h-100 text-center hover-lift">
+                    <div class="fk-card-body p-4">
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 70px; height: 70px;">
+                                <i class="fas fa-exclamation-triangle fa-2x text-primary"></i>
+                            </div>
+                        </div>
+                        <h2 class="mb-2">{{ audit.constatations|length }}</h2>
+                        <h6 class="text-muted mb-3"> {{ t("Findings") }} </h6>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-primary" 
+                                 style="width: {{ stats.progression_globale }}%">
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ stats.progression_globale|round|int }}% traitées</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 mb-4">
+            <a href="{{ url_for('detail_audit', id=audit.id) }}#recommandations" class="text-decoration-none">
+                <div class="fk-card h-100 text-center hover-lift">
+                    <div class="fk-card-body p-4">
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-warning bg-opacity-10 d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 70px; height: 70px;">
+                                <i class="fas fa-lightbulb fa-2x text-warning"></i>
+                            </div>
+                        </div>
+                        <h2 class="mb-2">{{ audit.recommandations|length }}</h2>
+                        <h6 class="text-muted mb-3"> {{ t("Recommendations") }} </h6>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-warning" 
+                                 style="width: {{ stats.taux_realisation_recommandations }}%">
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ stats.taux_realisation_recommandations|round|int }}% réalisées</small>
+                    </div>
+                </div>
+            </a>
+        </div>
+        
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 mb-4">
+            <a href="{{ url_for('detail_audit', id=audit.id) }}#plans-action" class="text-decoration-none">
+                <div class="fk-card h-100 text-center hover-lift">
+                    <div class="fk-card-body p-4">
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 70px; height: 70px;">
+                                <i class="fas fa-tasks fa-2x text-success"></i>
+                            </div>
+                        </div>
+                        <h2 class="mb-2">{{ audit.plans_action|length }}</h2>
+                        <h6 class="text-muted mb-3"> {{ t("Action plans") }} </h6>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-success" 
+                                 style="width: {% if audit.plans_action|length > 0 %}{{ (plans_termines_count / audit.plans_action|length * 100) }}{% else %}0{% endif %}%">
+                            </div>
+                        </div>
+                        <small class="text-muted">{{ plans_termines_count }} terminés</small>                    </div>
+                </div>
+            </a>
+        </div>
+        
+        <div class="col-xl-3 col-lg-6 col-md-6 col-sm-6 mb-4">
+            <a href="{{ url_for('detail_audit', id=audit.id) }}#risques" class="text-decoration-none">
+                <div class="fk-card h-100 text-center hover-lift">
+                    <div class="fk-card-body p-4">
+                        <div class="mb-3">
+                            <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center" 
+                                 style="width: 70px; height: 70px;">
+                                <i class="fas fa-bug fa-2x text-danger"></i>
+                            </div>
+                        </div>
+                        <h2 class="mb-2">{{ risques_associes_ids|length }}</h2>
+                        <h6 class="text-muted mb-3"> {{ t("Associated risks") }} </h6>
+                        <div class="mt-2">
+                            <span class="badge bg-light text-dark border">
+                                <i class="fas fa-external-link-alt me-1"></i> {{ t("See the risks") }} </span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        
+        <div class="col-xl-6 col-lg-12 mb-4">
+            <div class="fk-card h-100">
+                <div class="fk-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-pie me-2"></i> {{ t("Distribution of Findings") }} </h5>
+                </div>
+                <div class="fk-card-body">
+                    <div style="height: 300px;">
+                        <canvas id="chartConstatationsType"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-6 col-lg-12 mb-4">
+            <div class="fk-card h-100">
+                <div class="fk-card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i> {{ t("Status of Recommendations") }} </h5>
+                </div>
+                <div class="fk-card-body">
+                    <div style="height: 300px;">
+                        <canvas id="chartRecommandationsStatut"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="fk-card">
+                <div class="fk-card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bug me-2"></i> {{ t("Risks Associated with Audit") }} </h5>
+                    <span class="badge bg-{{ 'danger' if risques_associes|length > 0 else 'success' }}">
+                        {{ risques_associes|length }} risque{% if risques_associes|length > 1 %}s{% endif %}
+                    </span>
+                </div>
+                <div class="fk-card-body">
+                    {% if risques_associes|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="fk-table">
+                            <thead>
+                                <tr>
+                                    <th> {{ t("RÉFÉRENCE") }} </th>
+                                    <th> {{ t("INTITULÉ") }} </th>
+                                    <th> {{ t("CATÉGORIE") }} </th>
+                                    <th> {{ t("RISK LEVEL") }} </th>
+                                    <th> {{ t("ASSOCIÉ VIA") }} </th>
+                                    <th class="text-center"> {{ t("ACTIONS") }} </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for risque_data in risques_associes %}
+                                {% set risque = risque_data.risque %}
+                                <tr class="risk-row">
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-danger bg-opacity-10 rounded p-2 me-2">
+                                                <i class="fas fa-exclamation-circle text-danger"></i>
+                                            </div>
+                                            <strong class="font-monospace">{{ risque.reference }}</strong>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="fw-medium">{{ risque.intitule[:40] }}{% if risque.intitule|length > 40 %}...{% endif %}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            {{ risque.categorie or 'Non catégorisé' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if risque.evaluations %}
+                                            {% set derniere_eval = risque.evaluations|sort(attribute='created_at', reverse=true)|first %}
+                                            {% set niveau_color = 'danger' if derniere_eval.niveau_risque == 'Critique' 
+                                                else 'warning' if derniere_eval.niveau_risque == 'Élevé' 
+                                                else 'info' if derniere_eval.niveau_risque == 'Moyen'
+                                                else 'success' %}
+                                            <span class="badge bg-{{ niveau_color }} bg-opacity-10 text-{{ niveau_color }} border border-{{ niveau_color }}">
+                                                <i class="fas fa-thermometer-{{ 'full' if niveau_color == 'danger' else 'three-quarters' if niveau_color == 'warning' else 'half' if niveau_color == 'info' else 'quarter' }} me-1"></i>
+                                                {{ derniere_eval.niveau_risque }}
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-light text-dark border"> {{ t("Non évalué") }} </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% for type in risque_data.types_association %}
+                                        <span class="badge bg-{{ 
+                                            'warning' if type == 'recommandation' 
+                                            else 'success' if type == 'plan_action'
+                                            else 'info'
+                                        }} me-1 mb-1">
+                                            {{ type|replace('_', ' ')|title }}
+                                        </span>
+                                        {% endfor %}
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('detail_risque', id=risque.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="{{ t("See the risk") }}">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('detail_audit', id=audit.id) }}" 
+                                               class="btn btn-outline-secondary" 
+                                               title="{{ t("Voir dans l") }}'audit">
+                                                <i class="fas fa-external-link-alt"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i class="fas fa-bug fa-4x text-muted opacity-10"></i>
+                        </div>
+                        <h5 class="mb-3"> {{ t("No associated risk") }} </h5>
+                        <p class="text-muted mb-4" style="max-width: 500px; margin: 0 auto;"> {{ t("The risks associated with the recommendations and action plans will appear here automatically.") }} </p>
+                        <a href="{{ url_for('detail_audit', id=audit.id) }}" class="fk-btn fk-btn-outline">
+                            <i class="fas fa-plus me-2"></i> {{ t("Add recommendations with risks") }} </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="fk-card">
+                <div class="fk-card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-bell me-2"></i> {{ t("Alerts and Reminders") }} </h5>
+                    {% set alertes = [] %}
+                    {% for plan in audit.plans_action if plan.est_en_retard %}
+                        {% set jours_retard = (datetime.utcnow().date() - plan.date_fin_prevue).days if plan.date_fin_prevue else 0 %}
+                        {% set _ = alertes.append({
+                            'type': 'danger',
+                            'icone': 'fa-exclamation-triangle',
+                            'message': 'Plan d\'action "' ~ plan.nom ~ '" en retard depuis ' ~ jours_retard ~ ' jours',
+                            'lien': url_for('detail_audit', id=audit.id) ~ '#plans-action'
+                        }) %}
+                    {% endfor %}
+                    <span class="badge bg-{{ 'warning' if alertes|length > 0 else 'success' }}">
+                        {{ alertes|length }} alerte{% if alertes|length > 1 %}s{% endif %}
+                    </span>
+                </div>
+                <div class="fk-card-body">
+                    {% if alertes|length > 0 %}
+                        <div class="list-group list-group-flush">
+                            {% for alerte in alertes %}
+                                <a href="{{ alerte.lien }}" class="list-group-item list-group-item-action list-group-item-{{ alerte.type }} border-start-{{ alerte.type }} border-start-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="flex-shrink-0 me-3">
+                                            <i class="fas {{ alerte.icone }} fa-lg"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            {{ alerte.message }}
+                                        </div>
+                                        <div class="flex-shrink-0">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </div>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <div class="mb-3">
+                                <i class="fas fa-check-circle fa-3x text-success opacity-25"></i>
+                            </div>
+                            <h5 class="mb-3"> {{ t("No active alert") }} </h5>
+                            <p class="text-muted"> {{ t("All audit actions are on track.") }} </p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Graphique des constatations par type
+    const ctx1 = document.getElementById('chartConstatationsType').getContext('2d');
+    const typesData = {{ stats.constatations_par_type|tojson }};
+    
+    const typesChart = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(typesData).map(t => {
+                const labels = {
+                    'non_conformite': 'Non-conformité',
+                    'observation': 'Observation',
+                    'opportunite_amelioration': 'Opportunité',
+                    'conforme': 'Conforme',
+                    'point_fort': 'Point fort'
+                };
+                return labels[t] || t.replace('_', ' ').toUpperCase();
+            }),
+            datasets: [{
+                data: Object.values(typesData),
+                backgroundColor: [
+                    '#dc3545', // Non-conformité
+                    '#ffc107', // Observation
+                    '#0dcaf0', // Opportunité
+                    '#28a745', // Conforme
+                    '#8B5CF6'  // Point fort (violet)
+                ],
+                borderWidth: 1,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'right',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                }
+            }
+        }
+    });
+
+    // Graphique des recommandations par statut
+    const ctx2 = document.getElementById('chartRecommandationsStatut').getContext('2d');
+    const statutsData = {{ stats.recommandations_par_statut|tojson }};
+    
+    const statutsLabels = Object.keys(statutsData).map(s => {
+        const labels = {
+            'a_traiter': 'À traiter',
+            'en_cours': 'En cours',
+            'termine': 'Terminé',
+            'retarde': 'Retardé',
+            'annule': 'Annulé'
+        };
+        return labels[s] || s.replace('_', ' ').toUpperCase();
+    });
+    
+    const statutsChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: statutsLabels,
+            datasets: [{
+                label: 'Nombre de recommandations',
+                data: Object.values(statutsData),
+                backgroundColor: function(context) {
+                    const index = context.dataIndex;
+                    const statut = context.chart.data.labels[index];
+                    const colors = {
+                        'À traiter': 'rgba(108, 117, 125, 0.7)',
+                        'En cours': 'rgba(13, 202, 240, 0.7)',
+                        'Terminé': 'rgba(40, 167, 69, 0.7)',
+                        'Retardé': 'rgba(220, 53, 69, 0.7)',
+                        'Annulé': 'rgba(108, 117, 125, 0.3)'
+                    };
+                    return colors[statut] || 'rgba(108, 117, 125, 0.5)';
+                },
+                borderColor: function(context) {
+                    const index = context.dataIndex;
+                    const statut = context.chart.data.labels[index];
+                    const colors = {
+                        'À traiter': '#6c757d',
+                        'En cours': '#0dcaf0',
+                        'Terminé': '#28a745',
+                        'Retardé': '#dc3545',
+                        'Annulé': '#6c757d'
+                    };
+                    return colors[statut] || '#6c757d';
+                },
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1,
+                        precision: 0
+                    },
+                    grid: {
+                        drawBorder: false
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    titleFont: {
+                        size: 14
+                    },
+                    bodyFont: {
+                        size: 14
+                    },
+                    padding: 12
+                }
+            }
+        }
+    });
+
+    // Animation des cartes
+    const hoverCards = document.querySelectorAll('.hover-lift');
+    hoverCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-8px)';
+            this.style.boxShadow = '0 12px 30px rgba(0, 0, 0, 0.15)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+    });
+
+    // Animation des lignes de risques
+    const riskRows = document.querySelectorAll('.risk-row');
+    riskRows.forEach((row, index) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-20px)';
+        row.style.transition = 'all 0.5s ease-out';
+        
+        setTimeout(() => {
+            row.style.opacity = '1';
+            row.style.transform = 'translateX(0)';
+        }, 100 * index);
+    });
+    
+    // Animation des alertes
+    const alertItems = document.querySelectorAll('.list-group-item-action');
+    alertItems.forEach((item, index) => {
+        item.style.animationDelay = `${index * 0.1}s`;
+    });
+});
+</script>
+
+<style>
+/* Styles spécifiques pour cette page */
+.score-svg {
+    animation: rotate 2s ease-out;
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(-90deg);
+    }
+    to {
+        transform: rotate(0);
+    }
+}
+
+.fk-card.hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.fk-table tbody tr {
+    transition: all 0.3s ease;
+}
+
+.fk-table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.border-start-danger {
+    border-left-color: var(--bs-danger) !important;
+}
+
+.border-start-warning {
+    border-left-color: var(--bs-warning) !important;
+}
+
+.border-start-info {
+    border-left-color: var(--bs-info) !important;
+}
+
+.border-start-success {
+    border-left-color: var(--bs-success) !important;
+}
+
+/* Animation pour les alertes */
+.list-group-item-action {
+    animation: slideInRight 0.5s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Style pour les badges */
+.badge {
+    padding: 0.4rem 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+}
+
+/* Style pour les icônes dans les cercles */
+.rounded-circle {
+    transition: all 0.3s ease;
+}
+
+.rounded-circle:hover {
+    transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .btn-toolbar {
+        margin-top: 1rem;
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+    
+    .btn-group {
+        margin-bottom: 0.5rem;
+    }
+    
+    .score-svg {
+        width: 100px;
+        height: 100px;
+    }
+    
+    .fk-card-body {
+        padding: 1rem;
+    }
+}
+
+/* Animation pour le contenu */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.container-fluid > * {
+    animation: fadeInUp 0.5s ease-out;
+}
+</style>
+{% endblock %}
