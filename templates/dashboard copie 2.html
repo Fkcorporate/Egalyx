@@ -1,0 +1,746 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de Bord - Contrôle Interne{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-900">Tableau de Bord</h1>
+            <p class="text-muted">Vue d'ensemble de votre gestion des risques</p>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-outline-primary btn-sm" onclick="actualiserDonnees()">
+                <i class="fas fa-sync-alt me-1"></i>Actualiser
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="exporterDashboard()">
+                <i class="fas fa-download me-1"></i>Exporter
+            </button>
+        </div>
+    </div>
+
+    <!-- Cartes de statistiques principales avec arrière-plans -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card clickable-card bg-gradient-primary text-white" onclick="location.href='{{ url_for('liste_cartographies') }}'">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-2">TOTAL RISQUES</h6>
+                            <h2 class="mb-0 text-white">{{ total_risques }}</h2>
+                            <small class="text-white-75">{{ risques_critiques_count }} critiques</small>
+                        </div>
+                        <div class="icon-circle bg-white-20">
+                            <i class="fas fa-exclamation-triangle text-white"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-white-75">
+                            <i class="fas fa-chart-line me-1"></i>
+                            Surveillance active
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card clickable-card bg-gradient-success text-white" onclick="location.href='{{ url_for('liste_kri') }}'">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-2">KRI ACTIFS</h6>
+                            <h2 class="mb-0 text-white">{{ total_kri }}</h2>
+                            <small class="text-white-75">{{ kri_alertes }} en alerte</small>
+                        </div>
+                        <div class="icon-circle bg-white-20">
+                            <i class="fas fa-chart-line text-white"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-white-75">
+                            <i class="fas fa-eye me-1"></i>
+                            Surveillance continue
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card clickable-card bg-gradient-info text-white" onclick="location.href='{{ url_for('liste_processus') }}'">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-white-50 mb-2">PROCESSUS</h6>
+                            <h2 class="mb-0 text-white">{{ total_processus }}</h2>
+                            <small class="text-white-75">{{ processus_actifs }} actifs</small>
+                        </div>
+                        <div class="icon-circle bg-white-20">
+                            <i class="fas fa-sitemap text-white"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-white-75">
+                            <i class="fas fa-cog me-1"></i>
+                            Optimisation en cours
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card stat-card clickable-card bg-gradient-warning text-dark" onclick="location.href='{{ url_for('veille_reglementaire') }}'">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-title text-dark-50 mb-2">VEILLES ACTIVES</h6>
+                            <h2 class="mb-0 text-dark">{{ veilles_actives }}</h2>
+                            <small class="text-dark-75">{{ actions_retardees }} retards</small>
+                        </div>
+                        <div class="icon-circle bg-dark-10">
+                            <i class="fas fa-balance-scale text-dark"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-dark-75">
+                            <i class="fas fa-clock me-1"></i>
+                            {{ actions_retardees }} actions en retard
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Section gauche : Alertes et Risques -->
+        <div class="col-lg-8">
+            <!-- Alertes urgentes avec arrière-plan -->
+            <!-- Dans la section Alertes Requérant une Attention -->
+            {% if risques_critiques or actions_retardees > 0 %}
+            <div class="card alert-card mb-4 bg-light-warning border-warning">
+                <div class="card-header bg-warning text-dark border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-bell me-2"></i>
+                            Alertes Requérant une Attention
+                        </h5>
+                        <span class="badge bg-dark">{{ risques_critiques_count + (actions_retardees if actions_retardees > 0 else 0) }}</span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if risques_critiques %}
+                    <div class="alert-item p-3 border-bottom border-warning">
+                        <div class="d-flex align-items-center">
+                            <div class="alert-icon bg-danger me-3">
+                                <i class="fas fa-fire text-white"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 text-dark">{{ risques_critiques_count }} Risque(s) Critique(s)</h6>
+                                <p class="mb-1 text-muted">Nécessitent une action immédiate</p>
+                                <div class="risk-tags mt-2">
+                                    {% for item in risques_critiques %}
+                                    <span class="badge bg-danger me-1 mb-1">
+                                        {{ item.risque.reference }} ({{ item.risque.cartographie.nom }})
+                                    </span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <a href="{{ url_for('liste_cartographies') }}" class="btn btn-sm btn-outline-danger">
+                                Voir <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if actions_retardees > 0 %}
+                    <div class="alert-item p-3">
+                        <div class="d-flex align-items-center">
+                            <div class="alert-icon bg-warning me-3">
+                                <i class="fas fa-clock text-white"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1 text-dark">{{ actions_retardees }} Action(s) en Retard</h6>
+                                <p class="mb-1 text-muted">Dépassement des délais de conformité</p>
+                                <small class="text-muted">Consulter le module de veille réglementaire</small>
+                            </div>
+                            <a href="{{ url_for('veille_reglementaire') }}" class="btn btn-sm btn-outline-warning">
+                                Voir <i class="fas fa-arrow-right ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Graphique de répartition des risques -->
+            <div class="card mb-4">
+                <div class="card-header bg-light border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-dark">Répartition des Risques</h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary active" onclick="changerVueGraphique('doughnut')">
+                                <i class="fas fa-chart-pie"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" onclick="changerVueGraphique('bar')">
+                                <i class="fas fa-chart-bar"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">
+                            Total: {{ total_risques }} risques • 
+                            Dernière mise à jour: <span class="last-update">{{ now().strftime('%d/%m/%Y %H:%M') }}</span>
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Liste des risques critiques avec arrière-plan -->
+            <div class="card bg-light-danger border-danger">
+                <div class="card-header bg-danger text-white border-0">
+                    <h5 class="mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Risques Requérant une Attention Immédiate
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if risques_critiques %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-danger">
+                                <tr>
+                                    <th class="border-0">RÉFÉRENCE</th>
+                                    <th class="border-0">INTITULÉ</th>
+                                    <th class="border-0">CARTOGRAPHIE</th>
+                                    <th class="border-0">SCORE</th>
+                                    <th class="border-0">DERNIÈRE ÉVAL.</th>
+                                    <th class="border-0"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in risques_critiques %}
+                                {% set risque = item.risque %}
+                                {% set evaluation = item.evaluation %}
+                                <tr class="clickable-row" onclick="location.href='{{ url_for('detail_risque', id=risque.id) }}'">
+                                    <td>
+                                        <span class="fw-bold text-danger">{{ risque.reference }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-semibold">{{ risque.intitule|truncate(40) }}</div>
+                                        <small class="text-muted">{{ risque.categorie }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ risque.cartographie.nom|truncate(20) }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ evaluation.score_risque if evaluation else 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ evaluation.created_at.strftime('%d/%m/%Y') if evaluation else 'Non évalué' }}
+                                        </small>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('matrice_risque_specifique', cartographie_id=risque.cartographie_id, risque_id=risque.id) }}" 
+                                               class="btn btn-outline-danger btn-sm">
+                                                <i class="fas fa-bullseye"></i>
+                                            </a>
+                                            <a href="{{ url_for('detail_risque', id=risque.id) }}" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h5 class="text-muted">Aucun risque critique</h5>
+                        <p class="text-muted">Tous les risques sont sous contrôle</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Section droite : Actions et Vue d'ensemble -->
+        <div class="col-lg-4">
+            <!-- Actions rapides avec arrière-plan -->
+            <div class="card mb-4 bg-light-primary border-primary">
+                <div class="card-header bg-primary text-white border-0">
+                    <h5 class="mb-0">Actions Rapides</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('nouvelle_cartographie') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Nouvelle Cartographie
+                        </a>
+                        <a href="{{ url_for('choisir_cartographie_risque') }}" class="btn btn-success">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Nouveau Risque
+                        </a>
+                        <a href="{{ url_for('nouveau_processus') }}" class="btn btn-info">
+                            <i class="fas fa-sitemap me-2"></i>Nouveau Processus
+                        </a>
+                        <a href="{{ url_for('nouvelle_veille') }}" class="btn btn-warning">
+                            <i class="fas fa-balance-scale me-2"></i>Nouvelle Veille
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vue d'ensemble des indicateurs avec arrière-plan -->
+            <div class="card mb-4 bg-light-info border-info">
+                <div class="card-header bg-info text-white border-0">
+                    <h5 class="mb-0">Indicateurs Clés</h5>
+                </div>
+                <div class="card-body">
+                    <div class="indicator-list">
+                        <div class="indicator-item d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="indicator-dot bg-success me-3"></div>
+                                <div>
+                                    <div class="fw-semibold">Taux de Couverture KRI</div>
+                                    <small class="text-muted">Risques couverts par des indicateurs</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-success">{{ taux_couverture_kri }}%</span>
+                        </div>
+
+                        <div class="indicator-item d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="indicator-dot bg-info me-3"></div>
+                                <div>
+                                    <div class="fw-semibold">Délai Moyen d'Évaluation</div>
+                                    <small class="text-muted">Jours depuis dernière évaluation</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-info">{{ delai_moyen_evaluation }}j</span>
+                        </div>
+
+                        <div class="indicator-item d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <div class="indicator-dot bg-warning me-3"></div>
+                                <div>
+                                    <div class="fw-semibold">Processus Documentés</div>
+                                    <small class="text-muted">Pourcentage de processus formalisés</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-warning">{{ taux_processus_documentes }}%</span>
+                        </div>
+
+                        <div class="indicator-item d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <div class="indicator-dot bg-primary me-3"></div>
+                                <div>
+                                    <div class="fw-semibold">Conformité Réglementaire</div>
+                                    <small class="text-muted">Taux d'actions réalisées</small>
+                                </div>
+                            </div>
+                            <span class="badge bg-primary">{{ taux_conformite }}%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cartographies récentes avec arrière-plan -->
+            <div class="card bg-light-success border-success">
+                <div class="card-header bg-success text-white border-0">
+                    <h5 class="mb-0">Cartographies Récentes</h5>
+                </div>
+                <div class="card-body">
+                    {% if cartographies %}
+                    <div class="cartographie-list">
+                        {% for cartographie in cartographies[:3] %}
+                        <div class="cartographie-item mb-3 p-3 border border-success rounded bg-white">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0 text-dark">{{ cartographie.nom|truncate(25) }}</h6>
+                                <span class="badge bg-success">{{ cartographie.risques|length }}</span>
+                            </div>
+                            <p class="text-muted small mb-2">{{ cartographie.description|truncate(60) if cartographie.description else 'Aucune description' }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">{{ cartographie.direction.nom if cartographie.direction else 'Non assigné' }}</small>
+                                <a href="{{ url_for('nouveau_risque', cartographie_id=cartographie.id) }}" 
+                                   class="btn btn-sm btn-outline-success">
+                                    <i class="fas fa-plus"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% if cartographies|length > 3 %}
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('liste_cartographies') }}" class="btn btn-sm btn-outline-primary">
+                            Voir toutes les cartographies
+                        </a>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-map fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Aucune cartographie</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Données pour le graphique - avec valeurs par défaut
+const riskData = {
+    faible: {{ risques_faibles|default(0) }},
+    moyen: {{ risques_moyens|default(0) }},
+    eleve: {{ risques_eleves|default(0) }},
+    critique: {{ risques_critiques_count|default(0) }}
+};
+
+console.log('Données risques:', riskData); // Debug
+
+let riskChart;
+
+function initialiserGraphique(type = 'doughnut') {
+    const ctx = document.getElementById('riskChart');
+    if (!ctx) {
+        console.error('Canvas riskChart non trouvé');
+        return;
+    }
+    
+    // Détruire le graphique existant
+    if (riskChart) {
+        riskChart.destroy();
+    }
+    
+    const data = {
+        labels: ['Faible', 'Moyen', 'Élevé', 'Critique'],
+        datasets: [{
+            data: [riskData.faible, riskData.moyen, riskData.eleve, riskData.critique],
+            backgroundColor: [
+                '#28a745',
+                '#ffc107', 
+                '#fd7e14',
+                '#dc3545'
+            ],
+            borderWidth: 3,
+            borderColor: '#fff'
+        }]
+    };
+
+    const options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 20,
+                    usePointStyle: true,
+                    font: {
+                        size: 12,
+                        weight: 'bold'
+                    }
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.raw || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                        return `${label}: ${value} risque(s) (${percentage}%)`;
+                    }
+                }
+            }
+        }
+    };
+
+    if (type === 'bar') {
+        riskChart = new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: {
+                ...options,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    } else {
+        riskChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: options
+        });
+    }
+}
+
+function changerVueGraphique(type) {
+    if (riskChart) {
+        riskChart.destroy();
+    }
+    initialiserGraphique(type);
+    
+    // Mettre à jour les boutons actifs
+    document.querySelectorAll('.btn-group .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+}
+
+function actualiserDonnees() {
+    // Afficher un indicateur de chargement
+    const btn = event.target;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Actualisation...';
+    btn.disabled = true;
+    
+    window.location.reload();
+}
+
+function exporterDashboard() {
+    // Afficher un indicateur de chargement
+    const btn = event.target;
+    const originalHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Génération...';
+    btn.disabled = true;
+    
+    // Rediriger vers la route d'export
+    window.location.href = "{{ url_for('export_dashboard') }}";
+    
+    // Restaurer le bouton après un délai
+    setTimeout(() => {
+        btn.innerHTML = originalHtml;
+        btn.disabled = false;
+    }, 3000);
+}
+
+// Initialisation
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Initialisation du dashboard...');
+    
+    // Initialiser le graphique après un court délai pour s'assurer que le canvas est prêt
+    setTimeout(() => {
+        initialiserGraphique();
+    }, 100);
+    
+    // Ajouter les interactions hover sur les cartes cliquables
+    document.querySelectorAll('.clickable-card, .clickable-row').forEach(element => {
+        element.style.cursor = 'pointer';
+        element.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px)';
+            this.style.transition = 'all 0.2s ease';
+        });
+        element.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+        });
+    });
+    
+    // Mettre à jour l'heure de dernière actualisation
+    function mettreAJourHeure() {
+        const maintenant = new Date();
+        const elementsHeure = document.querySelectorAll('.last-update');
+        elementsHeure.forEach(el => {
+            el.textContent = maintenant.toLocaleString('fr-FR');
+        });
+    }
+    
+    // Mettre à jour l'heure toutes les minutes
+    setInterval(mettreAJourHeure, 60000);
+    mettreAJourHeure();
+});
+</script>
+
+<style>
+/* Arrière-plans dégradés */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #117a8b 100%);
+}
+
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+}
+
+/* Arrière-plans légers */
+.bg-light-primary { background-color: #e3f2fd; }
+.bg-light-success { background-color: #e8f5e8; }
+.bg-light-info { background-color: #e1f5fe; }
+.bg-light-warning { background-color: #fff3cd; }
+.bg-light-danger { background-color: #f8d7da; }
+
+/* Icônes sur fond blanc translucide */
+.bg-white-20 {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.bg-dark-10 {
+    background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Texte avec transparence */
+.text-white-50 { color: rgba(255, 255, 255, 0.5) !important; }
+.text-white-75 { color: rgba(255, 255, 255, 0.75) !important; }
+.text-dark-50 { color: rgba(0, 0, 0, 0.5) !important; }
+.text-dark-75 { color: rgba(0, 0, 0, 0.75) !important; }
+
+.stat-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.icon-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.alert-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.alert-item {
+    transition: background-color 0.2s ease;
+}
+
+.alert-item:hover {
+    background-color: rgba(255,255,255,0.5);
+}
+
+.alert-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.indicator-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.cartographie-item {
+    transition: all 0.2s ease;
+}
+
+.cartographie-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.clickable-card, .clickable-row {
+    transition: all 0.2s ease;
+}
+
+.risk-tags .badge {
+    font-size: 0.7em;
+}
+
+.chart-container {
+    position: relative;
+}
+
+.table th {
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.card-header {
+    padding: 1rem 1.25rem;
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.badge {
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.table-danger {
+    background-color: #f8d7da;
+}
+
+.border-warning { border-color: #ffc107 !important; }
+.border-danger { border-color: #dc3545 !important; }
+.border-primary { border-color: #007bff !important; }
+.border-info { border-color: #17a2b8 !important; }
+.border-success { border-color: #28a745 !important; }
+
+/* Ajout pour l'indicateur de chargement */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.last-update {
+    font-size: 0.8em;
+    color: #6c757d;
+}
+
+/* Amélioration de la visibilité du graphique */
+.chart-container {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    padding: 10px;
+}
+</style>
+{% endblock %}

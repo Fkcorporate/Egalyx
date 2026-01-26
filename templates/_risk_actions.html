@@ -1,0 +1,50 @@
+
+<div class="btn-group btn-group-sm">
+    <a href="{{ url_for('matrice_risque_specifique', cartographie_id=item.risque.cartographie_id, risque_id=item.risque.id) }}" 
+       class="btn btn-sm btn-outline-primary" title="{{ t("View on matrix") }}">
+        <i class="fas fa-bullseye"></i>
+    </a>
+    <a href="{{ url_for('evaluer_risque', id=item.risque.id) }}" 
+       class="btn btn-sm btn-outline-warning" title="{{ t("Évaluer") }}">
+        <i class="fas fa-chart-bar"></i>
+    </a>
+    <a href="{{ url_for('detail_risque', id=item.risque.id) }}" 
+       class="btn btn-sm btn-outline-info" title="{{ t("Voir détail") }}">
+        <i class="fas fa-eye"></i>
+    </a>
+    <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="fas fa-ellipsis-v"></i>
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <a class="dropdown-item" href="{{ url_for('modifier_risque', id=item.risque.id) }}">
+                    <i class="fas fa-edit me-2"></i> {{ t("Modifier") }} </a>
+            </li>
+            <li>
+                <a class="dropdown-item" href="{{ url_for('dupliquer_risque', id=item.risque.id) }}">
+                    <i class="fas fa-copy me-2"></i> {{ t("Dupliquer") }} </a>
+            </li>
+            {% if not item.risque.kri %}
+            <li>
+                <a class="dropdown-item" href="{{ url_for('nouveau_kri', risque_id=item.risque.id) }}">
+                    <i class="fas fa-chart-line me-2"></i> {{ t("Créer KRI") }} </a>
+            </li>
+            {% endif %}
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item text-warning" href="{{ url_for('archiver_risque', id=item.risque.id) }}">
+                    <i class="fas fa-archive me-2"></i> {{ t("Archiver") }} </a>
+            </li>
+            {% if not item.risque.evaluations %}
+            <li>
+                <form method="POST" action="{{ url_for('supprimer_risque', id=item.risque.id) }}" class="d-inline">
+                    <button type="submit" class="dropdown-item text-danger" 
+                            onclick="return confirm('Êtes-vous sûr de vouloir supprimer définitivement ce risque ?')">
+                        <i class="fas fa-trash me-2"></i> {{ t("Supprimer") }} </button>
+                </form>
+            </li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
