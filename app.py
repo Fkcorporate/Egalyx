@@ -19,7 +19,7 @@ from functools import wraps
 import math
 from flask_babel import Babel, gettext as _, lazy_gettext as _l
 import gettext
-
+from sqlalchemy.orm import joinedload
 # ========================
 # IMPORTS FLASK ET EXTENSIONS
 # ========================
