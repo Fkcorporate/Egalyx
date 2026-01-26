@@ -17980,24 +17980,6 @@ try:
 except ImportError:
     print("⚠️ Flask-Compress non disponible")
 
-# Rate limiting
-try:
-    from flask_limiter import Limiter
-    from flask_limiter.util import get_remote_address
-    
-    limiter = Limiter(
-        app=app,
-        key_func=get_remote_address,
-        default_limits=["200 per hour", "50 per minute"]
-    )
-    
-    # Exceptions pour les pages importantes
-    limiter.exempt("static")
-    limiter.exempt("login")
-    limiter.exempt("health")
-    print("✅ Rate limiting activé")
-except ImportError:
-    print("⚠️ Flask-Limiter non disponible")
 
 # Endpoint de santé pour Render
 @app.route('/health')
