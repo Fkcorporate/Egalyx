@@ -21404,7 +21404,7 @@ def liste_risques():
         'sans_evaluations': get_client_filter(Risque).filter_by(is_archived=False)
             .filter(~Risque.evaluations.any()).count(),
         'avec_kri': get_client_filter(Risque).filter_by(is_archived=False)
-            .filter(Risque.kris.any()).count()
+            .filter(Risque.kri != None).count()
     }
     
     # ========================
