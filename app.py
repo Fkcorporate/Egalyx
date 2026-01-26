@@ -6288,7 +6288,37 @@ def debug_create_user_form():
     </body>
     </html>
     """
-
+@app.route('/debug/formule/<int:id>/modules')
+@login_required
+@super_admin_required
+def debug_formule_modules(id):
+    """Debug pour voir les modules d'une formule"""
+    formule = FormuleAbonnement.query.get_or_404(id)
+    
+    debug_info = {
+        'formule': {
+            'id': formule.id,
+            'nom': formule.nom,
+            'code': formule.code
+        },
+        'modules_actuels': formule.modules,
+        'permissions_template': formule.permissions_template,
+        'modules_problematiques': {
+            'veille_reglementaire': formule.modules.get('veille_reglementaire', 'NON TROUVÉ'),
+            'gestion_processus': formule.modules.get('gestion_processus', 'NON TROUVÉ'),
+            'analyse_ia': formule.modules.get('analyse_ia', 'NON TROUVÉ'),
+            'tableaux_bord': formule.modules.get('tableaux_bord', 'NON TROUVÉ')
+        },
+        'permissions_associees': {
+            'can_manage_regulatory': formule.permissions_template.get('can_manage_regulatory', 'NON TROUVÉ'),
+            'can_manage_logigram': formule.permissions_template.get('can_manage_logigram', 'NON TROUVÉ'),
+            'can_use_ia_analysis': formule.permissions_template.get('can_use_ia_analysis', 'NON TROUVÉ'),
+            'can_view_dashboard': formule.permissions_template.get('can_view_dashboard', 'NON TROUVÉ')
+        }
+    }
+    
+    return jsonify(debug_info)
+    
 @app.route('/admin/debug-form-action', methods=['GET', 'POST'])
 @login_required
 def debug_form_action():
