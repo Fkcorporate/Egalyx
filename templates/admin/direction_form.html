@@ -3,14 +3,14 @@
 {% block content %}
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h2">
-        <i class="fas fa-plus"></i> {{ t("New Management") }} </h1>
+        <i class="fas fa-plus"></i> {{ t("Nouvelle Direction") }}</h1>
 </div>
 
 <div class="row">
     <div class="col-md-8">
         <div class="card shadow">
             <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"> {{ t("Information from Management") }} </h5>
+                <h5 class="mb-0">{{ t("Informations de la Direction") }}</h5>
             </div>
             <div class="card-body">
                 <form method="POST">
@@ -18,7 +18,7 @@
                     
                     <div class="mb-3">
                         {{ form.nom.label(class="form-label") }}
-                        {{ form.nom(class="form-control", placeholder=t("Name of management")) }}
+                        {{ form.nom(class="form-control", placeholder=t("Nom de la direction")) }}
                         {% for error in form.nom.errors %}
                         <div class="text-danger">{{ error }}</div>
                         {% endfor %}
@@ -26,7 +26,7 @@
                     
                     <div class="mb-3">
                         {{ form.description.label(class="form-label") }}
-                        {{ form.description(class="form-control", rows="4", placeholder=t("Description of management...")) }}
+                        {{ form.description(class="form-control", rows="4", placeholder=t("Description de la direction...")) }}
                         {% for error in form.description.errors %}
                         <div class="text-danger">{{ error }}</div>
                         {% endfor %}
@@ -38,14 +38,14 @@
                         {% for error in form.responsable_id.errors %}
                         <div class="text-danger">{{ error }}</div>
                         {% endfor %}
-                        <small class="form-text text-muted"> {{ t("Select the person responsible for this department") }} </small>
+                        <small class="form-text text-muted">{{ t("Sélectionnez le responsable de cette direction") }}</small>
                     </div>
                     
                     <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                         <a href="{{ url_for('admin_directions') }}" class="btn btn-secondary me-md-2">
-                            <i class="fas fa-arrow-left"></i> {{ t("Annuler") }} </a>
+                            <i class="fas fa-arrow-left"></i> {{ t("Annuler") }}</a>
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> {{ t("Create the Directorate") }} </button>
+                            <i class="fas fa-save"></i> {{ t("Créer la Direction") }}</button>
                     </div>
                 </form>
             </div>
@@ -55,19 +55,19 @@
     <div class="col-md-4">
         <div class="card shadow">
             <div class="card-header bg-info text-white">
-                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> {{ t("Information") }} </h6>
+                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> {{ t("Informations") }}</h6>
             </div>
             <div class="card-body">
-                <p> {{ t("The directorates represent the main organizational units of your structure.") }} </p>
-                <p><strong> {{ t("Exemples :") }} </strong></p>
+                <p>{{ t("Les directions représentent les principales unités organisationnelles de votre structure.") }}</p>
+                <p><strong>{{ t("Exemples :") }}</strong></p>
                 <ul>
-                    <li> {{ t("General Management") }} </li>
-                    <li> {{ t("Financial Department") }} </li>
-                    <li> {{ t("Human Resources Department") }} </li>
-                    <li> {{ t("Technical Direction") }} </li>
-                    <li> {{ t("Sales Management") }} </li>
+                    <li>{{ t("Direction Générale") }}</li>
+                    <li>{{ t("Direction Financière") }}</li>
+                    <li>{{ t("Direction des Ressources Humaines") }}</li>
+                    <li>{{ t("Direction Technique") }}</li>
+                    <li>{{ t("Direction Commerciale") }}</li>
                 </ul>
-                <p> {{ t("Each department can contain several services and have its own risk maps.") }} </p>
+                <p>{{ t("Chaque direction peut contenir plusieurs services et disposer de ses propres cartographies des risques.") }}</p>
             </div>
         </div>
     </div>
