@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Nouveau Logigramme{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card card-modern">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Créer un Nouveau Logigramme</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="mb-3">
+                            <label for="nom" class="form-label">Nom du logigramme *</label>
+                            <input type="text" class="form-control" id="nom" name="nom" required 
+                                   placeholder="Ex: Processus d'achat, Gestion des réclamations...">
+                            <div class="form-text">Donnez un nom clair et descriptif à votre logigramme.</div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      placeholder="Décrivez brièvement l'objectif de ce logigramme..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="direction_id" class="form-label">Direction associée</label>
+                                    <select class="form-select" id="direction_id" name="direction_id">
+                                        <option value="">Sélectionner une direction</option>
+                                        {% for direction in directions %}
+                                        <option value="{{ direction.id }}">{{ direction.nom }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Optionnel - Associez ce logigramme à une direction.</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-4">
+                                    <label for="service_id" class="form-label">Service associé</label>
+                                    <select class="form-select" id="service_id" name="service_id">
+                                        <option value="">Sélectionner un service</option>
+                                        {% for service in services %}
+                                        <option value="{{ service.id }}" data-direction="{{ service.direction_id }}">
+                                            {{ service.nom }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Optionnel - Associez ce logigramme à un service.</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('liste_logigrammes') }}" class="btn btn-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-modern btn-modern-primary">
+                                <i class="fas fa-save me-2"></i>Créer et Éditer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const directionSelect = document.getElementById('direction_id');
+        const serviceSelect = document.getElementById('service_id');
+        const servicesOptions = Array.from(serviceSelect.options).slice(1); // Exclure l'option par défaut
+
+        function filtrerServices() {
+            const directionId = directionSelect.value;
+            
+            // Masquer toutes les options de service
+            servicesOptions.forEach(option => {
+                option.style.display = 'none';
+                option.disabled = true;
+            });
+            
+            // Afficher seulement les services de la direction sélectionnée
+            if (directionId) {
+                const servicesFiltres = servicesOptions.filter(option => 
+                    option.getAttribute('data-direction') === directionId
+                );
+                
+                servicesFiltres.forEach(option => {
+                    option.style.display = 'block';
+                    option.disabled = false;
+                });
+                
+                // Si aucun service ne correspond, afficher un message
+                if (servicesFiltres.length === 0) {
+                    const noServiceOption = document.createElement('option');
+                    noServiceOption.value = '';
+                    noServiceOption.textContent = 'Aucun service disponible pour cette direction';
+                    noServiceOption.disabled = true;
+                    serviceSelect.innerHTML = '';
+                    serviceSelect.appendChild(noServiceOption);
+                } else {
+                    // Réinitialiser le select des services
+                    serviceSelect.innerHTML = '<option value="">Sélectionner un service</option>';
+                    servicesFiltres.forEach(option => serviceSelect.appendChild(option.cloneNode(true)));
+                }
+            } else {
+                // Si aucune direction n'est sélectionnée, afficher tous les services
+                serviceSelect.innerHTML = '<option value="">Sélectionner un service</option>';
+                servicesOptions.forEach(option => {
+                    const newOption = option.cloneNode(true);
+                    newOption.style.display = 'block';
+                    newOption.disabled = false;
+                    serviceSelect.appendChild(newOption);
+                });
+            }
+            
+            // Réinitialiser la sélection du service
+            serviceSelect.value = '';
+        }
+
+        directionSelect.addEventListener('change', filtrerServices);
+        
+        // Initialiser le filtrage au chargement
+        filtrerServices();
+    });
+</script>
+{% endblock %}

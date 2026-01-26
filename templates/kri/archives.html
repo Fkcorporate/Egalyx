@@ -1,0 +1,648 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">KRI Archivés</h1>
+                    <p class="text-muted">Gestion des indicateurs de risque archivés</p>
+                </div>
+                <a href="{{ url_for('liste_kri') }}" class="btn btn-outline-primary">
+                    <i class="fas fa-arrow-left"></i> Retour aux KRI actifs
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques des archives -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-secondary text-white rounded p-3 me-3">
+                            <i class="fas fa-archive"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">{{ kris|length }}</h4>
+                            <small class="text-muted">KRI Archivés</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-warning text-white rounded p-3 me-3">
+                            <i class="fas fa-history"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">
+                                {% set kris_anciens = [] %}
+                                {% for kri in kris %}
+                                    {% if kri.archived_at and (now() - kri.archived_at).days > 30 %}
+                                        {% set _ = kris_anciens.append(kri) %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ kris_anciens|length }}
+                            </h4>
+                            <small class="text-muted">Archivés > 30 jours</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-info text-white rounded p-3 me-3">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">
+                                {% set users_archivants = [] %}
+                                {% for kri in kris %}
+                                    {% if kri.archived_by and kri.archived_by not in users_archivants %}
+                                        {% set _ = users_archivants.append(kri.archived_by) %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ users_archivants|length }}
+                            </h4>
+                            <small class="text-muted">Utilisateurs ayant archivé</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="bg-success text-white rounded p-3 me-3">
+                            <i class="fas fa-undo"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">
+                                {% set kris_restaurables = [] %}
+                                {% for kri in kris %}
+                                    {% if current_user.role == 'admin' or current_user.id == kri.archived_by %}
+                                        {% set _ = kris_restaurables.append(kri) %}
+                                    {% endif %}
+                                {% endfor %}
+                                {{ kris_restaurables|length }}
+                            </h4>
+                            <small class="text-muted">Restaurables</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres archives -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-filter me-2"></i>Filtres Archives
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <input type="text" id="searchArchiveKri" class="form-control" placeholder="Rechercher un KRI archivé...">
+                        </div>
+                        <div class="col-md-4">
+                            <select id="filterArchiveDate" class="form-select">
+                                <option value="all">Toutes les dates</option>
+                                <option value="today">Aujourd'hui</option>
+                                <option value="week">Cette semaine</option>
+                                <option value="month">Ce mois</option>
+                                <option value="old">Plus de 30 jours</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="btn-group w-100">
+                                <button class="btn btn-outline-primary active" data-filter-archive="all">Tous</button>
+                                <button class="btn btn-outline-primary" data-filter-archive="restorable">Restaurables</button>
+                                {% if current_user.role == 'admin' %}
+                                <button class="btn btn-outline-primary" data-filter-archive="deletable">Supprimables</button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des KRI archivés -->
+    <div class="row" id="archiveKriGrid">
+        {% for kri in kris %}
+        <div class="col-xl-4 col-lg-6 mb-4" data-kri-archive 
+             data-archived-at="{{ kri.archived_at.isoformat() if kri.archived_at else '' }}"
+             data-archived-by="{{ kri.archived_by }}"
+             data-restorable="{% if current_user.role == 'admin' or current_user.id == kri.archived_by %}true{% else %}false{% endif %}">
+            <div class="card h-100 border-secondary">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                    <div>
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-archive"></i> Archivé
+                        </span>
+                        {% if kri.archived_at and (now() - kri.archived_at).days > 30 %}
+                        <span class="badge bg-warning ms-1">
+                            <i class="fas fa-clock"></i> Ancien
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-ellipsis-v"></i>
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item restaurer-kri" href="#" data-kri-id="{{ kri.id }}">
+                                    <i class="fas fa-undo me-2"></i>Restaurer
+                                </a>
+                            </li>
+                            {% if current_user.role == 'admin' %}
+                            <li>
+                                <a class="dropdown-item text-danger supprimer-kri" href="#" data-kri-id="{{ kri.id }}">
+                                    <i class="fas fa-trash me-2"></i>Supprimer définitivement
+                                </a>
+                            </li>
+                            {% endif %}
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#detailsArchiveModal{{ kri.id }}">
+                                    <i class="fas fa-info-circle me-2"></i>Détails archivage
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <h5 class="card-title">{{ kri.nom }}</h5>
+                    <p class="card-text text-muted">{{ kri.description or 'Aucune description disponible' }}</p>
+                    
+                    <!-- Informations du KRI -->
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Unité de mesure:</small>
+                            <strong>{{ kri.unite_mesure or 'N/A' }}</strong>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Fréquence:</small>
+                            <strong>{{ kri.frequence_mesure|title if kri.frequence_mesure else 'N/A' }}</strong>
+                        </div>
+                        {% if kri.archived_at %}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Archivé le:</small>
+                            <strong>{{ kri.archived_at.strftime('%d/%m/%Y') }}</strong>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Dernière mesure -->
+                    {% if kri.mesures and kri.mesures|length > 0 %}
+                    <div class="border-top pt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Dernière valeur:</small>
+                            <strong>
+                                {{ kri.mesures[-1].valeur }} {{ kri.unite_mesure }}
+                            </strong>
+                        </div>
+                        <small class="text-muted">
+                            Le {{ kri.mesures[-1].date_mesure.strftime('%d/%m/%Y') }}
+                        </small>
+                    </div>
+                    {% endif %}
+
+                    <!-- Informations de risque associé -->
+                    {% if kri.risque %}
+                    <div class="border-top pt-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <small class="text-muted">Risque associé:</small>
+                            <strong class="text-primary">{{ kri.risque.reference }}</strong>
+                        </div>
+                        <small class="text-muted">{{ kri.risque.intitule }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <button class="btn btn-outline-success btn-sm w-100 restaurer-kri" data-kri-id="{{ kri.id }}">
+                                <i class="fas fa-undo me-1"></i>Restaurer
+                            </button>
+                        </div>
+                        {% if current_user.role == 'admin' %}
+                        <div class="col-6">
+                            <button class="btn btn-outline-danger btn-sm w-100 supprimer-kri" data-kri-id="{{ kri.id }}">
+                                <i class="fas fa-trash me-1"></i>Supprimer
+                            </button>
+                        </div>
+                        {% else %}
+                        <div class="col-6">
+                            <button class="btn btn-outline-secondary btn-sm w-100" disabled>
+                                <i class="fas fa-lock me-1"></i>Admin seulement
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Détails Archivage -->
+        <div class="modal fade" id="detailsArchiveModal{{ kri.id }}" tabindex="-1" aria-labelledby="detailsArchiveModalLabel{{ kri.id }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="detailsArchiveModalLabel{{ kri.id }}">Détails d'archivage - {{ kri.nom }}</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <strong>Informations d'archivage:</strong>
+                            <ul class="list-unstyled mt-2">
+                                <li><i class="fas fa-calendar me-2"></i>Date: {{ kri.archived_at.strftime('%d/%m/%Y à %H:%M') if kri.archived_at else 'Non disponible' }}</li>
+                                <li><i class="fas fa-user me-2"></i>Archivé par: {{ kri.archived_by_user.username if kri.archived_by_user else 'Utilisateur inconnu' }}</li>
+                                <li><i class="fas fa-clock me-2"></i>Depuis: {{ (now() - kri.archived_at).days if kri.archived_at else 0 }} jours</li>
+                            </ul>
+                        </div>
+                        <div class="mb-3">
+                            <strong>Statistiques du KRI:</strong>
+                            <ul class="list-unstyled mt-2">
+                                <li><i class="fas fa-chart-line me-2"></i>Mesures enregistrées: {{ kri.mesures|length }}</li>
+                                <li><i class="fas fa-bell me-2"></i>Seuil alerte: {{ kri.seuil_alerte or 'Non défini' }}</li>
+                                <li><i class="fas fa-fire me-2"></i>Seuil critique: {{ kri.seuil_critique or 'Non défini' }}</li>
+                            </ul>
+                        </div>
+                        {% if kri.risque %}
+                        <div class="mb-3">
+                            <strong>Risque associé:</strong>
+                            <p class="mt-2 mb-1">{{ kri.risque.reference }} - {{ kri.risque.intitule }}</p>
+                            <small class="text-muted">{{ kri.risque.description or 'Aucune description' }}</small>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                        {% if current_user.role == 'admin' or current_user.id == kri.archived_by %}
+                        <button type="button" class="btn btn-primary restaurer-kri" data-kri-id="{{ kri.id }}" data-bs-dismiss="modal">
+                            <i class="fas fa-undo me-1"></i>Restaurer
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="fas fa-archive fa-3x text-muted mb-3"></i>
+                <h3 class="text-muted">Aucun KRI archivé</h3>
+                <p class="text-muted mb-4">Les KRI archivés apparaîtront dans cette section</p>
+                <a href="{{ url_for('liste_kri') }}" class="btn btn-primary">
+                    <i class="fas fa-arrow-left me-1"></i>Retour aux KRI actifs
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Actions groupées (Admin seulement) -->
+    {% if current_user.role == 'admin' and kris %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h6 class="card-title mb-0">
+                        <i class="fas fa-tools me-2"></i>Actions Administrateur
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-success w-100" id="restaurerTousKri">
+                                <i class="fas fa-undo me-1"></i>Restaurer tous
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-danger w-100" id="supprimerAnciensKri">
+                                <i class="fas fa-trash me-1"></i>Nettoyer anciens
+                            </button>
+                        </div>
+                        <div class="col-md-4">
+                            <button class="btn btn-outline-secondary w-100" id="exporterArchivesKri">
+                                <i class="fas fa-download me-1"></i>Exporter liste
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            "Nettoyer anciens" supprime les KRI archivés depuis plus de 90 jours.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal Confirmation Suppression -->
+<div class="modal fade" id="confirmationSuppressionModal" tabindex="-1" aria-labelledby="confirmationSuppressionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmationSuppressionModalLabel">Confirmation de suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer définitivement ce KRI ?</p>
+                <p class="text-danger"><strong>Cette action est irréversible !</strong></p>
+                <p class="text-muted small">Toutes les mesures associées seront également supprimées.</p>
+                <form id="formSuppressionKri" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="d-flex gap-2 justify-content-end">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-danger">
+                            <i class="fas fa-trash me-1"></i>Supprimer définitivement
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filtrage des archives
+    const filterArchiveButtons = document.querySelectorAll('[data-filter-archive]');
+    const searchArchiveInput = document.getElementById('searchArchiveKri');
+    const filterArchiveDate = document.getElementById('filterArchiveDate');
+    const archiveKriCards = document.querySelectorAll('[data-kri-archive]');
+    
+    // Application des filtres
+    function applyArchiveFilters() {
+        const searchTerm = searchArchiveInput.value.toLowerCase();
+        const dateFilter = filterArchiveDate.value;
+        const typeFilter = document.querySelector('[data-filter-archive].active')?.getAttribute('data-filter-archive') || 'all';
+        
+        archiveKriCards.forEach(card => {
+            const title = card.querySelector('.card-title').textContent.toLowerCase();
+            const description = card.querySelector('.card-text').textContent.toLowerCase();
+            const archivedAt = card.getAttribute('data-archived-at');
+            const isRestorable = card.getAttribute('data-restorable') === 'true';
+            const archivedBy = card.getAttribute('data-archived-by');
+            
+            let show = true;
+            
+            // Filtre par recherche
+            if (searchTerm && !title.includes(searchTerm) && !description.includes(searchTerm)) {
+                show = false;
+            }
+            
+            // Filtre par date
+            if (show && dateFilter !== 'all' && archivedAt) {
+                const archiveDate = new Date(archivedAt);
+                const now = new Date();
+                const diffTime = now - archiveDate;
+                const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                
+                switch(dateFilter) {
+                    case 'today':
+                        show = diffDays === 0;
+                        break;
+                    case 'week':
+                        show = diffDays <= 7;
+                        break;
+                    case 'month':
+                        show = diffDays <= 30;
+                        break;
+                    case 'old':
+                        show = diffDays > 30;
+                        break;
+                }
+            }
+            
+            // Filtre par type
+            if (show) {
+                switch(typeFilter) {
+                    case 'restorable':
+                        show = isRestorable;
+                        break;
+                    case 'deletable':
+                        show = {{ 'true' if current_user.role == 'admin' else 'false' }};
+                        break;
+                }
+            }
+            
+            card.style.display = show ? 'block' : 'none';
+        });
+    }
+    
+    // Événements des filtres
+    filterArchiveButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            filterArchiveButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            applyArchiveFilters();
+        });
+    });
+    
+    searchArchiveInput.addEventListener('input', applyArchiveFilters);
+    filterArchiveDate.addEventListener('change', applyArchiveFilters);
+    
+    // Gestion des actions KRI archivés - CORRIGÉ
+    document.querySelectorAll('.restaurer-kri').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const kriId = this.getAttribute('data-kri-id');
+            console.log('Restauration KRI archivé:', kriId);
+            
+            if (confirm('Êtes-vous sûr de vouloir restaurer ce KRI ?\n\nIl redeviendra actif et apparaîtra dans la liste principale.')) {
+                restaurerKri(kriId);
+            }
+        });
+    });
+
+    document.querySelectorAll('.supprimer-kri').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const kriId = this.getAttribute('data-kri-id');
+            console.log('Suppression KRI archivé:', kriId);
+            
+            if (confirm('Êtes-vous sûr de vouloir supprimer définitivement ce KRI ?\n\nCette action est irréversible et supprimera également toutes les mesures associées.')) {
+                supprimerDefinitivementKri(kriId);
+            }
+        });
+    });
+
+    // Actions groupées (Admin seulement)
+    {% if current_user.role == 'admin' %}
+    document.getElementById('restaurerTousKri')?.addEventListener('click', function() {
+        if (confirm('Êtes-vous sûr de vouloir restaurer TOUS les KRI archivés ?')) {
+            restaurerTousKri();
+        }
+    });
+    
+    document.getElementById('supprimerAnciensKri')?.addEventListener('click', function() {
+        if (confirm('Êtes-vous sûr de vouloir supprimer les KRI archivés depuis plus de 90 jours ?\n\nCette action est irréversible.')) {
+            supprimerAnciensKri();
+        }
+    });
+    
+    document.getElementById('exporterArchivesKri')?.addEventListener('click', function() {
+        exporterArchivesKri();
+    });
+    {% endif %}
+
+    // Fonctions d'action
+    function restaurerKri(kriId) {
+        fetch(`/kri/${kriId}/changer-statut`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `action=restaurer&csrf_token=${getCsrfToken()}`
+        })
+        .then(handleResponse)
+        .then(data => {
+            if (data.success) {
+                showToast('KRI restauré avec succès', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                throw new Error(data.error || 'Erreur lors de la restauration');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur: ' + error.message, 'error');
+        });
+    }
+
+    function supprimerDefinitivementKri(kriId) {
+        fetch(`/kri/${kriId}/supprimer-definitivement`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `csrf_token=${getCsrfToken()}`
+        })
+        .then(response => {
+            if (response.ok) {
+                showToast('KRI supprimé définitivement', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                throw new Error('Erreur lors de la suppression');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur: ' + error.message, 'error');
+        });
+    }
+
+    {% if current_user.role == 'admin' %}
+    function restaurerTousKri() {
+        fetch('/kri/restaurer-tous', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `csrf_token=${getCsrfToken()}`
+        })
+        .then(handleResponse)
+        .then(data => {
+            if (data.success) {
+                showToast(`${data.count} KRI restaurés avec succès`, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                throw new Error(data.error || 'Erreur lors de la restauration globale');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur: ' + error.message, 'error');
+        });
+    }
+
+    function supprimerAnciensKri() {
+        fetch('/kri/nettoyer-anciens', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `csrf_token=${getCsrfToken()}`
+        })
+        .then(handleResponse)
+        .then(data => {
+            if (data.success) {
+                showToast(`${data.count} KRI anciens supprimés`, 'success');
+                setTimeout(() => location.reload(), 1500);
+            } else {
+                throw new Error(data.error || 'Erreur lors du nettoyage');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur: ' + error.message, 'error');
+        });
+    }
+
+    function exporterArchivesKri() {
+        showToast('Export en cours...', 'info');
+        // Implémentation de l'export
+        window.open('/api/kris/archives/export', '_blank');
+    }
+    {% endif %}
+
+    // Fonctions utilitaires
+    function getCsrfToken() {
+        return document.querySelector('[name="csrf_token"]').value;
+    }
+
+    function handleResponse(response) {
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.error || 'Erreur serveur');
+            });
+        }
+        return response.json();
+    }
+
+    function showToast(message, type = 'info') {
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        toast.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
+
+    // Application initiale des filtres
+    applyArchiveFilters();
+});
+</script>
+{% endblock %}

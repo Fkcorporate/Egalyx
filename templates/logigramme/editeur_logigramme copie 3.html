@@ -1,0 +1,2133 @@
+{% extends "base.html" %}
+
+{% block title %}Éditeur de Logigramme - {{ activite.nom }}{% endblock %}
+
+{% block styles %}
+<style>
+    .editor-container {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border-radius: var(--border-radius-xl);
+        padding: 1rem;
+        min-height: 85vh;
+    }
+
+    #editeur-logigramme {
+        width: 100%;
+        height: 75vh;
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--shadow-soft);
+        position: relative;
+        overflow: auto;
+        background-image: 
+            linear-gradient(rgba(0,0,0,0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0,0,0,0.03) 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+
+    #conteneur-elements {
+        position: relative;
+        width: 2000px;
+        height: 2000px;
+        min-width: 2000px;
+        min-height: 2000px;
+        transform-origin: 0 0;
+    }
+
+    .toolbar-modern {
+        background: white;
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-medium);
+        border: 1px solid #f1f5f9;
+    }
+
+    .info-panel {
+        background: white;
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-medium);
+        border: 1px solid #f1f5f9;
+        margin-bottom: 1rem;
+    }
+
+    .palette-modern {
+        background: white;
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-medium);
+        border: 1px solid #f1f5f9;
+        margin-bottom: 1rem;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    .palette-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #475569;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .palette-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .palette-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .palette-item {
+        background: white;
+        border: 2px dashed #cbd5e1;
+        border-radius: var(--border-radius-md);
+        padding: 1rem;
+        text-align: center;
+        cursor: grab;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .palette-item:hover {
+        border-color: #3b82f6;
+        background: #f8fafc;
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-soft);
+    }
+
+    .palette-item i {
+        font-size: 1.25rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .palette-item small {
+        font-weight: 500;
+        color: #475569;
+    }
+
+    /* Éléments du Processus - Design Moderne */
+    .element-processus {
+        position: absolute;
+        cursor: move;
+        user-select: none;
+        border-radius: var(--border-radius-md);
+        padding: 1.25rem 1.5rem;
+        text-align: center;
+        min-width: 160px;
+        box-shadow: var(--shadow-soft);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        backdrop-filter: blur(10px);
+        border: 2px solid transparent;
+        z-index: 10;
+    }
+
+    .element-processus:hover {
+        transform: translateY(-2px) scale(1.02);
+        box-shadow: var(--shadow-medium);
+        z-index: 100;
+    }
+
+    .element-processus.selected {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1), var(--shadow-medium);
+    }
+
+    .element-debut {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border-radius: 50px;
+        border: 3px solid #047857;
+    }
+
+    .element-action {
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+        border: 2px solid #1e40af;
+    }
+
+    .element-controle {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        border: 2px solid #b45309;
+    }
+
+    .element-risque {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        border: 2px solid #b91c1c;
+    }
+
+    .element-fin {
+        background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+        color: white;
+        border-radius: 50px;
+        border: 3px solid #374151;
+    }
+
+    .element-organisation {
+        background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+        color: white;
+        border: 2px dashed #6d28d9;
+        min-width: 20px;
+        min-height: 100%;
+        padding: 1rem 0.5rem;
+        writing-mode: vertical-lr;
+        text-orientation: mixed;
+    }
+
+    .element-titre {
+        background: white;
+        color: #1e293b;
+        border: 2px solid #e2e8f0;
+        font-size: 1.1rem;
+        font-weight: 700;
+        padding: 1.5rem 2rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .element-titre:hover {
+        border-color: #3b82f6;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .element-content {
+        pointer-events: none;
+    }
+
+    .element-title {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+        line-height: 1.3;
+    }
+
+    .element-description {
+        font-size: 0.75rem;
+        opacity: 0.9;
+        line-height: 1.2;
+    }
+
+    /* Liens Modernes avec Labels */
+    .lien-processus {
+        stroke: #475569;
+        stroke-width: 2.5;
+        marker-end: url(#arrowhead-modern);
+        fill: none;
+        transition: all 0.3s ease;
+    }
+
+    .lien-oui {
+        stroke: #10b981;
+        stroke-width: 2.5;
+        marker-end: url(#arrowhead-oui);
+    }
+
+    .lien-non {
+        stroke: #ef4444;
+        stroke-width: 2.5;
+        marker-end: url(#arrowhead-non);
+        stroke-dasharray: 5,5;
+    }
+
+    .lien-processus:hover {
+        stroke-width: 3.5;
+        cursor: pointer;
+    }
+
+    .lien-oui:hover {
+        stroke: #059669;
+    }
+
+    .lien-non:hover {
+        stroke: #dc2626;
+    }
+
+    /* Labels sur les liens */
+    .lien-label {
+        pointer-events: none;
+        font-size: 12px;
+        font-weight: 600;
+        fill: white;
+        paint-order: stroke;
+        stroke: #000;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+
+    .lien-label-oui {
+        fill: #10b981;
+    }
+
+    .lien-label-non {
+        fill: #ef4444;
+    }
+
+    #arrowhead-modern {
+        fill: #475569;
+    }
+
+    #arrowhead-oui {
+        fill: #10b981;
+    }
+
+    #arrowhead-non {
+        fill: #ef4444;
+    }
+
+    /* Boutons Modernes */
+    .btn-tool {
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: var(--border-radius-md);
+        padding: 0.75rem 1rem;
+        font-weight: 500;
+        color: #475569;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-tool:hover {
+        border-color: #3b82f6;
+        color: #3b82f6;
+        transform: translateY(-1px);
+    }
+
+    .btn-tool.active {
+        background: var(--primary-gradient);
+        border-color: transparent;
+        color: white;
+        box-shadow: var(--shadow-soft);
+    }
+
+    .btn-action {
+        background: var(--primary-gradient);
+        color: white;
+        border: none;
+        border-radius: var(--border-radius-md);
+        padding: 0.75rem 1.5rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-medium);
+    }
+
+    /* Indicateurs de Mode */
+    .mode-indicator {
+        background: #f1f5f9;
+        border-radius: var(--border-radius-md);
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .mode-active {
+        background: var(--success-gradient);
+        color: white;
+    }
+
+    /* Statistiques */
+    .stats-container {
+        background: white;
+        border-radius: var(--border-radius-lg);
+        padding: 1.5rem;
+        box-shadow: var(--shadow-soft);
+        border: 1px solid #f1f5f9;
+    }
+
+    .stat-item {
+        text-align: center;
+        padding: 1rem;
+    }
+
+    .stat-number {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+        display: block;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+    }
+
+    /* Responsive */
+    @media (min-width: 992px) {
+        .palette-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .editor-container {
+            padding: 0.5rem;
+        }
+        
+        .toolbar-modern {
+            padding: 1rem;
+        }
+    }
+
+    /* Animation */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-in {
+        animation: slideInUp 0.5s ease-out;
+    }
+
+    /* Overlay d'instructions */
+    .instructions-overlay {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border: 2px dashed #cbd5e1;
+    }
+
+    /* Text Gradient */
+    .text-gradient {
+        background: var(--primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Styles pour l'impression */
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        #editeur-logigramme {
+            height: auto !important;
+            overflow: visible !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: white !important;
+        }
+        
+        #conteneur-elements {
+            width: auto !important;
+            height: auto !important;
+            min-width: auto !important;
+            min-height: auto !important;
+            transform: none !important;
+        }
+        
+        .element-processus {
+            position: static !important;
+            margin: 10px;
+            break-inside: avoid;
+        }
+    }
+
+    /* Contrôles de navigation */
+    .navigation-controls {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: white;
+        border-radius: var(--border-radius-md);
+        padding: 0.5rem;
+        box-shadow: var(--shadow-medium);
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn-navigation {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid #e2e8f0;
+        border-radius: var(--border-radius-md);
+        background: white;
+        color: #475569;
+        transition: all 0.3s ease;
+    }
+
+    .btn-navigation:hover {
+        border-color: #3b82f6;
+        color: #3b82f6;
+    }
+
+    /* Menu contextuel pour les liens */
+    .context-menu-lien {
+        position: absolute;
+        background: white;
+        border-radius: var(--border-radius-md);
+        box-shadow: var(--shadow-medium);
+        padding: 0.5rem;
+        z-index: 1000;
+        min-width: 150px;
+    }
+
+    .context-menu-item {
+        padding: 0.5rem 1rem;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: background-color 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .context-menu-item:hover {
+        background: #f1f5f9;
+    }
+
+    .context-menu-item.text-danger:hover {
+        background: #fef2f2;
+    }
+
+    /* Informations du logigramme */
+    .info-badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .info-form {
+        background: #f8fafc;
+        border-radius: var(--border-radius-md);
+        padding: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid editor-container">
+    <!-- En-tête -->
+    <div class="row mb-4 animate-in">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h2 mb-2 fw-bold text-gradient">Éditeur de Logigramme</h1>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="badge bg-primary fs-6" id="logigramme-nom">{{ activite.nom }}</span>
+                        {% if activite.description %}
+                        <span class="text-muted">•</span>
+                        <p class="text-muted mb-0" id="logigramme-description">{{ activite.description }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="info-badges mt-2">
+                        {% if activite.direction %}
+                        <span class="badge bg-info">
+                            <i class="fas fa-sitemap me-1"></i>{{ activite.direction.nom }}
+                        </span>
+                        {% endif %}
+                        {% if activite.service %}
+                        <span class="badge bg-secondary">
+                            <i class="fas fa-building me-1"></i>{{ activite.service.nom }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="btn-group">
+                    <button id="btn-imprimer" class="btn btn-action no-print">
+                        <i class="fas fa-print me-2"></i>Imprimer
+                    </button>
+                    <button id="btn-sauvegarder" class="btn btn-action no-print">
+                        <i class="fas fa-save me-2"></i>Sauvegarder
+                    </button>
+                    <button id="btn-modifier-infos" class="btn btn-tool no-print">
+                        <i class="fas fa-edit me-2"></i>Modifier
+                    </button>
+                    <a href="{{ url_for('liste_logigrammes') }}" class="btn btn-tool no-print">
+                        <i class="fas fa-arrow-left me-2"></i>Retour
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sidebar Gauche - Palette et Informations -->
+        <div class="col-lg-2 no-print">
+            <!-- Informations du logigramme -->
+            <div class="info-panel animate-in" style="animation-delay: 0.1s;">
+                <div class="palette-title">
+                    <i class="fas fa-info-circle"></i>
+                    Informations
+                </div>
+                <div class="info-form">
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Nom</small>
+                        <strong id="info-nom">{{ activite.nom }}</strong>
+                    </div>
+                    {% if activite.description %}
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Description</small>
+                        <small id="info-description">{{ activite.description }}</small>
+                    </div>
+                    {% endif %}
+                    {% if activite.direction %}
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Direction</small>
+                        <small>{{ activite.direction.nom }}</small>
+                    </div>
+                    {% endif %}
+                    {% if activite.service %}
+                    <div class="mb-2">
+                        <small class="text-muted d-block">Service</small>
+                        <small>{{ activite.service.nom }}</small>
+                    </div>
+                    {% endif %}
+                    <div class="mb-0">
+                        <small class="text-muted d-block">Créé le</small>
+                        <small>{{ activite.created_at.strftime('%d/%m/%Y') }}</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="palette-modern animate-in" style="animation-delay: 0.1s;">
+                <!-- Éléments de Base -->
+                <div class="palette-section">
+                    <div class="palette-title">
+                        <i class="fas fa-shapes"></i>
+                        Éléments
+                    </div>
+                    <div class="palette-grid">
+                        <div class="palette-item element-debut" data-type="debut" draggable="true">
+                            <i class="fas fa-play-circle"></i>
+                            <small>Début</small>
+                        </div>
+                        <div class="palette-item element-action" data-type="action" draggable="true">
+                            <i class="fas fa-cogs"></i>
+                            <small>Action</small>
+                        </div>
+                        <div class="palette-item element-controle" data-type="controle" draggable="true">
+                            <i class="fas fa-check-double"></i>
+                            <small>Contrôle</small>
+                        </div>
+                        <div class="palette-item element-risque" data-type="risque" draggable="true">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <small>Risque</small>
+                        </div>
+                        <div class="palette-item element-fin" data-type="fin" draggable="true">
+                            <i class="fas fa-flag-checkered"></i>
+                            <small>Fin</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Organisation -->
+                <div class="palette-section">
+                    <div class="palette-title">
+                        <i class="fas fa-sitemap"></i>
+                        Organisation
+                    </div>
+                    <div class="palette-grid">
+                        <div class="palette-item element-organisation" data-type="organisation" draggable="true">
+                            <i class="fas fa-grip-lines-vertical"></i>
+                            <small>Séparation</small>
+                        </div>
+                        <div class="palette-item element-titre" data-type="titre" draggable="true">
+                            <i class="fas fa-heading"></i>
+                            <small>Titre</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Types de Liens -->
+                <div class="palette-section">
+                    <div class="palette-title">
+                        <i class="fas fa-link"></i>
+                        Connexions
+                    </div>
+                    <div class="palette-grid">
+                        <div class="palette-item" data-type="lien-normal" draggable="false" style="border-color: #475569; cursor: default;">
+                            <i class="fas fa-arrow-right" style="color: #475569;"></i>
+                            <small>Lien Normal</small>
+                        </div>
+                        <div class="palette-item" data-type="lien-oui" draggable="false" style="border-color: #10b981; cursor: default;">
+                            <i class="fas fa-check" style="color: #10b981;"></i>
+                            <small>Lien Oui</small>
+                        </div>
+                        <div class="palette-item" data-type="lien-non" draggable="false" style="border-color: #ef4444; cursor: default;">
+                            <i class="fas fa-times" style="color: #ef4444;"></i>
+                            <small>Lien Non</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="stats-container animate-in no-print" style="animation-delay: 0.2s;">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <span class="stat-number" id="stat-elements">0</span>
+                            <span class="stat-label">Éléments</span>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="stat-item">
+                            <span class="stat-number" id="stat-liens">0</span>
+                            <span class="stat-label">Connexions</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone d'Édition Principale -->
+        <div class="col-lg-10">
+            <!-- Barre d'Outils -->
+            <div class="toolbar-modern mb-3 animate-in no-print" style="animation-delay: 0.3s;">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex flex-wrap gap-2">
+                            <button class="btn-tool active" id="btn-mode-selection" data-mode="selection">
+                                <i class="fas fa-mouse-pointer"></i>
+                                Sélection
+                            </button>
+                            <button class="btn-tool" id="btn-mode-lien" data-mode="lien">
+                                <i class="fas fa-link"></i>
+                                Connexions
+                            </button>
+                            <div class="btn-group">
+                                <button class="btn-tool" id="btn-zoom-out" title="Zoom arrière">
+                                    <i class="fas fa-search-minus"></i>
+                                </button>
+                                <button class="btn-tool" id="btn-reset-zoom" title="Zoom normal">
+                                    <i class="fas fa-expand-arrows-alt"></i>
+                                </button>
+                                <button class="btn-tool" id="btn-zoom-in" title="Zoom avant">
+                                    <i class="fas fa-search-plus"></i>
+                                </button>
+                            </div>
+                            <button class="btn-tool" id="btn-supprimer-selection" title="Supprimer la sélection">
+                                <i class="fas fa-trash"></i>
+                                Supprimer
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-end gap-3 align-items-center">
+                            <div class="mode-indicator" id="mode-indicator">
+                                <i class="fas fa-mouse-pointer"></i>
+                                Mode Sélection
+                            </div>
+                            <button class="btn-tool text-danger" id="btn-effacer-tout" title="Tout effacer">
+                                <i class="fas fa-broom"></i>
+                                Tout Effacer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Éditeur -->
+            <div class="position-relative animate-in" style="animation-delay: 0.4s;">
+                <div id="editeur-logigramme">
+                    <svg id="svg-liens" style="position: absolute; top: 0; left: 0; width: 2000px; height: 2000px; pointer-events: none; z-index: 5;"></svg>
+                    <div id="conteneur-elements"></div>
+                </div>
+                
+                <!-- Overlay d'instructions -->
+                <div id="instructions-overlay" class="position-absolute top-50 start-50 translate-middle text-center instructions-overlay rounded-3 p-5" style="z-index: 1; pointer-events: none;">
+                    <i class="fas fa-project-diagram fa-4x text-muted mb-4"></i>
+                    <h4 class="text-muted mb-3">Commencer votre logigramme</h4>
+                    <p class="text-muted mb-4">Glissez des éléments depuis la palette pour démarrer la conception de votre processus</p>
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <span class="badge bg-light text-dark p-2">
+                            <i class="fas fa-mouse-pointer me-1"></i>Cliquer pour sélectionner
+                        </span>
+                        <span class="badge bg-light text-dark p-2">
+                            <i class="fas fa-link me-1"></i>Mode Connexions pour créer des liens
+                        </span>
+                        <span class="badge bg-light text-dark p-2">
+                            <i class="fas fa-trash me-1"></i>Suppr pour supprimer
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Contrôles de navigation -->
+                <div class="navigation-controls no-print">
+                    <button class="btn-navigation" id="btn-deplacer-gauche" title="Déplacer à gauche">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <button class="btn-navigation" id="btn-deplacer-droite" title="Déplacer à droite">
+                        <i class="fas fa-arrow-right"></i>
+                    </button>
+                    <button class="btn-navigation" id="btn-deplacer-haut" title="Déplacer vers le haut">
+                        <i class="fas fa-arrow-up"></i>
+                    </button>
+                    <button class="btn-navigation" id="btn-deplacer-bas" title="Déplacer vers le bas">
+                        <i class="fas fa-arrow-down"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Édition Élément -->
+<div class="modal fade" id="modal-editer-element" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>
+                    Éditer l'Élément
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-element">
+                    <input type="hidden" id="element-id">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="element-libelle" class="form-label fw-semibold">Libellé *</label>
+                                <input type="text" class="form-control form-control-lg" id="element-libelle" required 
+                                       placeholder="Saisissez le libellé de l'élément...">
+                            </div>
+                            <div class="mb-3">
+                                <label for="element-description" class="form-label fw-semibold">Description</label>
+                                <textarea class="form-control" id="element-description" rows="4" 
+                                          placeholder="Description détaillée de l'élément..."></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title fw-semibold">Informations</h6>
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted">Type d'élément</label>
+                                        <input type="text" class="form-control" id="element-type" disabled>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted">Position</label>
+                                        <div class="d-flex gap-2">
+                                            <input type="number" class="form-control form-control-sm" id="element-pos-x" placeholder="X">
+                                            <input type="number" class="form-control form-control-sm" id="element-pos-y" placeholder="Y">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label small text-muted">Dimensions</label>
+                                        <div class="d-flex gap-2">
+                                            <input type="number" class="form-control form-control-sm" id="element-width" placeholder="Largeur" min="100">
+                                            <input type="number" class="form-control form-control-sm" id="element-height" placeholder="Hauteur" min="50">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Annuler
+                </button>
+                <button type="button" class="btn btn-danger" id="btn-supprimer-element">
+                    <i class="fas fa-trash me-2"></i>Supprimer
+                </button>
+                <button type="button" class="btn btn-modern btn-modern-primary" id="btn-sauvegarder-element">
+                    <i class="fas fa-save me-2"></i>Sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Informations Logigramme -->
+<div class="modal fade" id="modal-infos-logigramme" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Informations du Logigramme
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-infos-logigramme">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="logigramme-nom" class="form-label fw-semibold">Nom du logigramme *</label>
+                                <input type="text" class="form-control form-control-lg" id="logigramme-nom-input" required 
+                                       value="{{ activite.nom }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="logigramme-description" class="form-label fw-semibold">Description</label>
+                                <textarea class="form-control" id="logigramme-description-input" rows="4">{{ activite.description or '' }}</textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title fw-semibold">Affectation</h6>
+                                    <div class="mb-3">
+                                        <label for="logigramme-direction" class="form-label small">Direction</label>
+                                        <select class="form-select" id="logigramme-direction-input">
+                                            <option value="">Sélectionner une direction</option>
+                                            {% for direction in directions %}
+                                            <option value="{{ direction.id }}" {% if activite.direction_id == direction.id %}selected{% endif %}>
+                                                {{ direction.nom }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="logigramme-service" class="form-label small">Service</label>
+                                        <select class="form-select" id="logigramme-service-input">
+                                            <option value="">Sélectionner un service</option>
+                                            {% for service in services %}
+                                            <option value="{{ service.id }}" data-direction="{{ service.direction_id }}" {% if activite.service_id == service.id %}selected{% endif %}>
+                                                {{ service.nom }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Annuler
+                </button>
+                <button type="button" class="btn btn-modern btn-modern-primary" id="btn-sauvegarder-infos">
+                    <i class="fas fa-save me-2"></i>Sauvegarder
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Sélection Type Lien -->
+<div class="modal fade" id="modal-type-lien" tabindex="-1">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-link me-2"></i>
+                    Type de Lien
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <p class="mb-4">Choisissez le type de lien :</p>
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-dark btn-lg" data-lien-type="normal">
+                        <i class="fas fa-arrow-right me-2"></i>Lien Normal
+                    </button>
+                    <button type="button" class="btn btn-outline-success btn-lg" data-lien-type="oui">
+                        <i class="fas fa-check me-2"></i>Lien Oui
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-lg" data-lien-type="non">
+                        <i class="fas fa-times me-2"></i>Lien Non
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Confirmation -->
+<div class="modal fade" id="modal-confirmation" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Confirmation
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="message-confirmation" class="mb-0">Êtes-vous sûr de vouloir effectuer cette action ?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Annuler
+                </button>
+                <button type="button" class="btn btn-warning" id="btn-confirmer-action">
+                    <i class="fas fa-check me-2"></i>Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Variables globales
+    const ACTIVITE_ID = {{ activite.id }};
+    let elements = [];
+    let liens = [];
+    let modeActuel = 'selection';
+    let elementSelectionne = null;
+    let elementSourceLien = null;
+    let echelle = 1;
+    let elementEnDeplacement = null;
+    let typeLienSelectionne = 'normal';
+    let menuContextuelLien = null;
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+        initialiserEditeur();
+        chargerLogigramme();
+        initialiserEvenements();
+        mettreAJourStats();
+        initialiserFiltrageServices();
+        
+        {% if activite.is_archived %}
+            afficherMessage('Ce logigramme est archivé et ne peut pas être modifié', 'warning');
+            
+            // Désactiver toutes les interactions
+            document.querySelectorAll('.palette-item, .btn-tool, #editeur-logigramme').forEach(el => {
+                el.style.pointerEvents = 'none';
+                el.style.opacity = '0.6';
+            });
+        {% endif %}
+    });
+
+    function initialiserEditeur() {
+        initialiserGlisserDeposer();
+        cacherInstructions();
+        initialiserNavigation();
+        initialiserDefsSVG();
+    }
+
+    function initialiserDefsSVG() {
+        const svg = document.getElementById('svg-liens');
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        
+        // Arrowhead pour lien normal
+        const arrowheadNormal = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        arrowheadNormal.setAttribute('id', 'arrowhead-modern');
+        arrowheadNormal.setAttribute('markerWidth', '10');
+        arrowheadNormal.setAttribute('markerHeight', '7');
+        arrowheadNormal.setAttribute('refX', '9');
+        arrowheadNormal.setAttribute('refY', '3.5');
+        arrowheadNormal.setAttribute('orient', 'auto');
+        arrowheadNormal.innerHTML = '<polygon points="0 0, 10 3.5, 0 7" fill="#475569"/>';
+        
+        // Arrowhead pour lien oui
+        const arrowheadOui = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        arrowheadOui.setAttribute('id', 'arrowhead-oui');
+        arrowheadOui.setAttribute('markerWidth', '10');
+        arrowheadOui.setAttribute('markerHeight', '7');
+        arrowheadOui.setAttribute('refX', '9');
+        arrowheadOui.setAttribute('refY', '3.5');
+        arrowheadOui.setAttribute('orient', 'auto');
+        arrowheadOui.innerHTML = '<polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>';
+        
+        // Arrowhead pour lien non
+        const arrowheadNon = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        arrowheadNon.setAttribute('id', 'arrowhead-non');
+        arrowheadNon.setAttribute('markerWidth', '10');
+        arrowheadNon.setAttribute('markerHeight', '7');
+        arrowheadNon.setAttribute('refX', '9');
+        arrowheadNon.setAttribute('refY', '3.5');
+        arrowheadNon.setAttribute('orient', 'auto');
+        arrowheadNon.innerHTML = '<polygon points="0 0, 10 3.5, 0 7" fill="#ef4444"/>';
+        
+        defs.appendChild(arrowheadNormal);
+        defs.appendChild(arrowheadOui);
+        defs.appendChild(arrowheadNon);
+        svg.appendChild(defs);
+    }
+
+    function initialiserNavigation() {
+        // Navigation avec les flèches
+        document.getElementById('btn-deplacer-gauche').addEventListener('click', () => deplacerVue(-100, 0));
+        document.getElementById('btn-deplacer-droite').addEventListener('click', () => deplacerVue(100, 0));
+        document.getElementById('btn-deplacer-haut').addEventListener('click', () => deplacerVue(0, -100));
+        document.getElementById('btn-deplacer-bas').addEventListener('click', () => deplacerVue(0, 100));
+    }
+
+    function initialiserFiltrageServices() {
+        const directionSelect = document.getElementById('logigramme-direction-input');
+        const serviceSelect = document.getElementById('logigramme-service-input');
+        
+        if (directionSelect && serviceSelect) {
+            directionSelect.addEventListener('change', function() {
+                const directionId = this.value;
+                const services = serviceSelect.querySelectorAll('option');
+                
+                services.forEach(option => {
+                    if (option.value === '') return; // Garder l'option par défaut
+                    
+                    if (!directionId || option.getAttribute('data-direction') === directionId) {
+                        option.style.display = 'block';
+                        option.disabled = false;
+                    } else {
+                        option.style.display = 'none';
+                        option.disabled = true;
+                    }
+                });
+                
+                // Réinitialiser la sélection du service si incompatible
+                if (directionId && serviceSelect.value) {
+                    const selectedOption = serviceSelect.querySelector(`option[value="${serviceSelect.value}"]`);
+                    if (selectedOption && selectedOption.getAttribute('data-direction') !== directionId) {
+                        serviceSelect.value = '';
+                    }
+                }
+            });
+        }
+    }
+
+    function deplacerVue(deltaX, deltaY) {
+        const editeur = document.getElementById('editeur-logigramme');
+        editeur.scrollLeft += deltaX;
+        editeur.scrollTop += deltaY;
+    }
+
+    function cacherInstructions() {
+        const overlay = document.getElementById('instructions-overlay');
+        if (overlay) {
+            overlay.style.display = 'none';
+        }
+    }
+
+    function montrerInstructions() {
+        const overlay = document.getElementById('instructions-overlay');
+        if (overlay && elements.length === 0) {
+            overlay.style.display = 'block';
+        }
+    }
+
+    // Charger les éléments et liens existants
+    async function chargerLogigramme() {
+        try {
+            const reponseElements = await fetchWithCSRF(`/api/logigramme/${ACTIVITE_ID}/elements`);
+            if (!reponseElements.ok) throw new Error('Erreur chargement éléments');
+            elements = await reponseElements.json();
+            
+            const reponseLiens = await fetchWithCSRF(`/api/logigramme/${ACTIVITE_ID}/liens`);
+            if (!reponseLiens.ok) throw new Error('Erreur chargement liens');
+            const liensData = await reponseLiens.json();
+            liens = liensData.map(lien => ({
+                ...lien,
+                type: lien.style?.type || 'normal'
+            }));
+            
+            afficherElements();
+            afficherLiens();
+            mettreAJourStats();
+            
+            if (elements.length > 0) {
+                cacherInstructions();
+            } else {
+                montrerInstructions();
+            }
+            
+        } catch (erreur) {
+            console.error('Erreur chargement:', erreur);
+            afficherMessage('Erreur lors du chargement du logigramme', 'error');
+        }
+    }
+
+    // Afficher les éléments
+    function afficherElements() {
+        const conteneur = document.getElementById('conteneur-elements');
+        conteneur.innerHTML = '';
+        
+        elements.forEach(element => {
+            const divElement = creerElementDOM(element);
+            conteneur.appendChild(divElement);
+        });
+    }
+
+    // Créer un élément DOM moderne
+    function creerElementDOM(element) {
+        const div = document.createElement('div');
+        div.className = `element-processus element-${element.type}`;
+        div.dataset.id = element.id;
+        div.style.left = element.position_x + 'px';
+        div.style.top = element.position_y + 'px';
+        
+        // Appliquer les dimensions personnalisées
+        if (element.style && element.style.width) {
+            div.style.width = element.style.width + 'px';
+        }
+        if (element.style && element.style.height) {
+            div.style.height = element.style.height + 'px';
+        }
+        
+        div.innerHTML = `
+            <div class="element-content">
+                <div class="element-title">${element.libelle}</div>
+                ${element.description ? `<div class="element-description">${element.description}</div>` : ''}
+            </div>
+        `;
+        
+        // Événements
+        div.addEventListener('dblclick', () => editerElement(element.id));
+        div.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            afficherMenuContextuel(e, element.id);
+        });
+        
+        div.addEventListener('click', (e) => {
+            e.stopPropagation();
+            
+            if (modeActuel === 'selection') {
+                selectionnerElement(element.id);
+            } else if (modeActuel === 'lien') {
+                gererCreationLien(element.id);
+            }
+        });
+        
+        // Glisser-déposer
+        rendreDraggable(div, element.id);
+        
+        return div;
+    }
+
+    // Afficher les liens avec labels
+    function afficherLiens() {
+        const svg = document.getElementById('svg-liens');
+        // Garder seulement les defs
+        const defs = svg.querySelector('defs');
+        svg.innerHTML = '';
+        if (defs) svg.appendChild(defs);
+        
+        liens.forEach(lien => {
+            const source = elements.find(el => el.id === lien.source_id);
+            const cible = elements.find(el => el.id === lien.cible_id);
+            
+            if (source && cible) {
+                // Calculer les positions
+                const x1 = source.position_x + (source.style?.width || 160) / 2;
+                const y1 = source.position_y + (source.style?.height || 80) / 2;
+                const x2 = cible.position_x + (cible.style?.width || 160) / 2;
+                const y2 = cible.position_y + (cible.style?.height || 80) / 2;
+                
+                // Créer la ligne
+                const ligne = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                const typeLien = lien.type || 'normal';
+                ligne.setAttribute('class', `lien-processus lien-${typeLien}`);
+                ligne.setAttribute('x1', x1);
+                ligne.setAttribute('y1', y1);
+                ligne.setAttribute('x2', x2);
+                ligne.setAttribute('y2', y2);
+                ligne.setAttribute('marker-end', `url(#arrowhead-${typeLien})`);
+                ligne.dataset.id = lien.id;
+                
+                // Ajouter des événements pour la suppression
+                ligne.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    afficherMenuContextuelLien(e, lien.id);
+                });
+                
+                ligne.addEventListener('click', (e) => {
+                    if (e.ctrlKey) {
+                        supprimerLien(lien.id);
+                    }
+                });
+                
+                svg.appendChild(ligne);
+                
+                // Ajouter le label pour les liens Oui/Non
+                if (typeLien === 'oui' || typeLien === 'non') {
+                    const labelX = (x1 + x2) / 2;
+                    const labelY = (y1 + y2) / 2;
+                    
+                    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    label.setAttribute('class', `lien-label lien-label-${typeLien}`);
+                    label.setAttribute('x', labelX);
+                    label.setAttribute('y', labelY);
+                    label.setAttribute('text-anchor', 'middle');
+                    label.setAttribute('dy', '0.3em');
+                    label.textContent = typeLien === 'oui' ? 'OUI' : 'NON';
+                    label.dataset.lienId = lien.id;
+                    
+                    svg.appendChild(label);
+                }
+            }
+        });
+    }
+
+    // Menu contextuel pour les liens
+    function afficherMenuContextuelLien(e, lienId) {
+        // Supprimer l'ancien menu s'il existe
+        if (menuContextuelLien) {
+            menuContextuelLien.remove();
+        }
+        
+        // Créer le nouveau menu
+        menuContextuelLien = document.createElement('div');
+        menuContextuelLien.className = 'context-menu-lien';
+        menuContextuelLien.style.left = e.clientX + 'px';
+        menuContextuelLien.style.top = e.clientY + 'px';
+        
+        menuContextuelLien.innerHTML = `
+            <div class="context-menu-item" data-action="changer-type">
+                <i class="fas fa-palette"></i>
+                Changer le type
+            </div>
+            <div class="context-menu-item text-danger" data-action="supprimer">
+                <i class="fas fa-trash"></i>
+                Supprimer le lien
+            </div>
+        `;
+        
+        document.body.appendChild(menuContextuelLien);
+        
+        // Gérer les clics sur le menu
+        menuContextuelLien.querySelector('[data-action="changer-type"]').addEventListener('click', () => {
+            changerTypeLien(lienId);
+            menuContextuelLien.remove();
+            menuContextuelLien = null;
+        });
+        
+        menuContextuelLien.querySelector('[data-action="supprimer"]').addEventListener('click', () => {
+            supprimerLien(lienId);
+            menuContextuelLien.remove();
+            menuContextuelLien = null;
+        });
+        
+        // Fermer le menu en cliquant ailleurs
+        setTimeout(() => {
+            document.addEventListener('click', fermerMenuContextuel);
+        }, 100);
+    }
+
+    function fermerMenuContextuel() {
+        if (menuContextuelLien) {
+            menuContextuelLien.remove();
+            menuContextuelLien = null;
+        }
+        document.removeEventListener('click', fermerMenuContextuel);
+    }
+
+    // Gestion du glisser-déposer depuis la palette
+    function initialiserGlisserDeposer() {
+        const paletteItems = document.querySelectorAll('.palette-item');
+        const editeur = document.getElementById('editeur-logigramme');
+        
+        paletteItems.forEach(item => {
+            if (item.dataset.type && !item.dataset.type.includes('lien-')) {
+                item.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('type', item.dataset.type);
+                    e.dataTransfer.effectAllowed = 'copy';
+                });
+            }
+        });
+        
+        editeur.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'copy';
+        });
+        
+        editeur.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('type');
+            const rect = editeur.getBoundingClientRect();
+            const scrollLeft = editeur.scrollLeft;
+            const scrollTop = editeur.scrollTop;
+            const x = e.clientX - rect.left + scrollLeft - 80;
+            const y = e.clientY - rect.top + scrollTop - 40;
+            
+            creerNouvelElement(type, x, y);
+        });
+    }
+
+    // Créer un nouvel élément
+    async function creerNouvelElement(type, x, y) {
+        const libelle = prompt('Libellé de l\'élément:', getLibelleParDefaut(type));
+        if (!libelle) return;
+        
+        const style = {};
+        if (type === 'organisation') {
+            style.width = 20;
+            style.height = 500;
+        } else if (type === 'titre') {
+            style.width = 200;
+            style.height = 60;
+        }
+        
+        const nouvelElement = {
+            type: type,
+            libelle: libelle,
+            description: '',
+            position_x: Math.max(0, x),
+            position_y: Math.max(0, y),
+            style: style
+        };
+        
+        try {
+            const reponse = await fetchWithCSRF(`/api/logigramme/${ACTIVITE_ID}/elements`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify(nouvelElement)
+            });
+            
+            if (!reponse.ok) throw new Error('Erreur création élément');
+            
+            const resultat = await reponse.json();
+            nouvelElement.id = resultat.id;
+            elements.push(nouvelElement);
+            
+            const conteneur = document.getElementById('conteneur-elements');
+            const divElement = creerElementDOM(nouvelElement);
+            conteneur.appendChild(divElement);
+            
+            cacherInstructions();
+            mettreAJourStats();
+            afficherMessage('Élément créé avec succès', 'success');
+            
+        } catch (erreur) {
+            console.error('Erreur création:', erreur);
+            afficherMessage('Erreur lors de la création de l\'élément', 'error');
+        }
+    }
+
+    // Libellés par défaut selon le type
+    function getLibelleParDefaut(type) {
+        const libelles = {
+            'debut': 'Début du processus',
+            'action': 'Nouvelle action',
+            'controle': 'Point de contrôle',
+            'risque': 'Risque identifié',
+            'fin': 'Fin du processus',
+            'organisation': 'Séparation organisationnelle',
+            'titre': 'Nouveau titre'
+        };
+        return libelles[type] || 'Nouvel élément';
+    }
+
+    // Rendre un élément draggable
+    function rendreDraggable(element, elementId) {
+        let deplacementX = 0, deplacementY = 0;
+        
+        element.addEventListener('mousedown', commencerDeplacement);
+        
+        function commencerDeplacement(e) {
+            if (modeActuel !== 'selection') return;
+            
+            e.preventDefault();
+            elementEnDeplacement = element;
+            element.classList.add('selected');
+            
+            const rect = element.getBoundingClientRect();
+            deplacementX = e.clientX - rect.left;
+            deplacementY = e.clientY - rect.top;
+            
+            document.addEventListener('mousemove', deplacerElement);
+            document.addEventListener('mouseup', arreterDeplacement);
+        }
+        
+        function deplacerElement(e) {
+            if (!elementEnDeplacement) return;
+            
+            const editeur = document.getElementById('editeur-logigramme');
+            const rectEditeur = editeur.getBoundingClientRect();
+            const scrollLeft = editeur.scrollLeft;
+            const scrollTop = editeur.scrollTop;
+            
+            let nouvelleX = e.clientX - rectEditeur.left + scrollLeft - deplacementX;
+            let nouvelleY = e.clientY - rectEditeur.top + scrollTop - deplacementY;
+            
+            // Limites de l'éditeur
+            nouvelleX = Math.max(0, nouvelleX);
+            nouvelleY = Math.max(0, nouvelleY);
+            
+            element.style.left = nouvelleX + 'px';
+            element.style.top = nouvelleY + 'px';
+            
+            afficherLiens();
+        }
+        
+        function arreterDeplacement() {
+            if (!elementEnDeplacement) return;
+            
+            document.removeEventListener('mousemove', deplacerElement);
+            document.removeEventListener('mouseup', arreterDeplacement);
+            
+            const nouvelleX = parseInt(element.style.left);
+            const nouvelleY = parseInt(element.style.top);
+            
+            mettreAJourPositionElement(elementId, nouvelleX, nouvelleY);
+            
+            elementEnDeplacement = null;
+        }
+    }
+
+    // Mettre à jour la position d'un élément
+    async function mettreAJourPositionElement(elementId, x, y) {
+        const element = elements.find(el => el.id === elementId);
+        if (element) {
+            element.position_x = x;
+            element.position_y = y;
+            
+            try {
+                const reponse = await fetchWithCSRF(`/api/element/${elementId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ position_x: x, position_y: y })
+                });
+                
+                if (!reponse.ok) throw new Error('Erreur mise à jour position');
+                
+                afficherLiens();
+                
+            } catch (erreur) {
+                console.error('Erreur mise à jour position:', erreur);
+            }
+        }
+    }
+
+    // Initialiser les événements
+    function initialiserEvenements() {
+        // Modes
+        document.getElementById('btn-mode-selection').addEventListener('click', () => changerMode('selection'));
+        document.getElementById('btn-mode-lien').addEventListener('click', () => changerMode('lien'));
+        
+        // Zoom
+        document.getElementById('btn-zoom-in').addEventListener('click', zoomIn);
+        document.getElementById('btn-zoom-out').addEventListener('click', zoomOut);
+        document.getElementById('btn-reset-zoom').addEventListener('click', resetZoom);
+        
+        // Actions
+        document.getElementById('btn-effacer-tout').addEventListener('click', effacerTout);
+        document.getElementById('btn-supprimer-selection').addEventListener('click', supprimerSelection);
+        document.getElementById('btn-imprimer').addEventListener('click', imprimerLogigramme);
+        document.getElementById('btn-sauvegarder').addEventListener('click', () => {
+            afficherMessage('Logigramme sauvegardé avec succès!', 'success');
+        });
+        
+        // Modification des informations
+        document.getElementById('btn-modifier-infos').addEventListener('click', () => {
+            const modal = new bootstrap.Modal(document.getElementById('modal-infos-logigramme'));
+            modal.show();
+        });
+        
+        document.getElementById('btn-sauvegarder-infos').addEventListener('click', sauvegarderInfosLogigramme);
+        
+        // Types de liens
+        document.querySelectorAll('[data-lien-type]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                typeLienSelectionne = e.target.closest('button').dataset.lienType;
+                bootstrap.Modal.getInstance(document.getElementById('modal-type-lien')).hide();
+            });
+        });
+        
+        // Clic sur l'éditeur
+        document.getElementById('editeur-logigramme').addEventListener('click', (e) => {
+            if (e.target.id === 'editeur-logigramme') {
+                deselectionnerElement();
+                if (modeActuel === 'lien') {
+                    reinitialiserSelectionLien();
+                }
+            }
+        });
+        
+        // Échap pour annuler
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                deselectionnerElement();
+                if (modeActuel === 'lien') {
+                    reinitialiserSelectionLien();
+                }
+                if (menuContextuelLien) {
+                    fermerMenuContextuel();
+                }
+            }
+            
+            // Supprimer avec la touche Suppr
+            if (e.key === 'Delete' && elementSelectionne) {
+                supprimerElement(elementSelectionne);
+            }
+        });
+    }
+
+    // Sauvegarder les informations du logigramme
+    async function sauvegarderInfosLogigramme() {
+        const nom = document.getElementById('logigramme-nom-input').value;
+        const description = document.getElementById('logigramme-description-input').value;
+        const directionId = document.getElementById('logigramme-direction-input').value || null;
+        const serviceId = document.getElementById('logigramme-service-input').value || null;
+        
+        if (!nom) {
+            afficherMessage('Le nom est obligatoire', 'error');
+            return;
+        }
+        
+        try {
+            const reponse = await fetchWithCSRF(`/api/logigramme/${ACTIVITE_ID}/infos`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    nom: nom,
+                    description: description,
+                    direction_id: directionId,
+                    service_id: serviceId
+                })
+            });
+            
+            if (!reponse.ok) throw new Error('Erreur mise à jour informations');
+            
+            // Mettre à jour l'affichage
+            document.getElementById('logigramme-nom').textContent = nom;
+            document.getElementById('info-nom').textContent = nom;
+            
+            if (description) {
+                document.getElementById('logigramme-description').textContent = description;
+                document.getElementById('info-description').textContent = description;
+            }
+            
+            // Mettre à jour les badges d'affectation
+            mettreAJourBadgesAffectation(directionId, serviceId);
+            
+            bootstrap.Modal.getInstance(document.getElementById('modal-infos-logigramme')).hide();
+            afficherMessage('Informations mises à jour avec succès', 'success');
+            
+        } catch (erreur) {
+            console.error('Erreur mise à jour informations:', erreur);
+            afficherMessage('Erreur lors de la mise à jour des informations', 'error');
+        }
+    }
+
+    function mettreAJourBadgesAffectation(directionId, serviceId) {
+        const badgesContainer = document.querySelector('.info-badges');
+        badgesContainer.innerHTML = '';
+        
+        // Récupérer les noms depuis les selects (pour l'affichage immédiat)
+        const directionSelect = document.getElementById('logigramme-direction-input');
+        const serviceSelect = document.getElementById('logigramme-service-input');
+        
+        if (directionId) {
+            const directionOption = directionSelect.querySelector(`option[value="${directionId}"]`);
+            if (directionOption) {
+                const badgeDirection = document.createElement('span');
+                badgeDirection.className = 'badge bg-info';
+                badgeDirection.innerHTML = `<i class="fas fa-sitemap me-1"></i>${directionOption.textContent}`;
+                badgesContainer.appendChild(badgeDirection);
+            }
+        }
+        
+        if (serviceId) {
+            const serviceOption = serviceSelect.querySelector(`option[value="${serviceId}"]`);
+            if (serviceOption) {
+                const badgeService = document.createElement('span');
+                badgeService.className = 'badge bg-secondary';
+                badgeService.innerHTML = `<i class="fas fa-building me-1"></i>${serviceOption.textContent}`;
+                badgesContainer.appendChild(badgeService);
+            }
+        }
+    }
+
+    function changerMode(nouveauMode) {
+        modeActuel = nouveauMode;
+        
+        // Mettre à jour les boutons
+        document.querySelectorAll('[data-mode]').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === nouveauMode);
+        });
+        
+        // Mettre à jour l'indicateur
+        const indicator = document.getElementById('mode-indicator');
+        if (indicator) {
+            indicator.innerHTML = nouveauMode === 'selection' ? 
+                '<i class="fas fa-mouse-pointer"></i> Mode Sélection' :
+                '<i class="fas fa-link"></i> Mode Connexions';
+            indicator.classList.toggle('mode-active', nouveauMode === 'lien');
+        }
+        
+        deselectionnerElement();
+        reinitialiserSelectionLien();
+        
+        afficherMessage(`Mode ${nouveauMode === 'selection' ? 'Sélection' : 'Connexions'} activé`, 'info');
+    }
+
+    function zoomIn() {
+        echelle = Math.min(2, echelle + 0.1);
+        appliquerZoom();
+    }
+
+    function zoomOut() {
+        echelle = Math.max(0.2, echelle - 0.1);
+        appliquerZoom();
+    }
+
+    function resetZoom() {
+        echelle = 1;
+        appliquerZoom();
+    }
+
+    function appliquerZoom() {
+        const conteneur = document.getElementById('conteneur-elements');
+        conteneur.style.transform = `scale(${echelle})`;
+        afficherMessage(`Zoom: ${Math.round(echelle * 100)}%`, 'info');
+    }
+
+    function selectionnerElement(elementId) {
+        deselectionnerElement();
+        elementSelectionne = elementId;
+        const element = document.querySelector(`[data-id="${elementId}"]`);
+        element.classList.add('selected');
+    }
+
+    function deselectionnerElement() {
+        if (elementSelectionne) {
+            const element = document.querySelector(`[data-id="${elementSelectionne}"]`);
+            if (element) element.classList.remove('selected');
+            elementSelectionne = null;
+        }
+    }
+
+    // Gestion de la création de liens
+    function gererCreationLien(elementId) {
+        if (!elementSourceLien) {
+            // Premier clic - sélectionner la source
+            elementSourceLien = elementId;
+            const element = document.querySelector(`[data-id="${elementId}"]`);
+            element.classList.add('selected');
+            
+            // Afficher le modal pour choisir le type de lien
+            const modal = new bootstrap.Modal(document.getElementById('modal-type-lien'));
+            modal.show();
+            
+        } else {
+            // Second clic - créer le lien
+            if (elementSourceLien !== elementId) {
+                creerLien(elementSourceLien, elementId, typeLienSelectionne);
+            } else {
+                afficherMessage('Impossible de créer un lien vers le même élément', 'warning');
+            }
+            
+            // Réinitialiser
+            reinitialiserSelectionLien();
+            typeLienSelectionne = 'normal';
+        }
+    }
+
+    function reinitialiserSelectionLien() {
+        document.querySelectorAll('.element-processus.selected').forEach(el => {
+            el.classList.remove('selected');
+        });
+        elementSourceLien = null;
+    }
+
+    // Créer un nouveau lien
+    async function creerLien(sourceId, cibleId, typeLien) {
+        try {
+            const reponse = await fetchWithCSRF(`/api/logigramme/${ACTIVITE_ID}/liens`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    source_id: sourceId,
+                    cible_id: cibleId,
+                    libelle: '',
+                    style: { type: typeLien }
+                })
+            });
+            
+            if (!reponse.ok) throw new Error('Erreur création lien');
+            
+            const resultat = await reponse.json();
+            liens.push({
+                id: resultat.id,
+                source_id: sourceId,
+                cible_id: cibleId,
+                type: typeLien
+            });
+            
+            afficherLiens();
+            mettreAJourStats();
+            afficherMessage('Lien créé avec succès', 'success');
+            
+        } catch (erreur) {
+            console.error('Erreur création lien:', erreur);
+            afficherMessage('Erreur lors de la création du lien', 'error');
+        }
+    }
+
+    // Changer le type d'un lien existant
+    async function changerTypeLien(lienId) {
+        const modal = new bootstrap.Modal(document.getElementById('modal-type-lien'));
+        modal.show();
+        
+        // Attendre la sélection du type
+        const ancienBoutons = document.querySelectorAll('[data-lien-type]');
+        ancienBoutons.forEach(btn => btn.removeEventListener('click', selectionTypeHandler));
+        
+        function selectionTypeHandler(e) {
+            const nouveauType = e.target.closest('button').dataset.lienType;
+            mettreAJourTypeLien(lienId, nouveauType);
+            modal.hide();
+        }
+        
+        document.querySelectorAll('[data-lien-type]').forEach(btn => {
+            btn.addEventListener('click', selectionTypeHandler);
+        });
+    }
+
+    async function mettreAJourTypeLien(lienId, nouveauType) {
+        try {
+            const reponse = await fetchWithCSRF(`/api/lien/${lienId}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    style: { type: nouveauType }
+                })
+            });
+            
+            if (!reponse.ok) throw new Error('Erreur mise à jour lien');
+            
+            const lien = liens.find(l => l.id === lienId);
+            if (lien) {
+                lien.type = nouveauType;
+            }
+            
+            afficherLiens();
+            afficherMessage('Type de lien mis à jour', 'success');
+            
+        } catch (erreur) {
+            console.error('Erreur mise à jour type lien:', erreur);
+            afficherMessage('Erreur lors de la mise à jour du type de lien', 'error');
+        }
+    }
+
+    function editerElement(elementId) {
+        const element = elements.find(el => el.id === elementId);
+        if (element) {
+            document.getElementById('element-id').value = element.id;
+            document.getElementById('element-libelle').value = element.libelle;
+            document.getElementById('element-description').value = element.description || '';
+            document.getElementById('element-type').value = getNomType(element.type);
+            document.getElementById('element-pos-x').value = element.position_x;
+            document.getElementById('element-pos-y').value = element.position_y;
+            document.getElementById('element-width').value = element.style?.width || '';
+            document.getElementById('element-height').value = element.style?.height || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('modal-editer-element'));
+            modal.show();
+        }
+    }
+
+    function getNomType(type) {
+        const noms = {
+            'debut': 'Début',
+            'action': 'Action',
+            'controle': 'Contrôle',
+            'risque': 'Risque',
+            'fin': 'Fin',
+            'organisation': 'Séparation Organisationnelle',
+            'titre': 'Titre'
+        };
+        return noms[type] || type;
+    }
+
+    // Sauvegarder les modifications d'un élément
+    document.getElementById('btn-sauvegarder-element').addEventListener('click', async function() {
+        const elementId = document.getElementById('element-id').value;
+        const libelle = document.getElementById('element-libelle').value;
+        const description = document.getElementById('element-description').value;
+        const posX = parseInt(document.getElementById('element-pos-x').value) || 0;
+        const posY = parseInt(document.getElementById('element-pos-y').value) || 0;
+        const width = parseInt(document.getElementById('element-width').value) || null;
+        const height = parseInt(document.getElementById('element-height').value) || null;
+        
+        if (!libelle) {
+            afficherMessage('Le libellé est obligatoire', 'error');
+            return;
+        }
+        
+        const style = {};
+        if (width) style.width = width;
+        if (height) style.height = height;
+        
+        try {
+            const reponse = await fetchWithCSRF(`/api/element/${elementId}`, {
+                method: 'PUT',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ 
+                    libelle, 
+                    description, 
+                    position_x: posX, 
+                    position_y: posY,
+                    style: style
+                })
+            });
+            
+            if (!reponse.ok) throw new Error('Erreur mise à jour élément');
+            
+            // Mettre à jour l'élément local
+            const element = elements.find(el => el.id === parseInt(elementId));
+            if (element) {
+                element.libelle = libelle;
+                element.description = description;
+                element.position_x = posX;
+                element.position_y = posY;
+                element.style = style;
+                afficherElements();
+                afficherLiens();
+            }
+            
+            bootstrap.Modal.getInstance(document.getElementById('modal-editer-element')).hide();
+            afficherMessage('Élément mis à jour avec succès', 'success');
+            
+        } catch (erreur) {
+            console.error('Erreur mise à jour:', erreur);
+            afficherMessage('Erreur lors de la mise à jour', 'error');
+        }
+    });
+
+    // Supprimer un élément
+    document.getElementById('btn-supprimer-element').addEventListener('click', function() {
+        const elementId = document.getElementById('element-id').value;
+        supprimerElement(elementId);
+    });
+
+    async function supprimerElement(elementId) {
+        confirmerAction(
+            'Supprimer l\'élément',
+            'Êtes-vous sûr de vouloir supprimer cet élément ? Cette action supprimera également tous les liens associés.',
+            async () => {
+                try {
+                    const reponse = await fetchWithCSRF(`/api/element/${elementId}`, { 
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token() }}'
+                        }
+                    });
+                    
+                    if (!reponse.ok) throw new Error('Erreur suppression élément');
+                    
+                    // Supprimer les liens associés
+                    const liensASupprimer = liens.filter(lien => 
+                        lien.source_id === parseInt(elementId) || lien.cible_id === parseInt(elementId)
+                    );
+                    
+                    for (const lien of liensASupprimer) {
+                        await fetchWithCSRF(`/api/lien/${lien.id}`, { 
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token() }}'
+                            }
+                        });
+                    }
+                    
+                    // Mettre à jour les données locales
+                    elements = elements.filter(el => el.id !== parseInt(elementId));
+                    liens = liens.filter(lien => 
+                        lien.source_id !== parseInt(elementId) && lien.cible_id !== parseInt(elementId)
+                    );
+                    
+                    afficherElements();
+                    afficherLiens();
+                    mettreAJourStats();
+                    montrerInstructions();
+                    deselectionnerElement();
+                    
+                    bootstrap.Modal.getInstance(document.getElementById('modal-editer-element')).hide();
+                    afficherMessage('Élément supprimé avec succès', 'success');
+                    
+                } catch (erreur) {
+                    console.error('Erreur suppression:', erreur);
+                    afficherMessage('Erreur lors de la suppression', 'error');
+                }
+            }
+        );
+    }
+
+    // Supprimer la sélection
+    function supprimerSelection() {
+        if (elementSelectionne) {
+            supprimerElement(elementSelectionne);
+        } else {
+            afficherMessage('Aucun élément sélectionné', 'warning');
+        }
+    }
+
+    async function supprimerLien(lienId) {
+        confirmerAction(
+            'Supprimer le lien',
+            'Êtes-vous sûr de vouloir supprimer ce lien ?',
+            async () => {
+                try {
+                    await fetchWithCSRF(`/api/lien/${lienId}`, { 
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token() }}'
+                        }
+                    });
+                    liens = liens.filter(l => l.id !== lienId);
+                    afficherLiens();
+                    mettreAJourStats();
+                    afficherMessage('Lien supprimé avec succès', 'success');
+                } catch (erreur) {
+                    console.error('Erreur suppression lien:', erreur);
+                    afficherMessage('Erreur lors de la suppression du lien', 'error');
+                }
+            }
+        );
+    }
+
+    function effacerTout() {
+        confirmerAction(
+            'Tout effacer',
+            'Êtes-vous sûr de vouloir supprimer tous les éléments et liens ? Cette action est irréversible.',
+            async () => {
+                try {
+                    // Supprimer tous les éléments (cela supprimera aussi les liens via CASCADE)
+                    for (const element of elements) {
+                        await fetchWithCSRF(`/api/element/${element.id}`, { 
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token() }}'
+                            }
+                        });
+                    }
+                    
+                    elements = [];
+                    liens = [];
+                    afficherElements();
+                    afficherLiens();
+                    mettreAJourStats();
+                    montrerInstructions();
+                    deselectionnerElement();
+                    
+                    afficherMessage('Tous les éléments ont été supprimés', 'success');
+                    
+                } catch (erreur) {
+                    console.error('Erreur suppression totale:', erreur);
+                    afficherMessage('Erreur lors de la suppression', 'error');
+                }
+            }
+        );
+    }
+
+    // Fonction d'impression
+    function imprimerLogigramme() {
+        window.print();
+    }
+
+    function confirmerAction(titre, message, callback) {
+        document.getElementById('message-confirmation').textContent = message;
+        const modal = new bootstrap.Modal(document.getElementById('modal-confirmation'));
+        
+        const btnConfirmer = document.getElementById('btn-confirmer-action');
+        btnConfirmer.onclick = () => {
+            modal.hide();
+            callback();
+        };
+        
+        modal.show();
+    }
+
+    // Mettre à jour les statistiques
+    function mettreAJourStats() {
+        document.getElementById('stat-elements').textContent = elements.length;
+        document.getElementById('stat-liens').textContent = liens.length;
+    }
+
+    // Fonction fetch avec CSRF
+    async function fetchWithCSRF(url, options = {}) {
+        const token = document.querySelector('input[name="csrf_token"]')?.value || 
+                     document.querySelector('meta[name="csrf-token"]')?.content;
+        
+        const mergedOptions = {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': token
+            },
+            credentials: 'same-origin',
+            ...options
+        };
+        
+        return await fetch(url, mergedOptions);
+    }
+
+    // Fonctions d'affichage des messages
+    function afficherMessage(message, type) {
+        const alert = document.createElement('div');
+        alert.className = `alert-modern alert-${type === 'error' ? 'danger' : type} position-fixed`;
+        alert.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        alert.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${getIconeType(type)} me-3"></i>
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
+            </div>
+        `;
+        
+        document.body.appendChild(alert);
+        
+        setTimeout(() => {
+            if (alert.parentElement) {
+                alert.remove();
+            }
+        }, 3000);
+    }
+
+    function getIconeType(type) {
+        const icones = {
+            'success': 'check-circle',
+            'error': 'exclamation-triangle',
+            'warning': 'exclamation-triangle',
+            'info': 'info-circle'
+        };
+        return icones[type] || 'info-circle';
+    }
+</script>
+{% endblock %}

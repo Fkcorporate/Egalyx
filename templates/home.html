@@ -1,0 +1,2577 @@
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=0">
+    <title> {{ t("FK Corporate Intelligence |") }} </title>
+
+    <meta name="description" content="Plateforme IA d'excellence pour le contrôle interne, la gestion des risques et la conformité réglementaire. Solution premium pour entreprises exigeantes.">
+    <meta name="keywords" content="intelligence artificielle contrôle interne, gestion des risques IA, conformité réglementaire, audit intelligent, gouvernance d'entreprise, solution SaaS premium">
+    <meta name="author" content="FK Corporate Intelligence Group">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:title" content="FK Corporate Intelligence - Excellence en IA">
+    <meta property="og:description" content="Plateforme IA premium de gestion des risques et contrôle interne pour les entreprises leaders">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://fkcorporate.com">
+    <meta property="og:image" content="https://fkcorporate.com/static/images/og-image.jpg">
+
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Palette de couleurs professionnelle - Bleu Corporate */
+            --primary-navy: #0A1929;
+            --primary-blue: #1A3C6B;
+            --accent-blue: #0066CC;
+            --accent-teal: #0D9488;
+            --accent-emerald: #10B981;
+            --accent-light-blue: #3B82F6;
+            --neutral-white: #FFFFFF;
+            --neutral-light: #F8FAFC;
+            --neutral-grey: #94A3B8;
+            --neutral-dark: #475569;
+            --text-dark: #1E293B;
+            --text-light: #64748B;
+            --border-light: #E2E8F0;
+            --border-dark: #334155;
+            
+            /* Gradients professionnels */
+            --gradient-primary: linear-gradient(135deg, #0A1929 0%, #1A3C6B 100%);
+            --gradient-accent: linear-gradient(135deg, #0066CC 0%, #0D9488 100%);
+            --gradient-blue: linear-gradient(135deg, #0066CC 0%, #3B82F6 50%, #60A5FA 100%);
+            --gradient-muted: linear-gradient(135deg, rgba(0, 102, 204, 0.1) 0%, rgba(13, 148, 136, 0.1) 100%);
+            
+            /* Ombres élégantes */
+            --shadow-subtle: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --shadow-medium: 0 8px 30px rgba(0, 0, 0, 0.12);
+            --shadow-elegant: 0 12px 40px rgba(0, 0, 0, 0.15);
+            --shadow-glow: 0 0 30px rgba(0, 102, 204, 0.15);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html {
+            overflow-x: hidden;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.7;
+            color: var(--text-dark);
+            background: var(--neutral-white);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            position: relative;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+        
+        .section-title {
+            text-align: center;
+            margin-bottom: 5rem;
+        }
+        
+        .section-title h2 {
+            font-size: 3.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--primary-navy);
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-title h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 3px;
+            background: var(--accent-blue);
+        }
+        
+        .section-title .lead {
+            font-size: 1.25rem;
+            color: var(--text-light);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+        
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            letter-spacing: 0.5px;
+            border: 1px solid transparent;
+        }
+        
+        .badge-primary {
+            background: var(--gradient-blue);
+            color: var(--neutral-white);
+            border-color: rgba(0, 102, 204, 0.3);
+        }
+        
+        .badge-secondary {
+            background: var(--gradient-accent);
+            color: white;
+            border-color: rgba(13, 148, 136, 0.3);
+        }
+        
+        /* ===== HEADER & NAVIGATION ===== */
+        .main-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            padding-top: env(safe-area-inset-top);
+        }
+        
+        .main-header.scrolled {
+            box-shadow: var(--shadow-subtle);
+        }
+        
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.75rem;
+            color: var(--primary-navy);
+        }
+        
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-blue);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--neutral-white);
+            font-weight: 800;
+            font-size: 1.5rem;
+            transition: transform 0.3s ease;
+        }
+        
+        .navbar-brand:hover .logo-icon {
+            transform: rotate(15deg);
+        }
+        
+        .nav-link {
+            font-weight: 500;
+            color: var(--text-dark);
+            margin: 0 0.25rem;
+            padding: 0.75rem 1.25rem !important;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: var(--accent-blue);
+            transition: width 0.3s ease;
+        }
+        
+        .nav-link:hover::after {
+            width: 20px;
+        }
+        
+        .nav-link:hover {
+            color: var(--accent-blue);
+        }
+        
+        .btn-primary-custom {
+            background: var(--gradient-blue);
+            color: var(--neutral-white);
+            border: none;
+            padding: 1rem 2.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow-subtle);
+        }
+        
+        .btn-primary-custom::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn-primary-custom:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary-custom:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-medium);
+            color: var(--neutral-white);
+        }
+        
+        .btn-outline-custom {
+            background: transparent;
+            color: var(--accent-blue);
+            border: 2px solid var(--accent-blue);
+            padding: 0.875rem 2.25rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .btn-outline-custom:hover {
+            background: var(--gradient-blue);
+            color: var(--neutral-white);
+            transform: translateY(-3px);
+            border-color: transparent;
+        }
+        
+        /* ===== HERO SECTION ===== */
+        .hero-section {
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+            background: var(--gradient-primary);
+            color: var(--neutral-white);
+            position: relative;
+            overflow: hidden;
+            padding-top: 100px;
+            padding-top: calc(100px + env(safe-area-inset-top));
+            display: flex;
+            align-items: center;
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(0, 102, 204, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(13, 148, 136, 0.15) 0%, transparent 50%);
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            padding: 6rem 0;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            margin-bottom: 3rem;
+            border: 1px solid rgba(0, 102, 204, 0.3);
+            animation: fadeInDown 1s ease-out;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .hero-title {
+            font-size: 4.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 2rem;
+            color: var(--neutral-white);
+        }
+        
+        .hero-title span {
+            color: #60A5FA;
+            position: relative;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.5rem;
+            opacity: 0.9;
+            margin-bottom: 3rem;
+            max-width: 700px;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .hero-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 3rem;
+            margin-top: 6rem;
+            padding: 3rem;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(0, 102, 204, 0.2);
+        }
+        
+        .stat-item {
+            text-align: center;
+            position: relative;
+        }
+        
+        .stat-item::after {
+            content: '';
+            position: absolute;
+            right: -1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .stat-item:last-child::after {
+            display: none;
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #60A5FA;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 0.875rem;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        /* ===== VIDEO SECTION ===== */
+        .video-section {
+            padding: 8rem 0;
+            background: var(--neutral-light);
+            position: relative;
+        }
+        
+        .video-container {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: var(--shadow-elegant);
+            background: var(--neutral-white);
+        }
+        
+        .video-preview {
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(135deg, var(--primary-navy), var(--primary-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .video-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 25, 41, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 1;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+            z-index: 2;
+        }
+        
+        .video-overlay:hover {
+            opacity: 0.9;
+        }
+        
+        .play-button {
+            width: 90px;
+            height: 90px;
+            background: var(--gradient-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--neutral-white);
+            font-size: 2rem;
+            transition: all 0.3s ease;
+        }
+        
+        .play-button:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-glow);
+        }
+        
+        /* ===== FEATURES SECTION ===== */
+        .features-section {
+            padding: 8rem 0;
+            background: var(--neutral-white);
+        }
+        
+        .feature-card {
+            background: var(--neutral-white);
+            border-radius: 20px;
+            padding: 3rem;
+            height: 100%;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-subtle);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-blue);
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-elegant);
+            border-color: var(--accent-blue);
+        }
+        
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            background: var(--gradient-muted);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+            font-size: 1.75rem;
+            color: var(--accent-blue);
+        }
+        
+        .feature-title {
+            font-size: 1.75rem;
+            margin-bottom: 1rem;
+            color: var(--primary-navy);
+        }
+        
+        .feature-description {
+            color: var(--text-light);
+            margin-bottom: 1.5rem;
+            line-height: 1.7;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin-top: 1.5rem;
+        }
+        
+        .feature-list li {
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-light);
+            font-size: 0.95rem;
+        }
+        
+        .feature-list li i {
+            color: var(--accent-teal);
+            font-size: 0.875rem;
+            flex-shrink: 0;
+        }
+        
+        /* ===== DASHBOARD PREVIEW ===== */
+        .dashboard-section {
+            padding: 8rem 0;
+            background: var(--gradient-primary);
+            color: var(--neutral-white);
+            position: relative;
+        }
+        
+        .dashboard-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+        }
+        
+        .dashboard-preview {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 3rem;
+            border: 1px solid rgba(0, 102, 204, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .dashboard-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            color: var(--neutral-white);
+        }
+        
+        .dashboard-title i {
+            color: #60A5FA;
+        }
+        
+        .dashboard-image {
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .dashboard-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+        
+        .dashboard-image:hover img {
+            transform: scale(1.02);
+        }
+        
+        /* ===== AI CAPABILITIES SECTION ===== */
+        .ai-capabilities-section {
+            padding: 8rem 0;
+            background: var(--neutral-light);
+        }
+        
+        .ai-capability-card {
+            background: var(--neutral-white);
+            border-radius: 20px;
+            padding: 2.5rem;
+            height: 100%;
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+        }
+        
+        .ai-capability-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-medium);
+            border-color: var(--accent-blue);
+        }
+        
+        .capability-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--gradient-muted);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: var(--accent-blue);
+            font-size: 1.5rem;
+        }
+        
+        /* ===== TESTIMONIALS SECTION ===== */
+        .testimonials-section {
+            padding: 8rem 0;
+            background: var(--neutral-white);
+            position: relative;
+        }
+        
+        .testimonials-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent-blue), transparent);
+        }
+        
+        .testimonial-card {
+            background: var(--neutral-white);
+            border-radius: 20px;
+            padding: 3rem;
+            height: 100%;
+            border: 1px solid var(--border-light);
+            box-shadow: var(--shadow-subtle);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .testimonial-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-medium);
+            border-color: var(--accent-blue);
+        }
+        
+        .testimonial-card::before {
+            content: '"';
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            font-size: 4rem;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--accent-blue);
+            opacity: 0.2;
+            line-height: 1;
+        }
+        
+        .testimonial-text {
+            font-size: 1.125rem;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            color: var(--text-dark);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .testimonial-author {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-light);
+        }
+        
+        .author-avatar {
+            width: 60px;
+            height: 60px;
+            background: var(--gradient-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--neutral-white);
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+        
+        .author-info h5 {
+            margin-bottom: 0.25rem;
+            color: var(--primary-navy);
+        }
+        
+        .author-info p {
+            color: var(--text-light);
+            font-size: 0.875rem;
+        }
+        
+        /* ===== CTA SECTION ===== */
+        .cta-section {
+            padding: 8rem 0;
+            background: var(--gradient-primary);
+            color: var(--neutral-white);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(0, 102, 204, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(13, 148, 136, 0.15) 0%, transparent 50%);
+        }
+        
+        .cta-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .cta-title {
+            font-size: 3.5rem;
+            margin-bottom: 2rem;
+            color: var(--neutral-white);
+        }
+        
+        .cta-title span {
+            color: #60A5FA;
+        }
+        
+        .cta-description {
+            font-size: 1.25rem;
+            opacity: 0.9;
+            margin-bottom: 3rem;
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.9);
+        }
+        
+        .demo-credentials {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2.5rem;
+            max-width: 500px;
+            margin: 0 auto 3rem;
+            border: 1px solid rgba(0, 102, 204, 0.2);
+        }
+        
+        .credentials-title {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            color: var(--neutral-white);
+        }
+        
+        .credentials-title i {
+            color: #60A5FA;
+        }
+        
+        .credential-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .credential-item:last-child {
+            border-bottom: none;
+        }
+        
+        .credential-item span:last-child {
+            font-weight: 600;
+            color: #60A5FA;
+        }
+        
+        /* ===== CONTACT SECTION ===== */
+        .contact-section {
+            padding: 8rem 0;
+            background: var(--neutral-white);
+        }
+        
+        .contact-card {
+            background: var(--neutral-white);
+            border-radius: 24px;
+            padding: 4rem;
+            box-shadow: var(--shadow-elegant);
+            border: 1px solid var(--border-light);
+        }
+        
+        .contact-form .form-control {
+            padding: 1rem 1.25rem;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: var(--neutral-light);
+        }
+        
+        .contact-form .form-control:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+            background: var(--neutral-white);
+        }
+        
+        .contact-form .form-label {
+            font-weight: 500;
+            color: var(--text-dark);
+            margin-bottom: 0.5rem;
+        }
+        
+        .contact-info {
+            padding-left: 3rem;
+        }
+        
+        .contact-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: var(--neutral-light);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .contact-item:hover {
+            transform: translateX(10px);
+            background: var(--gradient-muted);
+        }
+        
+        .contact-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--gradient-blue);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--neutral-white);
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+        
+        /* ===== FOOTER ===== */
+        .main-footer {
+            background: var(--primary-navy);
+            color: var(--neutral-white);
+            padding: 6rem 0 2rem;
+            padding-bottom: calc(2rem + env(safe-area-inset-bottom));
+            position: relative;
+        }
+        
+        .main-footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-blue);
+        }
+        
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .footer-logo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-blue);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: var(--neutral-white);
+        }
+        
+        .footer-logo-text {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--neutral-white);
+        }
+        
+        .footer-description {
+            opacity: 0.8;
+            line-height: 1.8;
+            margin-bottom: 2rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .footer-heading {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--neutral-white);
+            position: relative;
+            padding-bottom: 0.5rem;
+        }
+        
+        .footer-heading::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 30px;
+            height: 2px;
+            background: var(--accent-blue);
+        }
+        
+        .footer-links {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .footer-links li {
+            margin-bottom: 0.75rem;
+        }
+        
+        .footer-links a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .footer-links a:hover {
+            color: #60A5FA;
+            transform: translateX(5px);
+        }
+        
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .social-link {
+            width: 44px;
+            height: 44px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--neutral-white);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .social-link:hover {
+            background: var(--gradient-blue);
+            color: var(--neutral-white);
+            transform: translateY(-3px);
+        }
+        
+        .copyright {
+            text-align: center;
+            padding-top: 4rem;
+            margin-top: 4rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.875rem;
+        }
+        
+        /* ===== RESPONSIVE DESKTOP ===== */
+        @media (max-width: 1200px) {
+            .hero-title {
+                font-size: 3.5rem;
+            }
+            
+            .section-title h2 {
+                font-size: 3rem;
+            }
+            
+            .cta-title {
+                font-size: 3rem;
+            }
+        }
+        
+        @media (max-width: 992px) {
+            .hero-title {
+                font-size: 3rem;
+            }
+            
+            .hero-stats {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 2rem;
+            }
+            
+            .stat-item::after {
+                display: none;
+            }
+            
+            .contact-info {
+                padding-left: 0;
+                padding-top: 3rem;
+            }
+            
+            .video-preview {
+                height: 400px;
+            }
+        }
+        
+        /* ===== CORRECTIONS MOBILE COMPLÈTES ===== */
+        @media (max-width: 768px) {
+            /* Correction du viewport */
+            body {
+                position: relative;
+                width: 100%;
+            }
+            
+            .container {
+                padding-left: 15px;
+                padding-right: 15px;
+                max-width: 100%;
+            }
+            
+            .row {
+                margin-left: -8px;
+                margin-right: -8px;
+            }
+            
+            [class*="col-"] {
+                padding-left: 8px;
+                padding-right: 8px;
+            }
+            
+            /* Header mobile */
+            .navbar-brand {
+                font-size: 1.4rem;
+            }
+            
+            .logo-icon {
+                width: 40px;
+                height: 40px;
+                font-size: 1.25rem;
+            }
+            
+            /* Menu mobile - CORRECTION DU BLUR */
+            .navbar-collapse {
+                background: rgba(255, 255, 255, 1); /* Solide au lieu de blur */
+                border-radius: 12px;
+                margin-top: 1rem;
+                padding: 1.5rem;
+                box-shadow: var(--shadow-medium);
+                position: absolute;
+                top: 100%;
+                left: 15px;
+                right: 15px;
+                z-index: 1000;
+                border: 1px solid var(--border-light);
+                /* Retirer backdrop-filter pour mobile */
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+            
+            .navbar-collapse.collapsing,
+            .navbar-collapse.show {
+                transition: none !important; /* Désactiver les transitions Bootstrap */
+                animation: none !important;
+            }
+            
+            .nav-link {
+                padding: 0.75rem 1rem !important;
+                margin: 0.25rem 0;
+                display: block;
+                text-align: center;
+            }
+            
+            /* Hero section mobile */
+            .hero-section {
+                padding-top: 80px;
+                min-height: calc(100vh - 80px);
+            }
+            
+            .hero-content {
+                padding: 3rem 0 2rem;
+            }
+            
+            .hero-badge {
+                padding: 0.75rem 1.25rem;
+                margin-bottom: 2rem;
+                font-size: 0.875rem;
+                gap: 0.75rem;
+                backdrop-filter: none; /* Désactiver blur sur mobile */
+                -webkit-backdrop-filter: none;
+                background: rgba(255, 255, 255, 0.15);
+            }
+            
+            .hero-title {
+                font-size: 2.25rem;
+                line-height: 1.2;
+                margin-bottom: 1.5rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.125rem;
+                line-height: 1.6;
+                margin-bottom: 2rem;
+            }
+            
+            .hero-stats {
+                padding: 1.5rem;
+                margin-top: 3rem;
+                gap: 1.5rem;
+                backdrop-filter: none; /* Désactiver blur sur mobile */
+                -webkit-backdrop-filter: none;
+                background: rgba(255, 255, 255, 0.08);
+            }
+            
+            .stat-number {
+                font-size: 2rem;
+            }
+            
+            .stat-label {
+                font-size: 0.75rem;
+            }
+            
+            /* Boutons mobile */
+            .btn-primary-custom, .btn-outline-custom {
+                padding: 0.875rem 1.5rem;
+                font-size: 0.9375rem;
+                width: 100%;
+                justify-content: center;
+                margin-bottom: 0.5rem;
+            }
+            
+            .d-flex.flex-wrap.gap-3 {
+                gap: 0.75rem !important;
+                flex-direction: column;
+            }
+            
+            /* Section titles mobile */
+            .section-title {
+                margin-bottom: 3rem;
+                padding: 0 10px;
+            }
+            
+            .section-title h2 {
+                font-size: 2rem;
+                margin-bottom: 1rem;
+            }
+            
+            .section-title .lead {
+                font-size: 1rem;
+                line-height: 1.6;
+            }
+            
+            /* Video section mobile */
+            .video-section {
+                padding: 4rem 0;
+            }
+            
+            .video-preview {
+                height: 250px;
+            }
+            
+            .play-button {
+                width: 70px;
+                height: 70px;
+                font-size: 1.5rem;
+            }
+            
+            /* Features section mobile */
+            .features-section {
+                padding: 4rem 0;
+            }
+            
+            .feature-card {
+                padding: 1.75rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .feature-icon {
+                width: 55px;
+                height: 55px;
+                font-size: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .feature-title {
+                font-size: 1.4rem;
+            }
+            
+            .feature-description {
+                font-size: 0.95rem;
+            }
+            
+            /* Dashboard section mobile */
+            .dashboard-section {
+                padding: 4rem 0;
+            }
+            
+            .dashboard-preview {
+                padding: 1.5rem;
+                backdrop-filter: none; /* Désactiver blur sur mobile */
+                -webkit-backdrop-filter: none;
+                background: rgba(255, 255, 255, 0.08);
+            }
+            
+            .dashboard-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .dashboard-header .d-flex.gap-2 {
+                width: 100%;
+                justify-content: flex-start;
+                flex-wrap: wrap;
+                gap: 0.5rem !important;
+            }
+            
+            /* Dashboard stats mobile */
+            .dashboard-preview > div:last-child {
+                flex-direction: column;
+                gap: 1.5rem;
+                padding: 1.5rem;
+            }
+            
+            /* Testimonials mobile */
+            .testimonials-section {
+                padding: 4rem 0;
+            }
+            
+            .testimonial-card {
+                padding: 2rem;
+            }
+            
+            .testimonial-text {
+                font-size: 1rem;
+            }
+            
+            /* CTA section mobile */
+            .cta-section {
+                padding: 4rem 0;
+            }
+            
+            .cta-title {
+                font-size: 2rem;
+                margin-bottom: 1.5rem;
+            }
+            
+            .cta-description {
+                font-size: 1.125rem;
+                margin-bottom: 2rem;
+            }
+            
+            .demo-credentials {
+                padding: 1.5rem;
+                margin-bottom: 2rem;
+                backdrop-filter: none; /* Désactiver blur sur mobile */
+                -webkit-backdrop-filter: none;
+                background: rgba(255, 255, 255, 0.08);
+            }
+            
+            /* Contact section mobile */
+            .contact-section {
+                padding: 4rem 0;
+            }
+            
+            .contact-card {
+                padding: 2rem;
+            }
+            
+            .contact-form .form-control {
+                padding: 0.875rem;
+                font-size: 16px;
+            }
+            
+            .contact-info {
+                padding-left: 0;
+                padding-top: 2rem;
+            }
+            
+            .contact-item {
+                padding: 1.25rem;
+            }
+            
+            /* Footer mobile */
+            .main-footer {
+                padding: 3rem 0 2rem;
+            }
+            
+            .footer-logo {
+                margin-bottom: 1.5rem;
+            }
+            
+            .footer-logo-text {
+                font-size: 1.5rem;
+            }
+            
+            .footer-heading {
+                font-size: 1rem;
+                margin-bottom: 1rem;
+            }
+            
+            .footer-links a {
+                font-size: 0.9375rem;
+            }
+            
+            .copyright {
+                padding-top: 2rem;
+                margin-top: 2rem;
+            }
+            
+            .copyright p {
+                margin-bottom: 0.5rem;
+                font-size: 0.8125rem;
+            }
+            
+            /* Correction des badges sur mobile */
+            .badge {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+                padding: 0.5rem 1rem;
+                font-size: 0.8125rem;
+            }
+            
+            /* Correction des espacements */
+            .mt-5, .my-5 {
+                margin-top: 2rem !important;
+            }
+            
+            .pt-5, .py-5 {
+                padding-top: 2rem !important;
+            }
+            
+            /* Animation optimisée pour mobile */
+            .animate__animated {
+                animation-duration: 0.6s !important;
+            }
+            
+            /* Overlay pour menu mobile */
+            .mobile-menu-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 999;
+                animation: fadeIn 0.3s ease;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            .mobile-menu-overlay.active {
+                display: block;
+            }
+            
+            /* Correction pour header avec menu ouvert */
+            body.menu-open {
+                overflow: hidden;
+            }
+            
+            body.menu-open .main-header {
+                backdrop-filter: none; /* Désactiver blur quand menu ouvert */
+                -webkit-backdrop-filter: none;
+                background: rgba(255, 255, 255, 1);
+            }
+        }
+        
+        /* Corrections pour très petits écrans */
+        @media (max-width: 576px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+            
+            .section-title h2 {
+                font-size: 1.75rem;
+            }
+            
+            .section-title .lead {
+                font-size: 0.9375rem;
+            }
+            
+            .cta-title {
+                font-size: 1.75rem;
+            }
+            
+            .hero-stats {
+                grid-template-columns: 1fr;
+                text-align: center;
+                padding: 1.25rem;
+            }
+            
+            .video-preview {
+                height: 200px;
+            }
+            
+            .play-button {
+                width: 60px;
+                height: 60px;
+                font-size: 1.25rem;
+            }
+            
+            /* Correction pour les cartes features */
+            .feature-icon {
+                width: 50px;
+                height: 50px;
+                font-size: 1.25rem;
+            }
+            
+            /* Correction pour les formulaires */
+            .contact-form .form-control {
+                font-size: 16px !important;
+            }
+            
+            /* Optimisation des images */
+            img {
+                max-width: 100%;
+                height: auto;
+            }
+        }
+        
+        /* Correction spécifique pour iOS */
+        @supports (-webkit-touch-callout: none) {
+            @media (max-width: 768px) {
+                .hero-section {
+                    min-height: -webkit-fill-available;
+                }
+                
+                input, select, textarea {
+                    font-size: 16px !important;
+                }
+                
+                /* Désactiver tous les backdrop-filter sur iOS */
+                .main-header,
+                .hero-badge,
+                .hero-stats,
+                .dashboard-preview,
+                .demo-credentials {
+                    backdrop-filter: none !important;
+                    -webkit-backdrop-filter: none !important;
+                }
+            }
+        }
+        
+        /* Animation de flottement */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    
+    <header class="main-header">
+        <nav class="navbar navbar-expand-lg">
+            <div class="container">
+                <a class="navbar-brand" href="#">
+                    <div class="logo-icon"> {{ t("FK") }} </div>
+                    <span> {{ t("FK Corporate Intelligence") }} </span>
+                </a>
+                
+                <button class="navbar-toggler" type="button" id="navbarToggler" aria-label="{{ t("Menu mobile") }}">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#features"> {{ t("Features") }} </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#dashboard"> {{ t("Dashboard") }} </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#testimonials"> {{ t("Références") }} </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#contact"> {{ t("Contact") }} </a>
+                        </li>
+                    </ul>
+                    
+                    <div class="d-flex gap-2 ms-lg-3 mt-3 mt-lg-0">
+                        <a href="/auth/login_fullscreen" class="btn btn-primary-custom">
+                            <i class="fas fa-sign-in-alt"></i> {{ t("Espace Client") }} </a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="mobile-menu-overlay" id="mobileMenuOverlay"></div>
+
+    <section class="hero-section" id="home">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <div class="hero-content">
+                        <div class="hero-badge">
+                            <i class="fas fa-crown"></i>
+                            <span> {{ t("Premium Solution • Business") }} </span>
+                        </div>
+                        
+                        <h1 class="hero-title animate__animated animate__fadeInUp"> {{ t("L'") }} <span> {{ t("Intelligence") }} </span> {{ t("at the service of your governance") }} </h1>
+                        
+                        <p class="hero-subtitle animate__animated animate__fadeInUp animate__delay-1s">{{ t("Plateforme d'intelligence artificielle dédiée au contrôle interne et à la gestion des risques. 
+                            Une solution sur mesure pour les organisations exigeant le meilleur en matière de gouvernance.") }}</p>
+                        
+                        <div class="d-flex flex-wrap gap-3 animate__animated animate__fadeInUp animate__delay-2s">
+                            <a href="#contact" class="btn btn-primary-custom">
+                                <i class="fas fa-calendar-check"></i> {{ t("Request a Demo") }} </a>
+                            <a href="#video" class="btn btn-outline-custom">
+                                <i class="fas fa-play"></i> {{ t("Watch the Video") }} </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="dashboard-preview mt-5 mt-lg-0 animate__animated animate__fadeIn">
+                        <div class="dashboard-header">
+                            <div class="dashboard-title">
+                                <i class="fas fa-chart-line"></i>
+                                <h4 style="margin: 0;"> {{ t("Executive Dashboard") }} </h4>
+                            </div>
+                            <div class="badge badge-primary">
+                                <i class="fas fa-sync fa-spin"></i> {{ t("Temps Réel") }} </div>
+                        </div>
+                        
+                        <div class="dashboard-image">
+                            <img src="/static/images/dashboard-preview.png" 
+                                alt="{{ t("FK Corporate Intelligence Executive Dashboard") }}"
+                                class="img-fluid">
+                        </div>
+                        
+                        <div style="display: flex; justify-content: space-around; padding: 2rem; 
+                                    background: rgba(255, 255, 255, 0.05); border-radius: 0 0 24px 24px;">
+                            <div style="text-align: center;">
+                                <div style="font-size: 2rem; font-weight: 700; color: #60A5FA;">98%</div>
+                                <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 1px;"> {{ t("Satisfaction") }} </div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2rem; font-weight: 700; color: var(--accent-teal);"> {{ t("24/7") }} </div>
+                                <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 1px;"> {{ t("Monitoring") }} </div>
+                            </div>
+                            <div style="text-align: center;">
+                                <div style="font-size: 2rem; font-weight: 700; color: var(--accent-light-blue);"> {{ t("ISO") }} </div>
+                                <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 1px;"> {{ t("Certifié") }} </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="hero-stats animate__animated animate__fadeIn animate__delay-3s">
+                <div class="stat-item">
+                    <div class="stat-number"> {{ t("500+") }} </div>
+                    <div class="stat-label"> {{ t("Premium Customers") }} </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">99.9%</div>
+                    <div class="stat-label"> {{ t("Availability") }} </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">40%</div>
+                    <div class="stat-label"> {{ t("Efficiency Gain") }} </div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number"> {{ t("ISO 27001") }} </div>
+                    <div class="stat-label"> {{ t("Certifié") }} </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="video-section" id="video">
+        <div class="container">
+            <div class="section-title">
+                <span class="badge badge-primary mb-3"> {{ t("EXCLUSIVE PRESENTATION") }} </span>
+                <h2> {{ t("Discover our excellence") }} </h2>
+                <p class="lead"> {{ t("A demonstration of our platform and its impact on your corporate governance") }} </p>
+            </div>
+            
+            <div class="video-container" data-aos="fade-up">
+                <div class="video-preview">
+                    
+                    <div class="video-overlay" id="videoOverlay" style="display: none;">
+                        <div class="play-button" id="playButton">
+                            <i class="fas fa-play"></i>
+                        </div>
+                    </div>
+
+                    <video id="demoVideo" class="video-player" width="100%" height="100%" 
+                        poster="/static/images/video-thumbnail.jpg" style="display: block;"
+                        autoplay muted playsinline webkit-playsinline loop>
+                        <source src="/static/videos/presentation-platforme.mp4" type="video/mp4"> {{ t("Your browser does not support playing HTML5 videos.") }} </video>
+
+                    <div id="videoPlaceholder" style="text-align: center; color: var(--neutral-grey); padding: 2rem; display: none;">
+                        <i class="fas fa-video fa-4x mb-3" style="opacity: 0.3;"></i>
+                        <h3 style="color: var(--neutral-white); margin-bottom: 1rem;"> {{ t("Presentation of the Platform") }} </h3>
+                        <p> {{ t("Click to see the demo") }} </p>
+                    </div>
+                </div>
+                
+                <div style="padding: 2rem; border-top: 1px solid var(--border-light);">
+                    <div class="row text-center">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <i class="fas fa-shield-alt fa-2x mb-2" style="color: var(--accent-blue);"></i>
+                                <h5 style="color: var(--text-dark);"> {{ t("Maximum Security") }} </h5>
+                                <p class="text-muted"> {{ t("Encrypted and certified data") }} </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <i class="fas fa-brain fa-2x mb-2" style="color: var(--accent-teal);"></i>
+                                <h5 style="color: var(--text-dark);"> {{ t("IA Avancée") }} </h5>
+                                <p class="text-muted"> {{ t("Intelligent predictive analytics") }} </p>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <i class="fas fa-chart-pie fa-2x mb-2" style="color: var(--accent-light-blue);"></i>
+                                <h5 style="color: var(--text-dark);"> {{ t("Analytique") }} </h5>
+                                <p class="text-muted"> {{ t("Real-time actionable insights") }} </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features-section" id="features">
+        <div class="container">
+            <div class="section-title">
+                <span class="badge badge-primary mb-3"> {{ t("FULL FEATURES") }} </span>
+                <h2> {{ t("An integrated platform for all your needs") }} </h2>
+                <p class="lead"> {{ t("Discover our specialized modules designed to optimize your internal control") }} </p>
+            </div>
+            
+            <div class="row g-4">
+                
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card" data-aos="fade-up">
+                        <div class="feature-icon">
+                            <i class="fas fa-map"></i>
+                        </div>
+                        <h3 class="feature-title"> {{ t("Risk Mapping") }} </h3>
+                        <p class="feature-description"> {{ t("Identify, assess and visualize your risks with interactive matrices and dynamic dashboards.") }} </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> {{ t("Detailed risk sheets") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Risk/impact matrix") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Automated Bordeaux table") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Multi-criteria evaluations") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Interactive heat maps") }} </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="100">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3 class="feature-title"> {{ t("KRI Indicators & Monitoring") }} </h3>
+                        <p class="feature-description"> {{ t("Monitor evolving risks with key indicators and configurable alert thresholds.") }} </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> {{ t("Customizable KRIs") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Automatic alerts") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Trends and analyzes") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Automated reporting") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Real-time dashboards") }} </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="200">
+                        <div class="feature-icon">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <h3 class="feature-title"> {{ t("Regulatory Compliance") }} </h3>
+                        <p class="feature-description"> {{ t("Follow regulatory developments and manage your compliance actions with our dedicated module.") }} </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> {{ t("Regulatory monitoring") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Compliance action plan") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Alerts and deadlines") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Certified documentation") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Compliance Reports") }} </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="300">
+                        <div class="feature-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <h3 class="feature-title"> {{ t("Audit Management") }} </h3>
+                        <p class="feature-description"> {{ t("Plan, execute and track your internal audits with comprehensive workflows.") }} </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> {{ t("Scheduling of audits") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Findings and Recommendations") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Corrective action plans") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Closing follow-up") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Automated audit reports") }} </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="400">
+                        <div class="feature-icon">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <h3 class="feature-title"> {{ t("Processes & Flowcharts") }} </h3>
+                        <p class="feature-description"> {{ t("Map your business processes and identify critical control points.") }} </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> {{ t("Process modeling") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Interactive flowcharts") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Identified risk areas") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Related controls") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("PDF/Excel export") }} </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card" data-aos="fade-up" data-aos-delay="500">
+                        <div class="feature-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h3 class="feature-title"> {{ t("AI & Predictive Analysis") }} </h3>
+                        <p class="feature-description"> {{ t("Benefit from artificial intelligence for risk analysis and recommendation generation.") }} </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check"></i> {{ t("Predictive risk analysis") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Smart recommendations") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Anomaly Detection") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Automated reports") }} </li>
+                            <li><i class="fas fa-check"></i> {{ t("Personalized Insights") }} </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row mt-8 pt-8">
+                <div class="col-lg-4" data-aos="fade-right">
+                    <div class="ai-capability-card">
+                        <div class="capability-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 style="color: var(--primary-navy); margin-bottom: 1rem;"> {{ t("Security & Compliance") }} </h3>
+                        <p style="color: var(--text-light); line-height: 1.7;"> {{ t("Encrypted data, two-factor authentication, GDPR compliance and ISO 27001 certifications.") }} </p>
+                        <div class="mt-3">
+                            <span class="badge" style="background: var(--gradient-muted); color: var(--accent-blue);"> {{ t("RGPD Compliant") }} </span>
+                            <span class="badge" style="background: var(--gradient-muted); color: var(--accent-teal);"> {{ t("ISO 27001") }} </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4" data-aos="fade-up">
+                    <div class="ai-capability-card">
+                        <div class="capability-icon">
+                            <i class="fas fa-sync-alt"></i>
+                        </div>
+                        <h3 style="color: var(--primary-navy); margin-bottom: 1rem;"> {{ t("Integrations") }} </h3>
+                        <p style="color: var(--text-light); line-height: 1.7;"> {{ t("Connect your existing tools: Microsoft 365, Google Workspace, Salesforce, SAP, and more.") }} </p>
+                        <div class="mt-3">
+                            <span class="badge" style="background: var(--gradient-muted); color: var(--accent-blue);"> {{ t("API REST") }} </span>
+                            <span class="badge" style="background: var(--gradient-muted); color: var(--accent-teal);"> {{ t("Webhooks") }} </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4" data-aos="fade-left">
+                    <div class="ai-capability-card">
+                        <div class="capability-icon">
+                            <i class="fas fa-users-cog"></i>
+                        </div>
+                        <h3 style="color: var(--primary-navy); margin-bottom: 1rem;"> {{ t("Collaboration") }} </h3>
+                        <p style="color: var(--text-light); line-height: 1.7;"> {{ t("Work as a team with granular roles and permissions.") }} </p>
+                        <div class="mt-3">
+                            <span class="badge" style="background: var(--gradient-muted); color: var(--accent-blue);"> {{ t("Workflows") }} </span>
+                            <span class="badge" style="background: var(--gradient-muted); color: var(--accent-teal);"> {{ t("Notifications") }} </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-section" id="dashboard">
+        <div class="container">
+            <div class="section-title">
+                <span class="badge badge-secondary mb-3"> {{ t("PREMIUM INTERFACE") }} </span>
+                <h2 style="color: var(--neutral-white);"> {{ t("Executive Dashboard") }} </h2>
+                <p class="lead" style="color: rgba(255, 255, 255, 0.9);"> {{ t("An interface designed for operational excellence") }} </p>
+            </div>
+            
+            <div class="dashboard-preview" data-aos="fade-up">
+                <div class="dashboard-header">
+                    <div class="dashboard-title">
+                        <i class="fas fa-tachometer-alt"></i>
+                        <h4 style="margin: 0; color: var(--neutral-white);"> {{ t("Executive overview") }} </h4>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <span class="badge" style="background: rgba(0, 102, 204, 0.2); color: #60A5FA; border-color: #60A5FA;">
+                            <i class="fas fa-eye"></i> {{ t("Monitoring") }} </span>
+                        <span class="badge" style="background: rgba(13, 148, 136, 0.2); color: var(--accent-teal); border-color: var(--accent-teal);">
+                            <i class="fas fa-chart-line"></i> {{ t("Analytics") }} </span>
+                    </div>
+                </div>
+                
+                <div class="dashboard-image">
+                    <img src="/static/images/dashboard-preview.png" 
+                        alt="{{ t("FK Corporate Intelligence executive interface") }}"
+                        class="img-fluid">
+                </div>
+                
+                <div style="display: flex; justify-content: space-around; padding: 2rem; 
+                            background: rgba(255, 255, 255, 0.05); border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: #60A5FA;">45</div>
+                        <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 1px;">
+                            <i class="fas fa-flag me-1"></i> {{ t("Indicateurs") }} </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-teal);">100%</div>
+                        <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 1px;">
+                            <i class="fas fa-check-circle me-1"></i> {{ t("Conformité") }} </div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 2rem; font-weight: 700; color: var(--accent-light-blue);">0</div>
+                        <div style="font-size: 0.875rem; color: rgba(255, 255, 255, 0.8); text-transform: uppercase; letter-spacing: 1px;">
+                            <i class="fas fa-exclamation-triangle me-1"></i> {{ t("Incidents") }} </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="testimonials-section" id="testimonials">
+        <div class="container">
+            <div class="section-title">
+                <span class="badge badge-primary mb-3"> {{ t("CUSTOMER TESTIMONIALS") }} </span>
+                <h2> {{ t("What our customers say") }} </h2>
+                <p class="lead"> {{ t("Leading organizations trust us for their operational excellence") }} </p>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-4" data-aos="fade-up">
+                    <div class="testimonial-card">
+                        <div class="testimonial-text">{{ t("\"La plateforme a transformé notre approche du contrôle interne. 
+                            La cartographie des risques et les indicateurs KRI nous ont permis d'anticiper les problèmes avant qu'ils ne surviennent.\"") }}</div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar"> {{ t("ML") }} </div>
+                            <div class="author-info">
+                                <h5> {{ t("Marie Laurent") }} </h5>
+                                <p> {{ t("Risk Director, Finance Group") }} </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+                    <div class="testimonial-card">
+                        <div class="testimonial-text">
+                            "L'analyse prédictive de l'IA a détecté des anomalies que nos équipes auraient manquées. 
+                            La gestion des audits est désormais 70% plus efficace."
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar"> {{ t("PD") }} </div>
+                            <div class="author-info">
+                                <h5> {{ t("Pierre Dubois") }} </h5>
+                                <p> {{ t("Compliance Manager, Banking Sector") }} </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
+                    <div class="testimonial-card">
+                        <div class="testimonial-text">
+                            "Les logigrammes interactifs et la modélisation des processus nous ont permis d'optimiser 
+                            nos flux opérationnels et de réduire nos risques de 40%."
+                        </div>
+                        <div class="testimonial-author">
+                            <div class="author-avatar"> {{ t("SL") }} </div>
+                            <div class="author-info">
+                                <h5> {{ t("Sophie Leroy") }} </h5>
+                                <p> {{ t("Director of Operations, Industry") }} </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-section" id="cta">
+        <div class="container">
+            <div class="cta-content">
+                <h2 class="cta-title"> {{ t("Prêt à") }} <span> {{ t("transformer") }} </span> {{ t("your governance?") }} </h2>
+                <p class="cta-description">{{ t("Rejoignez les organisations qui ont choisi l'excellence en matière de contrôle interne et de gestion des risques.
+                    Demandez une démonstration personnalisée.") }}</p>
+                
+                <div class="demo-credentials">
+                    <h5 class="credentials-title">
+                        <i class="fas fa-key"></i> {{ t("Demonstration Access") }} </h5>
+                    <div class="credential-item">
+                        <span> {{ t("Environment :") }} </span>
+                        <span> {{ t("Premium Sandbox") }} </span>
+                    </div>
+                    <div class="credential-item">
+                        <span> {{ t("Durée :") }} </span>
+                        <span> {{ t("14 days free") }} </span>
+                    </div>
+                    <div class="credential-item">
+                        <span> {{ t("Support :") }} </span>
+                        <span> {{ t("Dédié 24/7") }} </span>
+                    </div>
+                </div>
+                
+                <div class="d-flex flex-wrap gap-3 justify-content-center">
+                    <a href="#contact" class="btn btn-primary-custom">
+                        <i class="fas fa-calendar-alt"></i> {{ t("Request a Demo") }} </a>
+                    <a href="/auth/login_fullscreen" class="btn btn-outline-custom" style="color: var(--neutral-white); border-color: var(--neutral-white);">
+                        <i class="fas fa-sign-in-alt"></i> {{ t("Essayer Gratuitement") }} </a>
+                </div>
+                
+                <p class="mt-5" style="color: rgba(255, 255, 255, 0.8);">
+                    <i class="fas fa-shield-alt me-2"></i> {{ t("Secure environment • Test data • Premium support • No obligation") }} </p>
+            </div>
+        </div>
+    </section>
+
+    <section class="contact-section" id="contact">
+        <div class="container">
+            <div class="section-title">
+                <span class="badge badge-primary mb-3"> {{ t("CONTACT US") }} </span>
+                <h2> {{ t("Talk to our experts") }} </h2>
+                <p class="lead"> {{ t("Let's discuss your needs and find out how we can support you") }} </p>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-8" data-aos="fade-right">
+                    <div class="contact-card">
+                        <h3 class="mb-4" style="color: var(--primary-navy);"> {{ t("Demo request") }} </h3>
+                        
+                        <form class="contact-form" id="demoForm" onsubmit="return envoyerDemande(event)">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label"> {{ t("Full name *") }} </label>
+                                    <input type="text" class="form-control" id="nom_complet" placeholder="{{ t("Votre nom") }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label"> {{ t("Professional email *") }} </label>
+                                    <input type="email" class="form-control" id="email" placeholder="votre@email.com" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label"> {{ t("Société *") }} </label>
+                                    <input type="text" class="form-control" id="societe" placeholder="{{ t("Your company") }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label"> {{ t("Téléphone") }} </label>
+                                    <input type="tel" class="form-control" id="telephone" placeholder="{{ t("+33 1 23 45 67 89") }}">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label"> {{ t("Sujet *") }} </label>
+                                    <input type="text" class="form-control" id="sujet" placeholder="{{ t("Subject of your request") }}" required>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label"> {{ t("Message *") }} </label>
+                                    <textarea class="form-control" id="message" rows="5" placeholder="{{ t("Describe your needs...") }}" required></textarea>
+                                </div>
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="privacyPolicy" required>
+                                        <label class="form-check-label" for="privacyPolicy"> {{ t("I accept the privacy and data processing policy") }} </label>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <button type="submit" class="btn btn-primary-custom w-100" id="submitBtn">
+                                        <i class="fas fa-paper-plane me-2"></i> {{ t("Send my request") }} </button>
+                                    <div id="formMessage" style="display: none; margin-top: 15px;"></div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="col-lg-4" data-aos="fade-left">
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-headset"></i>
+                            </div>
+                            <div>
+                                <h5 style="color: var(--text-dark);"> {{ t("Customer Support") }} </h5>
+                                <p style="color: var(--text-light);"> {{ t("Premium technical support") }} </p>
+                                <p style="color: var(--accent-blue); font-weight: 600;">contact.fkcorporate@gmail.com</p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div>
+                                <h5 style="color: var(--text-dark);"> {{ t("Notre siège") }} </h5>
+                                <p style="color: var(--text-light);"> {{ t("Paris, France") }} </p>
+                                <p style="color: var(--text-light);"> {{ t("123 Avenue des Champs-Élysées") }} <br> {{ t("75008 Paris") }} </p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                            <div>
+                                <h5 style="color: var(--text-dark);"> {{ t("Horaires") }} </h5>
+                                <p style="color: var(--text-light);"> {{ t("Monday - Friday: 8 a.m. - 8 p.m.") }} </p>
+                                <p style="color: var(--text-light);"> {{ t("Saturday: 9 a.m.-6 p.m.") }} </p>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone"></i>
+                            </div>
+                            <div>
+                                <h5 style="color: var(--text-dark);"> {{ t("Téléphone") }} </h5>
+                                <p style="color: var(--text-light);"> {{ t("Technical support") }} </p>
+                                <p style="color: var(--accent-teal); font-weight: 600;"> {{ t("+33 7 52 71 77 01") }} </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="main-footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-5">
+                    <div class="footer-logo">
+                        <div class="footer-logo-icon"> {{ t("FK") }} </div>
+                        <div class="footer-logo-text"> {{ t("FK Corporate Intelligence") }} </div>
+                    </div>
+                    <p class="footer-description">{{ t("Solution premium d'intelligence artificielle dédiée au contrôle interne, 
+                        à la gestion des risques et à la conformité réglementaire. 
+                        L'excellence au service de votre gouvernance.") }}</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                        <a href="#" class="social-link">
+                            <i class="fab fa-github"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-2 col-md-4 mb-5">
+                    <h5 class="footer-heading"> {{ t("Modules") }} </h5>
+                    <ul class="footer-links">
+                        <li><a href="#features"> {{ t("Risk Mapping") }} </a></li>
+                        <li><a href="#features"> {{ t("KRI indicators") }} </a></li>
+                        <li><a href="#features"> {{ t("Conformité") }} </a></li>
+                        <li><a href="#features"> {{ t("Audit Management") }} </a></li>
+                        <li><a href="#features"> {{ t("Processes & Flowcharts") }} </a></li>
+                        <li><a href="#features"> {{ t("Analyse IA") }} </a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-2 col-md-4 mb-5">
+                    <h5 class="footer-heading"> {{ t("Entreprise") }} </h5>
+                    <ul class="footer-links">
+                        <li><a href="#"> {{ t("À propos") }} </a></li>
+                        <li><a href="#"> {{ t("Carrières") }} </a></li>
+                        <li><a href="#"> {{ t("Blog") }} </a></li>
+                        <li><a href="#"> {{ t("Presse") }} </a></li>
+                        <li><a href="#"> {{ t("Partenaires") }} </a></li>
+                    </ul>
+                </div>
+                
+                <div class="col-lg-4 col-md-4 mb-5">
+                    <h5 class="footer-heading"> {{ t("Ressources") }} </h5>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-file-contract"></i> {{ t("General conditions") }} </a></li>
+                        <li><a href="#"><i class="fas fa-shield-alt"></i> {{ t("Privacy Policy") }} </a></li>
+                        <li><a href="#"><i class="fas fa-cookie"></i> {{ t("Cookie policy") }} </a></li>
+                        <li><a href="#"><i class="fas fa-book"></i> {{ t("Documentation") }} </a></li>
+                        <li><a href="#"><i class="fas fa-download"></i> {{ t("Downloads") }} </a></li>
+                        <li><a href="#"><i class="fas fa-gavel"></i> {{ t("GDPR compliance") }} </a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                <p> {{ t("© 2024 FK Corporate Intelligence Group.") }} </p>
+                <div class="mt-3">
+                    <span class="me-4"> {{ t("Paris, France") }} </span>
+                    <span class="me-4">contact@fkcorporate.com</span>
+                    <span> {{ t("+33 1 23 45 67 89") }} </span>
+                </div>
+                <p class="mt-4">
+                    <small>
+                        <i class="fas fa-certificate me-2"></i> {{ t("ISO 27001 • GDPR • SOC 2 Type II • HDS Certified • ESG Compliant") }} </small>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <script>
+        // Initialize AOS with mobile optimization
+        AOS.init({
+            duration: 800,
+            easing: 'ease-out-cubic',
+            once: true,
+            offset: 100,
+            disable: function() {
+                return window.innerWidth < 768;
+            }
+        });
+        
+        // Header scroll effect
+        window.addEventListener('scroll', function() {
+            const header = document.querySelector('.main-header');
+            if (window.scrollY > 50) {
+                header.classList.add('scrolled');
+            } else {
+                header.classList.remove('scrolled');
+            }
+        });
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                    
+                    // Fermer le menu mobile si ouvert
+                    if (window.innerWidth < 768) {
+                        closeMobileMenu();
+                    }
+                }
+            });
+        });
+        
+        // MODIFICATION: Vidéo qui se lance automatiquement
+        function initVideo() {
+            const video = document.getElementById('demoVideo');
+            const videoOverlay = document.getElementById('videoOverlay');
+            const videoPlaceholder = document.getElementById('videoPlaceholder');
+            const playButton = document.getElementById('playButton');
+            
+            // Masquer le placeholder et overlay par défaut
+            videoPlaceholder.style.display = 'none';
+            videoOverlay.style.display = 'none';
+            video.style.display = 'block';
+            
+            // Configurer la vidéo pour autoplay
+            video.autoplay = true;
+            video.muted = true; // Nécessaire pour autoplay sur la plupart des navigateurs
+            video.loop = true;
+            video.playsInline = true;
+            video.setAttribute('playsinline', '');
+            video.setAttribute('webkit-playsinline', '');
+            
+            // Essayer de jouer la vidéo
+            const playPromise = video.play();
+            
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    // Vidéo jouée avec succès
+                    console.log('Vidéo lancée automatiquement');
+                }).catch(error => {
+                    // Autoplay bloqué, afficher l'overlay
+                    console.log('Autoplay bloqué, affichage de l\'overlay');
+                    videoOverlay.style.display = 'flex';
+                    video.muted = false; // Démuter pour permettre le son quand l'utilisateur clique
+                    video.loop = false; // Ne pas boucler en mode manuel
+                    
+                    // Configurer le bouton play
+                    playButton.innerHTML = '<i class="fas fa-play"></i>';
+                    playButton.onclick = function() {
+                        videoOverlay.style.display = 'none';
+                        video.play();
+                        video.setAttribute('controls', 'controls');
+                    };
+                });
+            }
+            
+            // Gestion de la fin de vidéo
+            video.addEventListener('ended', function() {
+                // Rejouer la vidéo automatiquement
+                this.currentTime = 0;
+                this.play();
+            });
+            
+            // Ajouter des contrôles pour permettre à l'utilisateur de mettre en pause
+            video.addEventListener('click', function() {
+                if (video.paused) {
+                    video.play();
+                } else {
+                    video.pause();
+                    // Afficher l'overlay avec bouton play quand en pause
+                    videoOverlay.style.display = 'flex';
+                    playButton.innerHTML = '<i class="fas fa-play"></i>';
+                    playButton.onclick = function() {
+                        videoOverlay.style.display = 'none';
+                        video.play();
+                    };
+                }
+            });
+        }
+        
+        // Intersection Observer for counters
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const stats = document.querySelectorAll('.stat-number');
+                    stats.forEach(stat => {
+                        let target = stat.textContent;
+                        let suffix = '';
+                        
+                        // Handle percentage and other suffixes
+                        if (target.includes('%')) {
+                            target = parseInt(target);
+                            suffix = '%';
+                        } else if (target.includes('+')) {
+                            target = parseInt(target.replace('+', ''));
+                            suffix = '+';
+                        } else if (target === 'ISO 27001') {
+                            return; // Skip non-numeric values
+                        } else {
+                            target = parseInt(target);
+                        }
+                        
+                        if (!isNaN(target)) {
+                            animateCounter(stat, target, suffix);
+                        }
+                    });
+                    observer.disconnect();
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        const statsSection = document.querySelector('.hero-stats');
+        if (statsSection) {
+            observer.observe(statsSection);
+        }
+        
+        function animateCounter(element, target, suffix) {
+            let current = 0;
+            const increment = target / 50;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= target) {
+                    clearInterval(timer);
+                    current = target;
+                }
+                element.textContent = Math.floor(current) + suffix;
+            }, 30);
+        }
+        
+        // Form submission
+        function envoyerDemande(event) {
+            event.preventDefault();
+            
+            // Récupérer les données
+            const formData = {
+                nom_complet: document.getElementById('nom_complet').value,
+                email: document.getElementById('email').value,
+                societe: document.getElementById('societe').value,
+                telephone: document.getElementById('telephone').value,
+                sujet: document.getElementById('sujet').value,
+                message: document.getElementById('message').value
+            };
+            
+            // Validation
+            if (!formData.nom_complet || !formData.email || !formData.message) {
+                showMessage('Les champs obligatoires doivent être remplis', 'error');
+                return false;
+            }
+            
+            // Désactiver le bouton
+            const submitBtn = document.getElementById('submitBtn');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Envoi en cours...';
+            submitBtn.disabled = true;
+            
+            // ENVOYER À VOTRE API CORRECTE
+            fetch('/api/contact/demo-request', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                const messageDiv = document.getElementById('formMessage');
+                if (result.success) {
+                    messageDiv.className = 'alert alert-success';
+                    messageDiv.innerHTML = `✅ ${result.message}<br>Référence: ${result.reference}`;
+                    document.getElementById('demoForm').reset();
+                } else {
+                    messageDiv.className = 'alert alert-danger';
+                    messageDiv.innerHTML = `❌ ${result.message || result.errors?.join('<br>')}`;
+                }
+                messageDiv.style.display = 'block';
+                
+                // Cacher le message après 10 secondes
+                setTimeout(() => {
+                    messageDiv.style.display = 'none';
+                }, 10000);
+            })
+            .catch(error => {
+                const messageDiv = document.getElementById('formMessage');
+                messageDiv.className = 'alert alert-danger';
+                messageDiv.innerHTML = '❌ Erreur de connexion au serveur';
+                messageDiv.style.display = 'block';
+            })
+            .finally(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            });
+            
+            return false;
+        }
+        
+        // Gestion du menu mobile avec suppression du blur problématique
+        const navbarToggler = document.getElementById('navbarToggler');
+        const navbarCollapse = document.getElementById('navbarNav');
+        const mobileMenuOverlay = document.getElementById('mobileMenuOverlay');
+        const body = document.body;
+        
+        function openMobileMenu() {
+            navbarCollapse.classList.add('show');
+            mobileMenuOverlay.classList.add('active');
+            body.classList.add('menu-open');
+            body.style.overflow = 'hidden';
+            
+            // Désactiver le blur sur le header quand le menu est ouvert
+            const header = document.querySelector('.main-header');
+            header.style.backdropFilter = 'none';
+            header.style.webkitBackdropFilter = 'none';
+        }
+        
+        function closeMobileMenu() {
+            navbarCollapse.classList.remove('show');
+            mobileMenuOverlay.classList.remove('active');
+            body.classList.remove('menu-open');
+            body.style.overflow = '';
+            
+            // Réactiver le blur sur le header quand le menu est fermé
+            const header = document.querySelector('.main-header');
+            if (window.innerWidth >= 768) {
+                header.style.backdropFilter = 'blur(20px)';
+                header.style.webkitBackdropFilter = 'blur(20px)';
+            } else {
+                // Sur mobile, garder un fond solide
+                header.style.backdropFilter = 'none';
+                header.style.webkitBackdropFilter = 'none';
+            }
+        }
+        
+        if (navbarToggler && navbarCollapse) {
+            // Remplacer le comportement Bootstrap par notre propre gestion
+            navbarToggler.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (navbarCollapse.classList.contains('show')) {
+                    closeMobileMenu();
+                } else {
+                    openMobileMenu();
+                }
+            });
+            
+            // Fermer le menu en cliquant sur l'overlay
+            mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+            
+            // Fermer le menu en cliquant sur un lien
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', closeMobileMenu);
+            });
+            
+            // Fermer le menu en cliquant en dehors
+            document.addEventListener('click', function(e) {
+                if (navbarCollapse.classList.contains('show') && 
+                    !navbarCollapse.contains(e.target) && 
+                    !navbarToggler.contains(e.target)) {
+                    closeMobileMenu();
+                }
+            });
+        }
+        
+        // Optimisations pour mobile
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser la vidéo
+            initVideo();
+            
+            // Détection mobile
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                // Prévenir le zoom sur les inputs
+                document.querySelectorAll('input, select, textarea').forEach(el => {
+                    el.addEventListener('focus', function() {
+                        this.style.fontSize = '16px';
+                    });
+                });
+            }
+            
+            // Add floating animation to some elements
+            const elements = document.querySelectorAll('.feature-icon, .capability-icon');
+            elements.forEach((el, index) => {
+                el.style.animation = `float ${3 + index * 0.5}s ease-in-out infinite`;
+                el.style.animationDelay = `${index * 0.2}s`;
+            });
+            
+            // Feature cards hover enhancement
+            document.querySelectorAll('.feature-card').forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    const icon = this.querySelector('.feature-icon');
+                    if (icon) {
+                        icon.style.transform = 'scale(1.1) rotate(5deg)';
+                        icon.style.transition = 'transform 0.3s ease';
+                    }
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    const icon = this.querySelector('.feature-icon');
+                    if (icon) {
+                        icon.style.transform = 'scale(1) rotate(0deg)';
+                    }
+                });
+            });
+        });
+        
+        // Prévenir les gestes de zoom sur iOS
+        document.addEventListener('touchmove', function(e) {
+            if (e.scale !== 1 && e.target.tagName.toLowerCase() === 'input') {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        // Optimisation du scroll mobile
+        let lastScrollTop = 0;
+        const header = document.querySelector('.main-header');
+
+        window.addEventListener('scroll', function() {
+            if (window.innerWidth < 768) {
+                const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+                
+                if (scrollTop > lastScrollTop && scrollTop > 100) {
+                    // Scroll vers le bas - cacher le header
+                    header.style.transform = 'translateY(-100%)';
+                    header.style.transition = 'transform 0.3s ease';
+                } else {
+                    // Scroll vers le haut - montrer le header
+                    header.style.transform = 'translateY(0)';
+                }
+                
+                // Si on est en haut de la page, toujours montrer le header
+                if (scrollTop <= 0) {
+                    header.style.transform = 'translateY(0)';
+                }
+                
+                lastScrollTop = scrollTop;
+            }
+        }, { passive: true });
+        
+        // Gérer le resize de la fenêtre
+        window.addEventListener('resize', function() {
+            if (window.innerWidth >= 768) {
+                // Sur desktop, fermer le menu mobile s'il est ouvert
+                closeMobileMenu();
+                
+                // Réactiver le blur sur le header
+                const header = document.querySelector('.main-header');
+                header.style.backdropFilter = 'blur(20px)';
+                header.style.webkitBackdropFilter = 'blur(20px)';
+            } else {
+                // Sur mobile, désactiver le blur problématique
+                const header = document.querySelector('.main-header');
+                header.style.backdropFilter = 'none';
+                header.style.webkitBackdropFilter = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

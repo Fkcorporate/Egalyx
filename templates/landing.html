@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FK Corporate Intelligence - Plateforme de Contrôle Interne</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-navy: #0A1929;
+            --corporate-blue: #1A3C6B;
+            --accent-blue: #0066CC;
+            --light-blue: #E3F2FD;
+            --success: #0D9488;
+            --warning: #F59E0B;
+            --danger: #DC2626;
+            --text-dark: #1A202C;
+            --text-muted: #4A5568;
+            --border-light: #E2E8F0;
+            --gradient-blue: linear-gradient(135deg, #1A3C6B 0%, #0066CC 100%);
+            --gradient-light: linear-gradient(135deg, #FFFFFF 0%, #F7FAFC 100%);
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            --hover-shadow: 0 20px 40px rgba(26, 60, 107, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #FFFFFF;
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .navbar {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 1.2rem 0;
+            border-bottom: 1px solid var(--border-light);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.05);
+        }
+
+        .logo-brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: var(--primary-navy);
+            text-decoration: none;
+        }
+
+        .logo-brand span {
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-link {
+            color: var(--text-muted) !important;
+            font-weight: 500;
+            padding: 0.5rem 1.5rem !important;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .nav-link:hover {
+            color: var(--corporate-blue) !important;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 1.5rem;
+            right: 1.5rem;
+            height: 2px;
+            background: var(--gradient-blue);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .nav-link:hover::after {
+            transform: scaleX(1);
+        }
+
+        .btn-login {
+            background: var(--gradient-blue);
+            color: white;
+            border: none;
+            padding: 0.8rem 2.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(26, 60, 107, 0.2);
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(26, 60, 107, 0.3);
+            color: white;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            min-height: 100vh;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(26, 60, 107, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(0, 102, 204, 0.05) 0%, transparent 40%),
+                var(--gradient-light);
+            display: flex;
+            align-items: center;
+            padding-top: 100px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            color: var(--primary-navy);
+        }
+
+        .hero-title span {
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline-block;
+        }
+
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary-lg {
+            background: var(--gradient-blue);
+            color: white;
+            padding: 1rem 3rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.125rem;
+            border: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 6px 20px rgba(26, 60, 107, 0.25);
+        }
+
+        .btn-primary-lg:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(26, 60, 107, 0.35);
+            color: white;
+        }
+
+        .btn-outline-lg {
+            background: transparent;
+            color: var(--corporate-blue);
+            padding: 1rem 2.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.125rem;
+            border: 2px solid var(--corporate-blue);
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-outline-lg:hover {
+            background: rgba(26, 60, 107, 0.05);
+            color: var(--corporate-blue);
+            transform: translateY(-2px);
+        }
+
+        /* Demo Credentials Card */
+        .demo-card {
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-top: 3rem;
+            max-width: 500px;
+            box-shadow: var(--card-shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .demo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-blue);
+        }
+
+        .demo-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .demo-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-blue);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .demo-icon i {
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .demo-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--primary-navy);
+            margin: 0;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .demo-item {
+            background: #F8FAFC;
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .demo-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--card-shadow);
+        }
+
+        .demo-label {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .demo-value {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--primary-navy);
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Floating Elements */
+        .floating-element {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(2deg); }
+        }
+
+        /* Stats Section */
+        .stats-section {
+            padding: 6rem 2rem;
+            background: #F8FAFC;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 2.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            height: 100%;
+            box-shadow: var(--card-shadow);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            background: var(--gradient-blue);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        /* Features Grid */
+        .features-section {
+            padding: 6rem 2rem;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-navy);
+            margin-bottom: 4rem;
+        }
+
+        .feature-card {
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 16px;
+            padding: 2.5rem;
+            height: 100%;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-blue);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .feature-icon {
+            width: 70px;
+            height: 70px;
+            background: var(--gradient-blue);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .feature-icon i {
+            font-size: 1.75rem;
+            color: white;
+        }
+
+        .feature-title {
+            font-size: 1.375rem;
+            font-weight: 600;
+            color: var(--primary-navy);
+            margin-bottom: 1rem;
+        }
+
+        .feature-description {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .feature-list li {
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.95rem;
+        }
+
+        .feature-list li i {
+            color: var(--accent-blue);
+            font-size: 0.875rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            padding: 8rem 2rem;
+            background: 
+                radial-gradient(circle at 30% 50%, rgba(26, 60, 107, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 20%, rgba(0, 102, 204, 0.08) 0%, transparent 50%),
+                #FFFFFF;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-card {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--gradient-blue);
+            border-radius: 24px;
+            padding: 5rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 30px 60px rgba(26, 60, 107, 0.25);
+        }
+
+        .cta-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+
+        .cta-title {
+            font-size: 3rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 1.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-text {
+            font-size: 1.25rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 4rem 2rem 2rem;
+            background: var(--primary-navy);
+            color: white;
+        }
+
+        .footer-logo {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(to right, #FFFFFF, #93c5fd);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .footer-text {
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+
+        .footer-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+        }
+
+        .footer-section h5 {
+            color: white;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+            font-size: 1.125rem;
+        }
+
+        .footer-section a {
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            display: block;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .footer-section a:hover {
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 3rem;
+            margin-top: 3rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9rem;
+        }
+
+        /* Floating Elements Background */
+        .floating-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .floating-shape {
+            position: absolute;
+            background: linear-gradient(135deg, rgba(26, 60, 107, 0.1) 0%, rgba(0, 102, 204, 0.05) 100%);
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 5%;
+            animation-delay: 0s;
+        }
+
+        .shape-2 {
+            width: 200px;
+            height: 200px;
+            top: 60%;
+            right: 10%;
+            animation-delay: -5s;
+            border-radius: 63% 37% 54% 46% / 55% 48% 52% 45%;
+        }
+
+        .shape-3 {
+            width: 150px;
+            height: 150px;
+            bottom: 20%;
+            left: 15%;
+            animation-delay: -10s;
+            border-radius: 38% 62% 63% 37% / 41% 44% 56% 59%;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .hero-title {
+                font-size: 2.75rem;
+            }
+            
+            .cta-title {
+                font-size: 2.5rem;
+            }
+            
+            .cta-card {
+                padding: 3rem 2rem;
+            }
+            
+            .demo-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.25rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+            
+            .btn-login {
+                padding: 0.7rem 1.5rem;
+                font-size: 0.9rem;
+            }
+            
+            .hero-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .btn-primary-lg, .btn-outline-lg {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
+        /* Animation Classes */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Quick Login Overlay */
+        .quick-login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .quick-login-card {
+            background: white;
+            border-radius: 24px;
+            padding: 3rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.15);
+            border: 1px solid var(--border-light);
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="logo-brand" href="{{ url_for('home') }}">
+                <i class="fas fa-shield-alt"></i>
+                <span>FK Corporate</span>
+                <small class="text-muted ms-2" style="font-size: 0.875rem;">Intelligence</small>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="fas fa-bars text-dark"></i>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-center">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Fonctionnalités</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#solutions">Solutions</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#clients">Clients</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">Contact</a>
+                    </li>
+                    <li class="nav-item ms-3">
+                        <a href="{{ url_for('login') }}" class="btn-login">
+                            <i class="fas fa-sign-in-alt"></i>
+                            Se connecter
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <!-- Floating Background Elements -->
+        <div class="floating-bg">
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="floating-shape shape-3"></div>
+        </div>
+        
+        <div class="container hero-content">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <h1 class="hero-title animate-on-scroll">
+                        Contrôle Interne <span>Intelligent</span> pour Entreprises Exigeantes
+                    </h1>
+                    <p class="hero-subtitle animate-on-scroll">
+                        Plateforme tout-en-un pour la gestion des risques, l'audit interne 
+                        et la conformité réglementaire. Solution professionnelle utilisée 
+                        par les plus grandes organisations.
+                    </p>
+                    
+                    <div class="hero-actions animate-on-scroll">
+                        <a href="{{ url_for('login') }}" class="btn-primary-lg">
+                            <i class="fas fa-rocket"></i>
+                            Accéder à la plateforme
+                        </a>
+                        <a href="#demo" class="btn-outline-lg">
+                            <i class="fas fa-play-circle"></i>
+                            Voir la démo
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-5 mt-5 mt-lg-0">
+                    <!-- Demo Credentials Card -->
+                    <div class="demo-card animate-on-scroll">
+                        <div class="demo-header">
+                            <div class="demo-icon">
+                                <i class="fas fa-key"></i>
+                            </div>
+                            <div>
+                                <h3 class="demo-title">Accès Démonstration</h3>
+                                <p class="text-muted mb-0">Testez toutes les fonctionnalités</p>
+                            </div>
+                        </div>
+                        
+                        <div class="demo-grid">
+                            <div class="demo-item">
+                                <div class="demo-label">
+                                    <i class="fas fa-user"></i>
+                                    Identifiant
+                                </div>
+                                <div class="demo-value">admin</div>
+                            </div>
+                            
+                            <div class="demo-item">
+                                <div class="demo-label">
+                                    <i class="fas fa-lock"></i>
+                                    Mot de passe
+                                </div>
+                                <div class="demo-value">admin123</div>
+                            </div>
+                            
+                            <div class="demo-item">
+                                <div class="demo-label">
+                                    <i class="fas fa-shield-alt"></i>
+                                    Accès
+                                </div>
+                                <div class="demo-value">Complet</div>
+                            </div>
+                            
+                            <div class="demo-item">
+                                <div class="demo-label">
+                                    <i class="fas fa-clock"></i>
+                                    Validité
+                                </div>
+                                <div class="demo-value">Illimité</div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <a href="{{ url_for('login') }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-external-link-alt me-2"></i>
+                                Accéder avec ces identifiants
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="stats-section">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-3 col-6">
+                    <div class="stat-card animate-on-scroll">
+                        <div class="stat-number">99.8%</div>
+                        <div class="stat-label">Satisfaction clients</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card animate-on-scroll">
+                        <div class="stat-number">40%</div>
+                        <div class="stat-label">Gain de productivité</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card animate-on-scroll">
+                        <div class="stat-number">24/7</div>
+                        <div class="stat-label">Surveillance continue</div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="stat-card animate-on-scroll">
+                        <div class="stat-number">ISO</div>
+                        <div class="stat-label">Certifié 27001</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <div class="container">
+            <h2 class="section-title animate-on-scroll">Fonctionnalités Professionnelles</h2>
+            
+            <div class="row g-4">
+                <!-- Cartographie -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <h3 class="feature-title">Cartographie Avancée</h3>
+                        <p class="feature-description">
+                            Cartographiez vos risques par processus, direction ou entité avec des matrices interactives.
+                        </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check-circle"></i> Matrices de risques dynamiques</li>
+                            <li><i class="fas fa-check-circle"></i> Tableau de Bordeaux automatique</li>
+                            <li><i class="fas fa-check-circle"></i> Analyse par scénarios</li>
+                            <li><i class="fas fa-check-circle"></i> Visualisation 3D</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Audit -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-clipboard-check"></i>
+                        </div>
+                        <h3 class="feature-title">Audit Intelligent</h3>
+                        <p class="feature-description">
+                            Programme d'audit complet avec planification, exécution et suivi automatisé.
+                        </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check-circle"></i> Planification automatique</li>
+                            <li><i class="fas fa-check-circle"></i> Checklists intelligentes</li>
+                            <li><i class="fas fa-check-circle"></i> Workflows d'approbation</li>
+                            <li><i class="fas fa-check-circle"></i> Rapports ISO standard</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Conformité -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <h3 class="feature-title">Conformité RGPD</h3>
+                        <p class="feature-description">
+                            Gestion complète de la conformité réglementaire avec veille automatique.
+                        </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check-circle"></i> Veille réglementaire IA</li>
+                            <li><i class="fas fa-check-circle"></i> Registre des traitements</li>
+                            <li><i class="fas fa-check-circle"></i> Analyses d'impact</li>
+                            <li><i class="fas fa-check-circle"></i> Documentation automatisée</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- KRI -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3 class="feature-title">Indicateurs KRI</h3>
+                        <p class="feature-description">
+                            Dashboard en temps réel avec alertes prédictives et tableaux de bord personnalisables.
+                        </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check-circle"></i> Alertes en temps réel</li>
+                            <li><i class="fas fa-check-circle"></i> Analyse prédictive</li>
+                            <li><i class="fas fa-check-circle"></i> Reporting automatique</li>
+                            <li><i class="fas fa-check-circle"></i> Benchmarking sectoriel</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- IA -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-brain"></i>
+                        </div>
+                        <h3 class="feature-title">Intelligence Artificielle</h3>
+                        <p class="feature-description">
+                            Analyse IA avancée pour la détection des risques et recommandations intelligentes.
+                        </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check-circle"></i> Détection d'anomalies</li>
+                            <li><i class="fas fa-check-circle"></i> Recommandations IA</li>
+                            <li><i class="fas fa-check-circle"></i> Analyse NLP des documents</li>
+                            <li><i class="fas fa-check-circle"></i> Prédiction des risques</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Intégration -->
+                <div class="col-lg-4 col-md-6">
+                    <div class="feature-card animate-on-scroll">
+                        <div class="feature-icon">
+                            <i class="fas fa-plug"></i>
+                        </div>
+                        <h3 class="feature-title">Intégration API</h3>
+                        <p class="feature-description">
+                            Connectez-vous à vos systèmes existants avec notre API RESTful complète.
+                        </p>
+                        <ul class="feature-list">
+                            <li><i class="fas fa-check-circle"></i> API RESTful complète</li>
+                            <li><i class="fas fa-check-circle"></i> Webhooks en temps réel</li>
+                            <li><i class="fas fa-check-circle"></i> Connecteurs pré-construits</li>
+                            <li><i class="fas fa-check-circle"></i> Documentation Swagger</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-card animate-on-scroll">
+                <h2 class="cta-title">Prêt à moderniser votre contrôle interne ?</h2>
+                <p class="cta-text">
+                    Rejoignez les entreprises leaders qui utilisent déjà notre plateforme pour transformer 
+                    leur gouvernance et assurer leur conformité. Démarrez dès aujourd'hui.
+                </p>
+                <div class="d-flex flex-column flex-md-row gap-3 justify-content-center align-items-center">
+                    <a href="{{ url_for('login') }}" class="btn-primary-lg">
+                        <i class="fas fa-play me-2"></i>
+                        Accéder à la plateforme
+                    </a>
+                    <a href="#contact" class="btn btn-light btn-lg px-4">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Demander une démo personnalisée
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-5 mb-lg-0">
+                    <div class="footer-logo">FK Corporate Intelligence</div>
+                    <p class="footer-text">
+                        Plateforme professionnelle de gestion du contrôle interne, 
+                        des risques et de la conformité réglementaire pour entreprises.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <a href="#" class="text-white opacity-75">
+                            <i class="fab fa-linkedin fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-white opacity-75">
+                            <i class="fab fa-twitter fa-lg"></i>
+                        </a>
+                        <a href="#" class="text-white opacity-75">
+                            <i class="fab fa-github fa-lg"></i>
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="col-lg-8">
+                    <div class="footer-links">
+                        <div class="footer-section">
+                            <h5>Plateforme</h5>
+                            <a href="#features">Fonctionnalités</a>
+                            <a href="#solutions">Solutions</a>
+                            <a href="#pricing">Tarification</a>
+                            <a href="#security">Sécurité</a>
+                        </div>
+                        
+                        <div class="footer-section">
+                            <h5>Secteurs</h5>
+                            <a href="#banks">Bancaire & Assurance</a>
+                            <a href="#healthcare">Santé</a>
+                            <a href="#industry">Industrie</a>
+                            <a href="#services">Services Financiers</a>
+                        </div>
+                        
+                        <div class="footer-section">
+                            <h5>Ressources</h5>
+                            <a href="#documentation">Documentation</a>
+                            <a href="#tutorials">Tutoriels vidéo</a>
+                            <a href="#blog">Blog technique</a>
+                            <a href="#api">API Developer</a>
+                        </div>
+                        
+                        <div class="footer-section">
+                            <h5>Entreprise</h5>
+                            <a href="#about">À propos</a>
+                            <a href="#contact">Contact commercial</a>
+                            <a href="#careers">Carrières</a>
+                            <a href="#legal">Mentions légales</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="copyright">
+                <p>&copy; 2024 FK Corporate Intelligence Group. Tous droits réservés. | 
+                   <a href="#privacy" class="text-white opacity-75 ms-2">Politique de confidentialité</a> | 
+                   <a href="#terms" class="text-white opacity-75 ms-2">Conditions d'utilisation</a>
+                </p>
+                <p class="mt-2">
+                    <small>ISO 27001:2022 Certified | RGPD Compliant | SOC 2 Type II</small>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Quick Login Overlay (Optionnel) -->
+    <div id="quickLoginOverlay" class="quick-login-overlay">
+        <div class="quick-login-card">
+            <h3 class="text-center mb-4">Connexion Rapide</h3>
+            <p class="text-center text-muted mb-4">Utilisez les identifiants de démonstration</p>
+            <div class="text-center">
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+                    <i class="fas fa-sign-in-alt me-2"></i>
+                    Se connecter avec admin / admin123
+                </a>
+            </div>
+            <button class="btn btn-link mt-4 w-100" onclick="closeQuickLogin()">
+                <i class="fas fa-times me-2"></i>
+                Fermer
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Animation on scroll
+        document.addEventListener('DOMContentLoaded', function() {
+            // Observer for scroll animations
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            // Observe all animate-on-scroll elements
+            document.querySelectorAll('.animate-on-scroll').forEach(el => {
+                observer.observe(el);
+            });
+
+            // Smooth scrolling for anchor links
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        e.preventDefault();
+                        window.scrollTo({
+                            top: targetElement.offsetTop - 80,
+                            behavior: 'smooth'
+                        });
+                    }
+                });
+            });
+
+            // Enhanced login button
+            document.querySelectorAll('.btn-login, .btn-primary-lg').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    if (this.getAttribute('href') === '{{ url_for("login") }}') {
+                        e.preventDefault();
+                        
+                        // Optional: Show quick login overlay
+                        // document.getElementById('quickLoginOverlay').style.display = 'flex';
+                        
+                        // Direct redirect to login page
+                        window.location.href = "{{ url_for('login') }}";
+                    }
+                });
+            });
+
+            // Demo credentials quick login
+            document.querySelectorAll('[href*="login"]').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    // Add loading state
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirection...';
+                    this.classList.add('disabled');
+                    
+                    // Simulate loading for better UX
+                    setTimeout(() => {
+                        this.innerHTML = originalText;
+                        this.classList.remove('disabled');
+                    }, 1000);
+                });
+            });
+
+            // Stats counter animation
+            function animateStats() {
+                const statNumbers = document.querySelectorAll('.stat-number');
+                statNumbers.forEach(stat => {
+                    const target = parseInt(stat.textContent);
+                    let current = 0;
+                    const increment = target / 50;
+                    
+                    const updateCount = () => {
+                        if (current < target) {
+                            current += increment;
+                            stat.textContent = Math.round(current) + (stat.textContent.includes('%') ? '%' : '');
+                            setTimeout(updateCount, 30);
+                        } else {
+                            stat.textContent = stat.textContent.replace('.8%', '.8%');
+                        }
+                    };
+                    
+                    // Start animation when element is visible
+                    const observer = new IntersectionObserver((entries) => {
+                        if (entries[0].isIntersecting) {
+                            updateCount();
+                            observer.unobserve(stat);
+                        }
+                    });
+                    
+                    observer.observe(stat);
+                });
+            }
+            
+            // Initialize stats animation
+            animateStats();
+        });
+
+        // Quick login functions
+        function showQuickLogin() {
+            document.getElementById('quickLoginOverlay').style.display = 'flex';
+        }
+
+        function closeQuickLogin() {
+            document.getElementById('quickLoginOverlay').style.display = 'none';
+        }
+
+        // Close quick login on ESC key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeQuickLogin();
+            }
+        });
+    </script>
+</body>
+</html>

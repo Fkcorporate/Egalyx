@@ -1,0 +1,789 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-edit me-2"></i>Modifier {{ kri.get_type_display() }} : {{ kri.nom }}
+                        {% if 'IA suggérée' in kri.source_donnees %}
+                        <span class="badge bg-info ms-2">
+                            <i class="fas fa-robot me-1"></i>Généré par IA
+                        </span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Section IA pour la modification -->
+                    {% if 'IA suggérée' in kri.source_donnees or kri.notes_internes and 'Métadonnées IA' in kri.notes_internes %}
+                    <div class="alert alert-info mb-4">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-robot fa-2x"></i>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="alert-heading mb-1">Ce KRI a été généré par IA</h6>
+                                <p class="mb-2">Vous pouvez le modifier selon vos besoins ou demander à l'IA de nouvelles suggestions.</p>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="lancerRegenerationKriIA()">
+                                    <i class="fas fa-redo me-1"></i>Regénérer avec IA
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <form method="POST" action="{{ url_for('traiter_modifier_kri', kri_id=kri.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Indicator type *</label>
+                                    <div class="btn-group w-100" role="group">
+                                        <input type="radio" class="btn-check" name="type_indicateur" id="type_kri" value="kri" 
+                                               {% if kri.type_indicateur == 'kri' %}checked{% endif %}>
+                                        <label class="btn btn-outline-danger" for="type_kri">
+                                            <i class="fas fa-exclamation-triangle me-2"></i>KRI
+                                            <br><small class="text-muted">Risk Indicator</small>
+                                        </label>
+                                        
+                                        <input type="radio" class="btn-check" name="type_indicateur" id="type_kpi" value="kpi" 
+                                               {% if kri.type_indicateur == 'kpi' %}checked{% endif %}>
+                                        <label class="btn btn-outline-success" for="type_kpi">
+                                            <i class="fas fa-chart-line me-2"></i>KPI
+                                            <br><small class="text-muted">Performance Indicator</small>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        {% if kri.type_indicateur == 'kpi' %}
+                                            Processus ou projet associé (optionnel)
+                                        {% else %}
+                                            Risque associé
+                                        {% endif %}
+                                    </label>
+                                    <select class="form-select" name="risque_id" id="risqueSelect">
+                                        <option value="">Not associated (independent indicator)</option>
+                                        {% for risque in risques_disponibles %}
+                                            <option value="{{ risque.id }}" 
+                                                    {% if kri.risque_id == risque.id %}selected{% endif %}>
+                                                {{ risque.reference }} - {{ risque.intitule }}
+                                                {% if risque.is_archived %}[Archivé]{% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    {% if kri.risque and kri.type_indicateur == 'kri' %}
+                                    <div class="mt-2">
+                                        <button type="button" class="btn btn-sm btn-outline-info" onclick="analyserKriExistant()">
+                                            <i class="fas fa-search me-1"></i>Analyser avec IA
+                                        </button>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label">Indicator name *</label>
+                                <input type="text" class="form-control" name="nom" 
+                                       value="{{ kri.nom }}" 
+                                       placeholder="Ex: Taux d'erreur, Niveau de satisfaction client..." required>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Unit of measurement</label>
+                                <input type="text" class="form-control" name="unite_mesure" 
+                                       value="{{ kri.unite_mesure }}"
+                                       placeholder="%, €, days, number...">
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="description" rows="3"
+                                      placeholder="Décrivez l'indicateur, son objectif et sa méthode de calcul...">{{ kri.description }}</textarea>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Formula or method of calculation</label>
+                            <textarea class="form-control" name="formule_calcul" rows="2"
+                                      placeholder="Ex: (Nombre d'erreurs / Nombre total de transactions) × 100">{{ kri.formule_calcul }}</textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Measurement frequency *</label>
+                                <select class="form-select" name="frequence_mesure" required>
+                                    <option value="">Select...</option>
+                                    <option value="quotidien" {% if kri.frequence_mesure == 'quotidien' %}selected{% endif %}>Quotidien</option>
+                                    <option value="hebdomadaire" {% if kri.frequence_mesure == 'hebdomadaire' %}selected{% endif %}>Hebdomadaire</option>
+                                    <option value="mensuel" {% if kri.frequence_mesure == 'mensuel' %}selected{% endif %}>Mensuel</option>
+                                    <option value="trimestriel" {% if kri.frequence_mesure == 'trimestriel' %}selected{% endif %}>Trimestriel</option>
+                                    <option value="annuel" {% if kri.frequence_mesure == 'annuel' %}selected{% endif %}>Annuel</option>
+                                    <option value="ponctuel" {% if kri.frequence_mesure == 'ponctuel' %}selected{% endif %}>Ponctuel</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Measurement manager</label>
+                                <select class="form-select" name="responsable_mesure_id">
+                                    <option value="">Select a manager</option>
+                                    {% for user in utilisateurs %}
+                                        <option value="{{ user.id }}" 
+                                                {% if kri.responsable_mesure_id == user.id %}selected{% endif %}>
+                                            {{ user.username }} ({{ user.role }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-bell me-2"></i>Alert thresholds</h6>
+                            </div>
+                            <div class="card-body">
+                                
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Direction of threshold evaluation *</label>
+                                        <select class="form-select" name="sens_evaluation_seuil" id="sensEvaluation" required>
+                                            <option value="superieur" 
+                                                    {% if kri.sens_evaluation_seuil == 'superieur' %}selected{% endif %}>
+                                                Risk/underperformance if value > seuil
+                                            </option>
+                                            <option value="inferieur"
+                                                    {% if kri.sens_evaluation_seuil == 'inferieur' %}selected{% endif %}>Risk/underperformance if value< seuil
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="alert alert-info mt-4">
+                                            <small>
+                                                <i class="fas fa-info-circle me-1"></i>
+                                                <span id="aideSens">
+                                                    {% if kri.type_indicateur == 'kri' %}
+                                                        For KRIs: high value = high risk<br>Ex: Error rate, Delays...
+                                                    {% else %}
+                                                        For KPIs: adjust according to objective
+                                                    {% endif %}
+                                                </span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Alert threshold</label>
+                                        <div class="input-group">
+                                            <input type="number" step="0.01" class="form-control" name="seuil_alerte" 
+                                                   value="{{ kri.seuil_alerte if kri.seuil_alerte else '' }}"
+                                                   placeholder="0.00">
+                                            <span class="input-group-text" id="uniteAlerte">
+                                                {{ kri.unite_mesure if kri.unite_mesure }}
+                                            </span>
+                                        </div>
+                                        <div class="form-text">
+                                            <small id="texteSeuilAlerte">
+                                                {% if kri.type_indicateur == 'kri' %}
+                                                    Triggers enhanced surveillance
+                                                {% else %}
+                                                    Indicates underperformance
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Critical threshold</label>
+                                        <div class="input-group">
+                                            <input type="number" step="0.01" class="form-control" name="seuil_critique" 
+                                                   value="{{ kri.seuil_critique if kri.seuil_critique else '' }}"
+                                                   placeholder="0.00">
+                                            <span class="input-group-text" id="uniteCritique">
+                                                {{ kri.unite_mesure if kri.unite_mesure }}
+                                            </span>
+                                        </div>
+                                        <div class="form-text">
+                                            <small id="texteSeuilCritique">
+                                                {% if kri.type_indicateur == 'kri' %}
+                                                    Requires immediate action
+                                                {% else %}
+                                                    Indicates performance out of target
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="alert alert-light mb-0">
+                                    <small class="text-muted d-block mb-2">Interpretation of thresholds:</small>
+                                    <div class="row text-center small">
+                                        <div class="col-4">
+                                            <span class="badge bg-success p-2">Normal</span>
+                                            <div class="mt-1" id="zoneNormale">
+                                                {% if kri.sens_evaluation_seuil == 'inferieur' %}
+                                                    Valeur > seuil alerte
+                                                {% else %}
+                                                    Valeur < seuil alerte
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <span class="badge bg-warning p-2">Alerte</span>
+                                            <div class="mt-1" id="zoneAlerte">
+                                                {% if kri.sens_evaluation_seuil == 'inferieur' %}
+                                                    Seuil critique < valeur ≤ seuil alerte
+                                                {% else %}
+                                                    Seuil alerte ≤ valeur < seuil critique
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        <div class="col-4">
+                                            <span class="badge bg-danger p-2">Critique</span>
+                                            <div class="mt-1" id="zoneCritique">
+                                                {% if kri.sens_evaluation_seuil == 'inferieur' %}
+                                                    Valeur ≤ seuil critique
+                                                {% else %}
+                                                    Valeur ≥ seuil critique
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card mb-4">
+                            <div class="card-header">
+                                <h6 class="card-title mb-0">
+                                    <i class="fas fa-cog me-2"></i>Additional metadata</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Catégorie</label>
+                                        <select class="form-select" name="categorie">
+                                            <option value="">Select...</option>
+                                            <option value="operationnel" {% if kri.categorie == 'operationnel' %}selected{% endif %}>Operational</option>
+                                            <option value="financier" {% if kri.categorie == 'financier' %}selected{% endif %}>Financier</option>
+                                            <option value="qualite" {% if kri.categorie == 'qualite' %}selected{% endif %}>Qualité</option>
+                                            <option value="securite" {% if kri.categorie == 'securite' %}selected{% endif %}>Sécurité</option>
+                                            <option value="conformite" {% if kri.categorie == 'conformite' %}selected{% endif %}>Conformité</option>
+                                            <option value="rh" {% if kri.categorie == 'rh' %}selected{% endif %}>Human Resources</option>
+                                            <option value="technologique" {% if kri.categorie == 'technologique' %}selected{% endif %}>Technological</option>
+                                            <option value="autre" {% if kri.categorie == 'autre' %}selected{% endif %}>Autre</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Data source</label>
+                                        <input type="text" class="form-control" name="source_donnees"
+                                               value="{{ kri.source_donnees }}"
+                                               placeholder="Ex: SAP, Excel, API...">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Internal notes</label>
+                                    <textarea class="form-control" name="notes_internes" rows="3">{{ kri.notes_internes }}</textarea>
+                                    <div class="form-text">
+                                        <small>Information reserved for indicator managers</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex gap-2 justify-content-between">
+                            <div>
+                                <a href="{{ url_for('detail_kri', kri_id=kri.id) }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i>Annuler
+                                </a>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i>Save changes
+                                </button>
+                                {% if kri.risque %}
+                                <button type="button" class="btn btn-outline-info" onclick="optimiserAvecIA()">
+                                    <i class="fas fa-robot me-1"></i>Optimiser avec IA
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal IA pour la modification -->
+<div class="modal fade" id="modalKriIAModification" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-robot me-2 text-primary"></i>
+                    Suggestions IA pour optimiser votre KRI
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="kriIAModificationContent">
+                    <!-- Contenu chargé dynamiquement -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    Annuler
+                </button>
+                <button type="button" class="btn btn-primary" id="btnAppliquerOptimisationIA">
+                    <i class="fas fa-check me-2"></i>Appliquer les optimisations
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables globales pour l'IA
+    let suggestionsOptimisationIA = [];
+    let optimisationSelectionnee = null;
+    let kriId = {{ kri.id }};
+    
+    // Éléments DOM
+    const sensEvaluation = document.getElementById('sensEvaluation');
+    const uniteMesureInput = document.querySelector('input[name="unite_mesure"]');
+    const uniteAlerte = document.getElementById('uniteAlerte');
+    const uniteCritique = document.getElementById('uniteCritique');
+    const zoneNormale = document.getElementById('zoneNormale');
+    const zoneAlerte = document.getElementById('zoneAlerte');
+    const zoneCritique = document.getElementById('zoneCritique');
+    const texteSeuilAlerte = document.getElementById('texteSeuilAlerte');
+    const texteSeuilCritique = document.getElementById('texteSeuilCritique');
+    const aideSens = document.getElementById('aideSens');
+    
+    // Mise à jour de l'affichage selon le type d'indicateur
+    function mettreAJourAffichage() {
+        const typeSelectionne = document.querySelector('input[name="type_indicateur"]:checked').value;
+        const sens = sensEvaluation.value;
+        
+        // Mettre à jour les textes d'aide
+        if (typeSelectionne === 'kpi') {
+            texteSeuilAlerte.textContent = 'Indique une sous-performance';
+            texteSeuilCritique.textContent = 'Indique une performance hors cible';
+            
+            if (sens === 'inferieur') {
+                aideSens.innerHTML = 'Pour les KPI où une faible valeur est une sous-performance<br>Ex: Taux de satisfaction, Niveau de service...';
+            } else {
+                aideSens.innerHTML = 'Pour les KPI où une valeur élevée est une sous-performance<br>Ex: Coûts, Délais, Erreurs...';
+            }
+            
+            zoneNormale.textContent = sens === 'inferieur' ? 'Valeur ≥ seuil alerte' : 'Valeur ≤ seuil alerte';
+            zoneAlerte.textContent = sens === 'inferieur' ? 'Seuil critique ≤ valeur < seuil alerte' : 'Seuil alerte < valeur ≤ seuil critique';
+            zoneCritique.textContent = sens === 'inferieur' ? 'Valeur < seuil critique' : 'Valeur > seuil critique';
+        } else {
+            texteSeuilAlerte.textContent = 'Déclenche une surveillance renforcée';
+            texteSeuilCritique.textContent = 'Nécessite une action immédiate';
+            
+            if (sens === 'inferieur') {
+                aideSens.innerHTML = 'Pour les KRI où une faible valeur est un risque<br>Ex: Niveau de service, Satisfaction client...';
+            } else {
+                aideSens.innerHTML = 'Pour les KRI standard : valeur élevée = risque élevé<br>Ex: Taux d\'erreur, Retards, Coûts...';
+            }
+            
+            zoneNormale.textContent = sens === 'inferieur' ? 'Valeur > seuil alerte' : 'Valeur < seuil alerte';
+            zoneAlerte.textContent = sens === 'inferieur' ? 'Seuil critique < valeur ≤ seuil alerte' : 'Seuil alerte ≤ valeur < seuil critique';
+            zoneCritique.textContent = sens === 'inferieur' ? 'Valeur ≤ seuil critique' : 'Valeur ≥ seuil critique';
+        }
+    }
+    
+    // Mettre à jour les unités
+    function mettreAJourUnites() {
+        const unite = uniteMesureInput.value;
+        if (unite) {
+            uniteAlerte.textContent = unite;
+            uniteCritique.textContent = unite;
+        }
+    }
+    
+    // Écouteurs d'événements
+    sensEvaluation.addEventListener('change', mettreAJourAffichage);
+    uniteMesureInput.addEventListener('input', mettreAJourUnites);
+    
+    // Initialisation
+    mettreAJourAffichage();
+    mettreAJourUnites();
+    
+    // ============================================
+    // FONCTIONS IA POUR LA MODIFICATION
+    // ============================================
+    
+    // Fonction pour lancer la régénération IA
+    window.lancerRegenerationKriIA = async function() {
+        const risqueId = document.getElementById('risqueSelect').value;
+        
+        if (!risqueId) {
+            showToast('Veuillez d\'abord sélectionner un risque associé', 'warning');
+            return;
+        }
+        
+        // Afficher la modale
+        const modal = new bootstrap.Modal(document.getElementById('modalKriIAModification'));
+        modal.show();
+        
+        // Afficher le chargement
+        document.getElementById('kriIAModificationContent').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="mt-3">L'IA analyse votre KRI existant pour des suggestions d'optimisation...</p>
+            </div>
+        `;
+        
+        await chargerSuggestionsOptimisation(risqueId);
+    };
+    
+    // Fonction pour analyser le KRI existant
+    window.analyserKriExistant = async function() {
+        const risqueId = document.getElementById('risqueSelect').value;
+        
+        if (!risqueId) {
+            showToast('Aucun risque associé à analyser', 'warning');
+            return;
+        }
+        
+        // Afficher la modale
+        const modal = new bootstrap.Modal(document.getElementById('modalKriIAModification'));
+        modal.show();
+        
+        // Afficher le chargement
+        document.getElementById('kriIAModificationContent').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="mt-3">L'IA analyse votre KRI et le risque associé...</p>
+            </div>
+        `;
+        
+        await chargerSuggestionsOptimisation(risqueId);
+    };
+    
+    // Fonction pour optimiser avec IA
+    window.optimiserAvecIA = async function() {
+        // Récupérer les données actuelles du formulaire
+        const donneesKri = {
+            nom: document.querySelector('input[name="nom"]').value,
+            description: document.querySelector('textarea[name="description"]').value,
+            formule_calcul: document.querySelector('textarea[name="formule_calcul"]').value,
+            unite_mesure: document.querySelector('input[name="unite_mesure"]').value,
+            seuil_alerte: document.querySelector('input[name="seuil_alerte"]').value,
+            seuil_critique: document.querySelector('input[name="seuil_critique"]').value,
+            frequence_mesure: document.querySelector('select[name="frequence_mesure"]').value,
+            categorie: document.querySelector('select[name="categorie"]').value,
+            risque_id: document.getElementById('risqueSelect').value
+        };
+        
+        // Afficher la modale
+        const modal = new bootstrap.Modal(document.getElementById('modalKriIAModification'));
+        modal.show();
+        
+        // Afficher le chargement
+        document.getElementById('kriIAModificationContent').innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Chargement...</span>
+                </div>
+                <p class="mt-3">L'IA analyse votre KRI pour des suggestions d'amélioration...</p>
+            </div>
+        `;
+        
+        await optimiserKriAvecIA(donneesKri);
+    };
+    
+    // Charger les suggestions d'optimisation
+    async function chargerSuggestionsOptimisation(risqueId) {
+        try {
+            const response = await fetch(`/api/kri/${kriId}/optimiser-ia?risque_id=${risqueId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                suggestionsOptimisationIA = data.suggestions;
+                afficherSuggestionsOptimisation(suggestionsOptimisationIA);
+            } else {
+                afficherErreurOptimisation(data.error || 'Erreur lors de l\'optimisation');
+            }
+        } catch (error) {
+            console.error('Erreur chargement optimisation IA:', error);
+            afficherErreurOptimisation('Erreur de connexion au service IA');
+        }
+    }
+    
+    // Optimiser le KRI avec IA
+    async function optimiserKriAvecIA(donneesKri) {
+        try {
+            const response = await fetch(`/api/kri/${kriId}/optimiser-ia`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(donneesKri)
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                suggestionsOptimisationIA = data.suggestions;
+                afficherSuggestionsOptimisation(suggestionsOptimisationIA);
+            } else {
+                afficherErreurOptimisation(data.error || 'Erreur lors de l\'optimisation');
+            }
+        } catch (error) {
+            console.error('Erreur optimisation IA:', error);
+            afficherErreurOptimisation('Erreur de connexion au service IA');
+        }
+    }
+    
+    // Afficher les suggestions d'optimisation
+    function afficherSuggestionsOptimisation(suggestions) {
+        const container = document.getElementById('kriIAModificationContent');
+        
+        if (!suggestions || suggestions.length === 0) {
+            container.innerHTML = `
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    L'IA n'a pas pu générer de suggestions d'optimisation.
+                </div>
+            `;
+            return;
+        }
+        
+        let html = `
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-lightbulb me-2"></i>
+                L'IA propose ${suggestions.length} suggestions pour améliorer votre KRI.
+            </div>
+            
+            <div class="list-group" id="listeOptimisations">
+        `;
+        
+        suggestions.forEach((suggestion, index) => {
+            const isAmelioration = suggestion.type === 'amelioration';
+            const isCorrection = suggestion.type === 'correction';
+            const isOptimisation = suggestion.type === 'optimisation';
+            
+            let badgeClass = 'bg-info';
+            let badgeIcon = 'fa-lightbulb';
+            
+            if (isAmelioration) {
+                badgeClass = 'bg-success';
+                badgeIcon = 'fa-chart-line';
+            } else if (isCorrection) {
+                badgeClass = 'bg-warning';
+                badgeIcon = 'fa-exclamation-triangle';
+            } else if (isOptimisation) {
+                badgeClass = 'bg-primary';
+                badgeIcon = 'fa-cogs';
+            }
+            
+            html += `
+                <div class="list-group-item list-group-item-action" onclick="selectionnerOptimisation(${index})">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" 
+                                   name="optimisationSelectionnee" 
+                                   id="optimisation${index}"
+                                   ${index === 0 ? 'checked' : ''}>
+                            <label class="form-check-label" for="optimisation${index}">
+                                <strong>${suggestion.titre}</strong>
+                            </label>
+                        </div>
+                        <span class="badge ${badgeClass}">
+                            <i class="fas ${badgeIcon} me-1"></i>
+                            ${suggestion.type}
+                        </span>
+                    </div>
+                    <p class="mb-1 mt-2">${suggestion.description}</p>
+                    
+                    ${suggestion.changes ? `
+                    <div class="mt-2">
+                        <small class="text-muted">Changements proposés:</small>
+                        <ul class="small mb-1">
+                            ${Object.entries(suggestion.changes).map(([key, value]) => `
+                                <li><strong>${key}:</strong> ${value}</li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    ` : ''}
+                    
+                    ${suggestion.impact ? `
+                    <div class="mt-2">
+                        <small class="text-muted">Impact attendu:</small>
+                        <p class="small mb-0">${suggestion.impact}</p>
+                    </div>
+                    ` : ''}
+                    
+                    <small class="text-muted mt-2 d-block">
+                        <i class="fas fa-robot me-1"></i>
+                        Score de confiance: ${suggestion.score_confiance || 70}%
+                    </small>
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+        container.innerHTML = html;
+        
+        // Sélectionner la première par défaut
+        if (suggestions.length > 0) {
+            selectionnerOptimisation(0);
+        }
+    }
+    
+    // Afficher une erreur d'optimisation
+    function afficherErreurOptimisation(message) {
+        const container = document.getElementById('kriIAModificationContent');
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                ${message}
+            </div>
+        `;
+    }
+    
+    // Sélectionner une optimisation
+    window.selectionnerOptimisation = function(index) {
+        optimisationSelectionnee = suggestionsOptimisationIA[index];
+        
+        // Mettre à jour le bouton radio
+        document.querySelectorAll('input[name="optimisationSelectionnee"]').forEach((radio, i) => {
+            radio.checked = (i === index);
+        });
+        
+        // Activer le bouton d'application
+        document.getElementById('btnAppliquerOptimisationIA').disabled = false;
+    };
+    
+    // Configurer le bouton d'application
+    document.getElementById('btnAppliquerOptimisationIA').addEventListener('click', function() {
+        if (!optimisationSelectionnee) {
+            showToast('Veuillez sélectionner une optimisation', 'warning');
+            return;
+        }
+        
+        appliquerOptimisationIA(optimisationSelectionnee);
+    });
+    
+    // Appliquer l'optimisation sélectionnée
+    function appliquerOptimisationIA(optimisation) {
+        if (optimisation.changes) {
+            // Appliquer les changements au formulaire
+            Object.entries(optimisation.changes).forEach(([key, value]) => {
+                const element = document.querySelector(`[name="${key}"]`);
+                if (element) {
+                    element.value = value;
+                    
+                    // Déclencher les événements de mise à jour
+                    if (key === 'unite_mesure') {
+                        mettreAJourUnites();
+                    } else if (key === 'sens_evaluation_seuil') {
+                        element.dispatchEvent(new Event('change'));
+                    }
+                }
+            });
+            
+            // Fermer la modale
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalKriIAModification'));
+            modal.hide();
+            
+            showToast('✅ Optimisations appliquées au formulaire', 'success');
+            
+            // Mettre à jour l'affichage
+            mettreAJourAffichage();
+        }
+    }
+    
+    // ============================================
+    // FONCTION UTILITAIRE POUR LES MESSAGES
+    // ============================================
+    
+    // Fonction pour afficher des messages toast
+    window.showToast = function(message, type = 'info') {
+        // Créer le conteneur de toast s'il n'existe pas
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '9999';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Couleurs selon le type
+        const typeColors = {
+            'success': 'bg-success',
+            'error': 'bg-danger',
+            'warning': 'bg-warning',
+            'info': 'bg-info'
+        };
+        
+        const bgColor = typeColors[type] || 'bg-info';
+        
+        // Créer le toast
+        const toastId = 'toast-' + Date.now();
+        const toast = document.createElement('div');
+        toast.id = toastId;
+        toast.className = `toast ${bgColor} text-white`;
+        toast.setAttribute('role', 'alert');
+        toast.setAttribute('aria-live', 'assertive');
+        toast.setAttribute('aria-atomic', 'true');
+        
+        // Icône selon le type
+        const typeIcons = {
+            'success': 'fa-check-circle',
+            'error': 'fa-exclamation-circle',
+            'warning': 'fa-exclamation-triangle',
+            'info': 'fa-info-circle'
+        };
+        
+        const icon = typeIcons[type] || 'fa-info-circle';
+        
+        toast.innerHTML = `
+            <div class="toast-header ${bgColor} text-white">
+                <i class="fas ${icon} me-2"></i>
+                <strong class="me-auto">Notification</strong>
+                <small>${new Date().toLocaleTimeString()}</small>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body">
+                ${message}
+            </div>
+        `;
+        
+        toastContainer.appendChild(toast);
+        
+        // Initialiser et afficher le toast
+        const bsToast = new bootstrap.Toast(toast, {
+            autohide: true,
+            delay: 5000
+        });
+        bsToast.show();
+        
+        // Supprimer le toast après sa fermeture
+        toast.addEventListener('hidden.bs.toast', function() {
+            toast.remove();
+        });
+    };
+});
+</script>
+{% endblock %}

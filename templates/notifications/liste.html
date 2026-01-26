@@ -1,0 +1,787 @@
+<!-- templates/notifications/liste.html -->
+{% extends "base.html" %}
+
+{% block title %}Mes Notifications - FabriceKonan Corporate{% endblock %}
+
+{% block styles %}
+<style>
+/* Styles spécifiques aux notifications */
+.notification-item {
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+    cursor: pointer;
+}
+
+.notification-item.unread {
+    background-color: rgba(var(--bs-primary-rgb), 0.05) !important;
+    border-left-color: var(--bs-primary) !important;
+}
+
+.notification-item.urgent {
+    border-left-color: var(--bs-danger) !important;
+    animation: pulse 2s infinite;
+}
+
+.notification-item.important {
+    border-left-color: var(--bs-warning) !important;
+}
+
+.notification-item:hover {
+    background-color: rgba(0,0,0,0.03) !important;
+    transform: translateX(5px);
+}
+
+.notification-actions {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.notification-item:hover .notification-actions {
+    opacity: 1;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(var(--bs-danger-rgb), 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(var(--bs-danger-rgb), 0); }
+    100% { box-shadow: 0 0 0 0 rgba(var(--bs-danger-rgb), 0); }
+}
+
+.badge-urgence {
+    font-size: 0.7em;
+    padding: 0.25em 0.5em;
+}
+
+.filter-badge {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.filter-badge.active {
+    background: var(--bs-primary) !important;
+    color: white !important;
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-size: 1.2em;
+}
+
+/* Priorité des couleurs */
+.bg-urgence-urgent {
+    background-color: var(--bs-danger) !important;
+    color: white !important;
+}
+
+.bg-urgence-important {
+    background-color: var(--bs-warning) !important;
+    color: #000 !important;
+}
+
+.bg-urgence-normal {
+    background-color: var(--bs-info) !important;
+    color: white !important;
+}
+
+/* Animation pour nouvelles notifications */
+@keyframes highlightNew {
+    0% { background-color: rgba(var(--bs-primary-rgb), 0.2); }
+    100% { background-color: rgba(var(--bs-primary-rgb), 0.05); }
+}
+
+.new-notification {
+    animation: highlightNew 2s ease-out;
+}
+
+/* Pagination améliorée */
+.pagination .page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+
+.pagination .page-link {
+    color: var(--bs-primary);
+}
+
+.pagination .page-link:hover {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+    color: var(--bs-primary);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Notifications</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h4 mb-0">
+                    <i class="fas fa-bell me-2"></i>
+                    Mes Notifications
+                </h2>
+                
+                <div class="btn-group">
+                    <button class="btn btn-outline-primary btn-sm" onclick="marquerToutesLues()">
+                        <i class="fas fa-check-double me-2"></i>
+                        Tout marquer comme lu
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="supprimerToutesLues()">
+                        <i class="fas fa-trash me-2"></i>
+                        Supprimer les lues
+                    </button>
+                    <a href="{{ url_for('preferences_notifications') }}" 
+                        class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-cog me-2"></i>
+                        Préférences
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtres -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Type de notification</label>
+                            <select class="form-select" id="filterType">
+                                <option value="">Tous les types</option>
+                                {% for key, label in types.items() %}
+                                <option value="{{ key }}" {% if request.args.get('type') == key %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Niveau d'urgence</label>
+                            <select class="form-select" id="filterUrgence">
+                                <option value="">Tous les niveaux</option>
+                                <option value="urgent" {% if request.args.get('urgence') == 'urgent' %}selected{% endif %}>Urgent</option>
+                                <option value="important" {% if request.args.get('urgence') == 'important' %}selected{% endif %}>Important</option>
+                                <option value="normal" {% if request.args.get('urgence') == 'normal' %}selected{% endif %}>Normal</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Statut</label>
+                            <select class="form-select" id="filterStatut">
+                                <option value="">Toutes</option>
+                                <option value="non_lue" {% if request.args.get('statut') == 'non_lue' %}selected{% endif %}>Non lues uniquement</option>
+                                <option value="lue" {% if request.args.get('statut') == 'lue' %}selected{% endif %}>Lues uniquement</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">&nbsp;</label>
+                            <button class="btn btn-primary w-100" onclick="appliquerFiltres()">
+                                <i class="fas fa-filter me-2"></i>
+                                Appliquer les filtres
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Filtres rapides -->
+                    <div class="mt-3">
+                        <small class="text-muted me-2">Filtres rapides:</small>
+                        <span class="badge filter-badge bg-light text-dark border me-2 mb-1" onclick="setFilter('statut', 'non_lue')">
+                            <i class="fas fa-envelope me-1"></i> Non lues
+                        </span>
+                        <span class="badge filter-badge bg-light text-dark border me-2 mb-1" onclick="setFilter('urgence', 'urgent')">
+                            <i class="fas fa-exclamation-circle me-1"></i> Urgentes
+                        </span>
+                        <span class="badge filter-badge bg-light text-dark border me-2 mb-1" onclick="setFilter('type', 'nouvelle_constatation')">
+                            <i class="fas fa-exclamation-circle me-1"></i> Constatations
+                        </span>
+                        <span class="badge filter-badge bg-light text-dark border me-2 mb-1" onclick="setFilter('type', 'echeance')">
+                            <i class="fas fa-calendar-alt me-1"></i> Échéances
+                        </span>
+                        <span class="badge filter-badge bg-light text-dark border mb-1" onclick="clearFilters()">
+                            <i class="fas fa-times me-1"></i> Réinitialiser
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des notifications -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header d-flex justify-content-between align-items-center bg-white">
+                    <h5 class="mb-0 text-primary">
+                        <i class="fas fa-list me-2"></i>
+                        Notifications récentes
+                    </h5>
+                    <span class="badge bg-primary rounded-pill" id="notificationCount">
+                        {% if notifications_data %}
+                            {{ notifications_data|length }} notification(s)
+                        {% else %}
+                            0 notification(s)
+                        {% endif %}
+                    </span>
+                </div>
+                
+                <div class="card-body p-0">
+                    {% if notifications_data %}
+                    <div class="list-group list-group-flush" id="notificationsList">
+                        <!-- NOUVELLE BOUCLE CORRIGÉE -->
+                        {% for notification_data in notifications_data %}
+                        <div class="list-group-item notification-item {% if not notification_data.est_lue %}unread{% endif %} {% if notification_data.urgence == 'urgent' %}urgent{% elif notification_data.urgence == 'important' %}important{% endif %}"
+                             data-id="{{ notification_data.id }}"
+                             data-type="{{ notification_data.type }}"
+                             data-urgence="{{ notification_data.urgence }}"
+                             data-lue="{{ notification_data.est_lue }}"
+                             onclick="lireNotification({{ notification_data.id }})">
+                            
+                            <div class="row align-items-center">
+                                <!-- Icône -->
+                                <div class="col-auto">
+                                    <div class="notification-icon bg-{{ notification_data.color }} bg-opacity-10 text-{{ notification_data.color }}">
+                                        <i class="fas fa-{{ notification_data.icon }}"></i>
+                                    </div>
+                                </div>
+                                
+                                <!-- Contenu -->
+                                <div class="col">
+                                    <div class="d-flex justify-content-between align-items-start mb-1">
+                                        <div class="w-75">
+                                            <h6 class="mb-0">
+                                                {{ notification_data.titre }}
+                                                {% if notification_data.urgence == 'urgent' %}
+                                                <span class="badge badge-urgence bg-danger ms-2">URGENT</span>
+                                                {% elif notification_data.urgence == 'important' %}
+                                                <span class="badge badge-urgence bg-warning ms-2">IMPORTANT</span>
+                                                {% endif %}
+                                            </h6>
+                                            <small class="text-muted d-block mt-1">
+                                                <i class="far fa-clock me-1"></i>
+                                                {{ notification_data.time_ago }}
+                                                {% if notification_data.entite_type %}
+                                                • <i class="fas fa-{{ notification_data.icon }} me-1"></i>
+                                                {{ notification_data.entite_type|title }}
+                                                {% endif %}
+                                            </small>
+                                        </div>
+                                        
+                                        <!-- Actions -->
+                                        <div class="notification-actions" onclick="event.stopPropagation();">
+                                            <div class="btn-group btn-group-sm">
+                                                {% if not notification_data.est_lue %}
+                                                <button class="btn btn-outline-success" 
+                                                        onclick="marquerCommeLue({{ notification_data.id }}, event)"
+                                                        title="Marquer comme lu">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                {% else %}
+                                                <button class="btn btn-outline-secondary" 
+                                                        onclick="marquerCommeNonLue({{ notification_data.id }}, event)"
+                                                        title="Marquer comme non lu">
+                                                    <i class="fas fa-envelope"></i>
+                                                </button>
+                                                {% endif %}
+                                                
+                                                <!-- Bouton Voir les détails -->
+                                                {% if notification_data.url %}
+                                                <button class="btn btn-outline-primary" 
+                                                        onclick="window.location.href='{{ notification_data.url }}'"
+                                                        title="Voir les détails">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                                {% endif %}
+                                                
+                                                <button class="btn btn-outline-danger" 
+                                                        onclick="supprimerNotification({{ notification_data.id }}, event)"
+                                                        title="Supprimer">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <p class="mb-2 text-muted">
+                                        <i class="fas fa-quote-left me-1 opacity-50"></i>
+                                        {{ notification_data.message }}
+                                    </p>
+                                    
+                                    <!-- Actions disponibles -->
+                                    {% if notification_data.actions %}
+                                    <div class="mt-2" onclick="event.stopPropagation();">
+                                        {% for action in notification_data.actions %}
+                                        <a href="{{ action.url }}" class="btn btn-sm btn-outline-secondary me-2">
+                                            {% if action.icon %}
+                                            <i class="fas fa-{{ action.icon }} me-1"></i>
+                                            {% endif %}
+                                            {{ action.label }}
+                                        </a>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <!-- FIN DE LA NOUVELLE BOUCLE -->
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i class="fas fa-bell-slash fa-3x text-muted"></i>
+                        </div>
+                        <h5 class="text-muted mb-3">Aucune notification</h5>
+                        <p class="text-muted mb-4">Vous n'avez aucune notification pour le moment.</p>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                            <i class="fas fa-tachometer-alt me-2"></i>
+                            Retour au tableau de bord
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Pagination -->
+                {% if notifications and notifications.pages > 1 %}
+                <div class="card-footer bg-white">
+                    <nav aria-label="Pagination">
+                        <ul class="pagination justify-content-center mb-0">
+                            <!-- Bouton Précédent -->
+                            {% if notifications.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('liste_notifications', page=notifications.prev_num, **request.args) }}">
+                                    <i class="fas fa-chevron-left"></i> Précédent
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link"><i class="fas fa-chevron-left"></i> Précédent</span>
+                            </li>
+                            {% endif %}
+                            
+                            <!-- Numéros de page -->
+                            {% for page_num in notifications.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                                {% if page_num %}
+                                    {% if page_num == notifications.page %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                    {% else %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('liste_notifications', page=page_num, **request.args) }}">{{ page_num }}</a>
+                                    </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            <!-- Bouton Suivant -->
+                            {% if notifications.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('liste_notifications', page=notifications.next_num, **request.args) }}">
+                                    Suivant <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">Suivant <i class="fas fa-chevron-right"></i></span>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Variables
+    let currentFilters = {
+        type: '{{ request.args.get("type", "") }}',
+        urgence: '{{ request.args.get("urgence", "") }}',
+        statut: '{{ request.args.get("statut", "") }}'
+    };
+    
+    // Initialiser les filtres
+    document.addEventListener('DOMContentLoaded', function() {
+        // Remplir les filtres depuis l'URL
+        document.getElementById('filterType').value = currentFilters.type;
+        document.getElementById('filterUrgence').value = currentFilters.urgence;
+        document.getElementById('filterStatut').value = currentFilters.statut;
+        
+        // Marquer les badges actifs
+        updateFilterBadges();
+        
+        // Vérifier les nouvelles notifications toutes les minutes
+        setInterval(actualiserBadgeNotifications, 60000);
+        
+        // Gestion des clics sur les notifications
+        document.querySelectorAll('.notification-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                // Ne pas déclencher si on clique sur un bouton ou un lien
+                if (e.target.tagName === 'BUTTON' || 
+                    e.target.closest('button') || 
+                    e.target.tagName === 'A' || 
+                    e.target.closest('a')) {
+                    return;
+                }
+                
+                lireNotification(this.dataset.id);
+            });
+        });
+    });
+    
+    function setFilter(type, value) {
+        currentFilters[type] = value;
+        updateFilterBadges();
+        appliquerFiltres();
+    }
+    
+    function clearFilters() {
+        currentFilters = {
+            type: '',
+            urgence: '',
+            statut: ''
+        };
+        updateFilterBadges();
+        appliquerFiltres();
+    }
+    
+    function appliquerFiltres() {
+        const params = new URLSearchParams();
+        
+        if (currentFilters.type) params.set('type', currentFilters.type);
+        if (currentFilters.urgence) params.set('urgence', currentFilters.urgence);
+        if (currentFilters.statut) params.set('statut', currentFilters.statut);
+        
+        window.location.href = `{{ url_for('liste_notifications') }}?${params.toString()}`;
+    }
+    
+    function updateFilterBadges() {
+        // Mettre à jour l'apparence des badges
+        document.querySelectorAll('.filter-badge').forEach(badge => {
+            badge.classList.remove('active');
+        });
+        
+        // Activer les badges correspondant aux filtres actuels
+        if (currentFilters.statut === 'non_lue') {
+            const badge = document.querySelector('[onclick="setFilter(\'statut\', \'non_lue\')"]');
+            if (badge) badge.classList.add('active');
+        }
+        if (currentFilters.urgence === 'urgent') {
+            const badge = document.querySelector('[onclick="setFilter(\'urgence\', \'urgent\')"]');
+            if (badge) badge.classList.add('active');
+        }
+        if (currentFilters.type === 'nouvelle_constatation') {
+            const badge = document.querySelector('[onclick="setFilter(\'type\', \'nouvelle_constatation\')"]');
+            if (badge) badge.classList.add('active');
+        }
+        if (currentFilters.type === 'echeance') {
+            const badge = document.querySelector('[onclick="setFilter(\'type\', \'echeance\')"]');
+            if (badge) badge.classList.add('active');
+        }
+    }
+    
+    // ==================== FONCTIONS DE GESTION DES NOTIFICATIONS ====================
+    
+    function lireNotification(notificationId) {
+        // Rediriger vers la route de lecture
+        window.location.href = `/notifications/notification/${notificationId}/lire`;
+    }
+    
+    function marquerCommeLue(notificationId, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        fetch(`/api/notifications/${notificationId}/marquer-lue`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                if (item) {
+                    item.classList.remove('unread');
+                    item.dataset.lue = 'true';
+                    updateNotificationCount();
+                    showToast('Notification marquée comme lue', 'success');
+                    
+                    // Actualiser le badge dans la navbar
+                    actualiserBadgeNotifications();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors du traitement', 'error');
+        });
+    }
+    
+    function marquerCommeNonLue(notificationId, event) {
+        if (event) event.stopPropagation();
+        
+        fetch(`/api/notifications/${notificationId}/marquer-non-lue`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                if (item) {
+                    item.classList.add('unread');
+                    item.dataset.lue = 'false';
+                    updateNotificationCount();
+                    showToast('Notification marquée comme non lue', 'success');
+                    
+                    // Actualiser le badge dans la navbar
+                    actualiserBadgeNotifications();
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors du traitement', 'error');
+        });
+    }
+    
+    function marquerToutesLues() {
+        if (!confirm('Marquer toutes les notifications comme lues ?')) return;
+        
+        fetch('/notifications/marquer-toutes-lues', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                document.querySelectorAll('.notification-item.unread').forEach(item => {
+                    item.classList.remove('unread');
+                    item.dataset.lue = 'true';
+                });
+                updateNotificationCount();
+                showToast('Toutes les notifications ont été marquées comme lues', 'success');
+                
+                // Actualiser le badge dans la navbar
+                actualiserBadgeNotifications();
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors du traitement', 'error');
+        });
+    }
+    
+    function supprimerNotification(notificationId, event) {
+        if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }
+        
+        if (!confirm('Supprimer cette notification ?')) return;
+        
+        fetch(`/notifications/notification/${notificationId}/supprimer`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                const item = document.querySelector(`.notification-item[data-id="${notificationId}"]`);
+                if (item) {
+                    item.style.transition = 'all 0.3s ease';
+                    item.style.opacity = '0';
+                    item.style.height = '0';
+                    item.style.padding = '0';
+                    item.style.margin = '0';
+                    item.style.overflow = 'hidden';
+                    
+                    setTimeout(() => {
+                        item.remove();
+                        updateNotificationCount();
+                        showToast('Notification supprimée', 'success');
+                        
+                        // Actualiser le badge dans la navbar
+                        actualiserBadgeNotifications();
+                    }, 300);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors de la suppression', 'error');
+        });
+    }
+    
+    function supprimerToutesLues() {
+        if (!confirm('Supprimer toutes les notifications lues ? Cette action est irréversible.')) return;
+        
+        fetch('/notifications/supprimer-toutes-lues', {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                document.querySelectorAll('.notification-item[data-lue="true"]').forEach(item => {
+                    item.style.transition = 'all 0.3s ease';
+                    item.style.opacity = '0';
+                    item.style.height = '0';
+                    item.style.padding = '0';
+                    item.style.margin = '0';
+                    item.style.overflow = 'hidden';
+                    
+                    setTimeout(() => {
+                        item.remove();
+                    }, 300);
+                });
+                
+                setTimeout(() => {
+                    updateNotificationCount();
+                    showToast('Notifications lues supprimées', 'success');
+                    
+                    // Actualiser le badge dans la navbar
+                    actualiserBadgeNotifications();
+                }, 500);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors de la suppression', 'error');
+        });
+    }
+    
+    function updateNotificationCount() {
+        const total = document.querySelectorAll('.notification-item').length;
+        const nonLues = document.querySelectorAll('.notification-item[data-lue="false"]').length;
+        const countElement = document.getElementById('notificationCount');
+        if (countElement) {
+            countElement.textContent = `${total} notification(s)`;
+        }
+    }
+    
+    function actualiserBadgeNotifications() {
+        fetch('/api/notifications/count')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            updateNotificationBadge(data.count);
+        })
+        .catch(error => console.error('Erreur badge notifications:', error));
+    }
+    
+    function updateNotificationBadge(count) {
+        const dropdown = document.getElementById('notificationsDropdown');
+        if (!dropdown) return;
+        
+        let badge = dropdown.querySelector('.badge');
+        
+        if (count > 0) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger';
+                badge.style.fontSize = '0.6rem';
+                badge.style.padding = '0.25rem 0.4rem';
+                badge.style.zIndex = '1000';
+                dropdown.appendChild(badge);
+            }
+            badge.textContent = count;
+            badge.style.display = 'inline-block';
+            
+            // Animation
+            const icon = dropdown.querySelector('i.fa-bell');
+            if (icon) {
+                icon.classList.add('text-warning');
+            }
+        } else {
+            if (badge) {
+                badge.style.display = 'none';
+            }
+            const icon = dropdown.querySelector('i.fa-bell');
+            if (icon) {
+                icon.classList.remove('text-warning');
+            }
+        }
+    }
+    
+    // Fonction showToast (déjà définie dans base.html)
+    function showToast(message, type = 'info') {
+        // Utiliser la fonction existante de base.html
+        if (window.showToast) {
+            window.showToast(message, type);
+        } else {
+            // Fallback si la fonction n'est pas disponible
+            alert(message);
+        }
+    }
+</script>
+{% endblock %}

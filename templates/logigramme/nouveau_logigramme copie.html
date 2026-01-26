@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Nouveau Logigramme{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card card-modern">
+                <div class="card-header bg-white">
+                    <h4 class="mb-0">Créer un Nouveau Logigramme</h4>
+                </div>
+                <div class="card-body">
+                    <!-- FORMULAIRE CORRIGÉ AVEC CSRF -->
+                    <form method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="mb-3">
+                            <label for="nom" class="form-label">Nom de l'activité *</label>
+                            <input type="text" class="form-control" id="nom" name="nom" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="processus_id" class="form-label">Processus associé</label>
+                            <select class="form-select" id="processus_id" name="processus_id">
+                                <option value="">Sélectionner un processus</option>
+                                {% for processus in processus_list %}
+                                <option value="{{ processus.id }}">{{ processus.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ url_for('liste_logigrammes') }}" class="btn btn-secondary">Annuler</a>
+                            <button type="submit" class="btn btn-modern btn-modern-primary">
+                                <i class="fas fa-save me-2"></i>Créer et Éditer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

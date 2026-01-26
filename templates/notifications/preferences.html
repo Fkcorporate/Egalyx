@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block title %}Préférences de Notifications{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('liste_notifications') }}">Notifications</a></li>
+                    <li class="breadcrumb-item active">Préférences</li>
+                </ol>
+            </nav>
+            
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h4 mb-0">
+                    <i class="fas fa-cog me-2"></i>
+                    Préférences de notifications
+                </h2>
+                <a href="{{ url_for('liste_notifications') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Retour aux notifications
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <form method="POST" action="{{ url_for('preferences_notifications') }}">
+        {{ form.hidden_tag() }}
+        
+        <div class="row">
+            <!-- Section Email -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-envelope me-2"></i>
+                            Notifications par Email
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-bell me-2"></i>
+                                Types de notifications
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        {{ form.email_nouvelle_constatation(class="form-check-input") }}
+                                        {{ form.email_nouvelle_constatation.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">Nouvelle constatation d'audit</small>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        {{ form.email_nouvelle_recommandation(class="form-check-input") }}
+                                        {{ form.email_nouvelle_recommandation.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">Nouvelle recommandation</small>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        {{ form.email_nouveau_plan(class="form-check-input") }}
+                                        {{ form.email_nouveau_plan.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">Nouveau plan d'action</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        {{ form.email_echeance_7j(class="form-check-input") }}
+                                        {{ form.email_echeance_7j.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">7 jours avant échéance</small>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        {{ form.email_retard(class="form-check-input") }}
+                                        {{ form.email_retard.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">Plan en retard</small>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        {{ form.email_validation_requise(class="form-check-input") }}
+                                        {{ form.email_validation_requise.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">Validation requise</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Fréquence des emails -->
+                        <div class="mb-3">
+                            <h6 class="text-primary mb-3">
+                                <i class="fas fa-clock me-2"></i>
+                                Fréquence des emails de synthèse
+                            </h6>
+                            <div class="form-group">
+                                {{ form.frequence_email.label(class="form-label") }}
+                                {{ form.frequence_email(class="form-select") }}
+                                <small class="form-text text-muted">
+                                    Détermine la fréquence des emails de synthèse regroupant plusieurs notifications
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Section Web/Application -->
+            <div class="col-lg-6 mb-4">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="mb-0">
+                            <i class="fas fa-desktop me-2"></i>
+                            Notifications dans l'application
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-4">
+                            <h6 class="text-success mb-3">
+                                <i class="fas fa-bell me-2"></i>
+                                Types de notifications
+                            </h6>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        {{ form.web_nouvelle_constatation(class="form-check-input") }}
+                                        {{ form.web_nouvelle_constatation.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">Nouvelle constatation d'audit</small>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        {{ form.web_nouvelle_recommandation(class="form-check-input") }}
+                                        {{ form.web_nouvelle_recommandation.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">Nouvelle recommandation</small>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        {{ form.web_nouveau_plan(class="form-check-input") }}
+                                        {{ form.web_nouveau_plan.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">Nouveau plan d'action</small>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        {{ form.web_echeance_7j(class="form-check-input") }}
+                                        {{ form.web_echeance_7j.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">7 jours avant échéance</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-check mb-3">
+                                        {{ form.web_echeance_3j(class="form-check-input") }}
+                                        {{ form.web_echeance_3j.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">3 jours avant échéance</small>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        {{ form.web_echeance_1j(class="form-check-input") }}
+                                        {{ form.web_echeance_1j.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">1 jour avant échéance</small>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        {{ form.web_retard(class="form-check-input") }}
+                                        {{ form.web_retard.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">Plan en retard</small>
+                                    </div>
+                                    
+                                    <div class="form-check mb-3">
+                                        {{ form.web_validation_requise(class="form-check-input") }}
+                                        {{ form.web_validation_requise.label(class="form-check-label") }}
+                                        <small class="d-block text-muted">Validation requise</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Options supplémentaires -->
+                        <div class="mb-3">
+                            <h6 class="text-success mb-3">
+                                <i class="fas fa-cog me-2"></i>
+                                Options supplémentaires
+                            </h6>
+                            
+                            <div class="form-check mb-3">
+                                {{ form.web_kri_alerte(class="form-check-input") }}
+                                {{ form.web_kri_alerte.label(class="form-check-label") }}
+                                <small class="d-block text-muted">Alertes KRI</small>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                {{ form.web_veille_nouvelle(class="form-check-input") }}
+                                {{ form.web_veille_nouvelle.label(class="form-check-label") }}
+                                <small class="d-block text-muted">Nouvelle veille réglementaire</small>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                {{ form.web_audit_demarre(class="form-check-input") }}
+                                {{ form.web_audit_demarre.label(class="form-check-label") }}
+                                <small class="d-block text-muted">Audit démarré</small>
+                            </div>
+                            
+                            <div class="form-check mb-3">
+                                {{ form.web_audit_termine(class="form-check-input") }}
+                                {{ form.web_audit_termine.label(class="form-check-label") }}
+                                <small class="d-block text-muted">Audit terminé</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Pause des notifications -->
+                        <div class="mb-3">
+                            <h6 class="text-success mb-3">
+                                <i class="fas fa-pause-circle me-2"></i>
+                                Mise en pause
+                            </h6>
+                            <div class="form-group">
+                                {{ form.pause_until.label(class="form-label") }}
+                                {{ form.pause_until(class="form-control", type="date") }}
+                                <small class="form-text text-muted">
+                                    Mettre en pause toutes les notifications jusqu'à cette date (optionnel)
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Boutons d'action -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body text-center">
+                        {{ form.submit(class="btn btn-primary btn-lg me-3") }}
+                        <a href="{{ url_for('liste_notifications') }}" class="btn btn-secondary btn-lg">
+                            <i class="fas fa-times me-2"></i>
+                            Annuler
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}

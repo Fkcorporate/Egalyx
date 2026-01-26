@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block title %}Logigrammes des Processus{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="h3 mb-0">Logigrammes des Processus</h1>
+                <a href="{{ url_for('nouveau_logigramme') }}" class="btn btn-modern btn-modern-primary">
+                    <i class="fas fa-plus me-2"></i>Nouveau Logigramme
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        {% for activite in activites %}
+        <div class="col-xl-4 col-lg-6 mb-4">
+            <div class="card card-modern h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ activite.nom }}</h5>
+                    <p class="card-text text-muted">{{ activite.description|truncate(100) }}</p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-process-diagram me-1"></i>
+                            {{ activite.processus.nom if activite.processus else 'Non associé' }}
+                        </small>
+                        <div class="btn-group">
+                            <a href="{{ url_for('editer_logigramme', id=activite.id) }}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="#" class="btn btn-sm btn-outline-danger">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="card card-modern text-center py-5">
+                <div class="card-body">
+                    <i class="fas fa-project-diagram fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">Aucun logigramme créé</h4>
+                    <p class="text-muted">Commencez par créer votre premier logigramme de processus</p>
+                    <a href="{{ url_for('nouveau_logigramme') }}" class="btn btn-modern btn-modern-primary">
+                        <i class="fas fa-plus me-2"></i>Créer un Logigramme
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

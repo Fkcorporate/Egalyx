@@ -1,0 +1,124 @@
+<!-- templates/includes/client_view_selector.html -->
+<div class="dropdown is-hoverable">
+  <div class="dropdown-trigger">
+    <button class="button is-small" aria-haspopup="true" aria-controls="dropdown-menu">
+      <span class="icon">
+        {% if session.get('view_mode') == 'my_data_only' %}
+          <i class="fas fa-user"></i>
+        {% elif session.get('viewing_client_id') %}
+          <i class="fas fa-eye"></i>
+        {% else %}
+          <i class="fas fa-building"></i>
+        {% endif %}
+      </span>
+      <span>
+        {% if session.get('view_mode') == 'my_data_only' %}
+          Mes données
+        {% elif session.get('viewing_client_id') %}
+          Vue client: {{ viewing_client.nom|truncate(20) if viewing_client else 'Client' }}
+        {% else %}
+          Mon client
+        {% endif %}
+      </span>
+      <span class="icon is-small">
+        <i class="fas fa-angle-down" aria-hidden="true"></i>
+      </span>
+    </button>
+  </div>
+  
+  <div class="dropdown-menu" id="dropdown-menu" role="menu">
+    <div class="dropdown-content">
+      
+      <!-- Section: Vos vues -->
+      <div class="dropdown-item">
+        <small><strong>Votre vue:</strong></small>
+      </div>
+      
+      <a href="{{ url_for('view_my_data_only') }}" 
+         class="dropdown-item {% if session.get('view_mode') == 'my_data_only' %}is-active{% endif %}">
+        <span class="icon">
+          <i class="fas fa-user"></i>
+        </span>
+        <span>Mes données seulement</span>
+        <span class="tag is-light is-pulled-right">Strict</span>
+      </a>
+      
+      <a href="{{ url_for('view_my_client') }}" 
+         class="dropdown-item {% if not session.get('viewing_client_id') and session.get('view_mode') != 'my_data_only' %}is-active{% endif %}">
+        <span class="icon">
+          <i class="fas fa-building"></i>
+        </span>
+        <span>Tout mon client</span>
+        <span class="tag is-info is-pulled-right">Normal</span>
+      </a>
+      
+      {% if current_user.role == 'super_admin' %}
+        <!-- Section: Super Admin - Vue globale -->
+        <hr class="dropdown-divider">
+        
+        <div class="dropdown-item">
+          <small><strong>Super Admin:</strong></small>
+        </div>
+        
+        <!-- Option: Voir tous les clients -->
+        <a href="{{ url_for('view_all_clients') }}" 
+           class="dropdown-item {% if not session.get('viewing_client_id') and session.get('view_mode') != 'my_data_only' %}is-active{% endif %}">
+          <span class="icon">
+            <i class="fas fa-globe"></i>
+          </span>
+          <span>Vue globale (tous clients)</span>
+          <span class="tag is-success is-pulled-right">Super Admin</span>
+        </a>
+        
+        <!-- Séparateur entre vue globale et liste des clients -->
+        <div class="dropdown-item">
+          <small><strong>Visualiser un client:</strong></small>
+        </div>
+        
+        {% for client in available_clients %}
+        <a href="{{ url_for('switch_client', client_id=client.id) }}" 
+           class="dropdown-item {% if session.get('viewing_client_id') == client.id %}is-active{% endif %}">
+          <span class="icon">
+            <i class="fas fa-eye"></i>
+          </span>
+          <span>Client: {{ client.nom|truncate(25) }}</span>
+          {% if session.get('viewing_client_id') == client.id %}
+          <span class="tag is-warning is-pulled-right">Actif</span>
+          {% endif %}
+        </a>
+        {% endfor %}
+        
+        <a href="{{ url_for('super_admin_control_panel') }}" class="dropdown-item">
+          <span class="icon">
+            <i class="fas fa-cog"></i>
+          </span>
+          <span>Panel de contrôle</span>
+        </a>
+      {% endif %}
+      
+      <!-- Section: Info -->
+      <hr class="dropdown-divider">
+      
+      <div class="dropdown-item">
+        <small class="has-text-grey">
+          {% if session.get('view_mode') == 'my_data_only' %}
+            <i class="fas fa-info-circle"></i> Vous voyez uniquement les données que vous avez créées.
+          {% elif session.get('viewing_client_id') and viewing_client %}
+            <i class="fas fa-eye"></i> <strong>Vue Client Active :</strong> Vous visualisez uniquement les données du client <strong>{{ viewing_client.nom }}</strong>. 
+            {% if current_user.role == 'super_admin' %}
+              <br><a href="{{ url_for('view_all_clients') }}" class="has-text-link is-small">Revenir à la vue globale</a>
+            {% endif %}
+          {% else %}
+            <i class="fas fa-building"></i> 
+            {% if current_user.role == 'super_admin' %}
+              Vous voyez toutes les données de tous les clients (vue super admin).
+            {% else %}
+              Vous voyez toutes les données de votre client.
+            {% endif %}
+          {% endif %}
+        </small>
+      </div>
+      
+    </div>
+  </div>
+</div>

@@ -1,0 +1,38 @@
+<!-- templates/notifications/partials/dropdown.html -->
+<div class="notifications-dropdown-content">
+    {% if notifications %}
+    <div class="list-group list-group-flush">
+        {% for notification in notifications %}
+        <a href="{{ notification.url or '#' }}" 
+           class="list-group-item list-group-item-action {% if not notification.est_lue %}fw-bold bg-light{% endif %} p-3 border-bottom"
+           onclick="{% if not notification.est_lue %}marquerNotificationLueDropdown({{ notification.id }}, event){% endif %}">
+            <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                    <div class="rounded-circle p-2 bg-{{ notification.color }} bg-opacity-10">
+                        <i class="fas fa-{{ notification.icon }} text-{{ notification.color }}"></i>
+                    </div>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <h6 class="mb-1">{{ notification.titre[:50] }}{% if notification.titre|length > 50 %}...{% endif %}</h6>
+                        <small class="text-muted">{{ notification.time_ago }}</small>
+                    </div>
+                    <p class="mb-0 text-muted small">{{ notification.message[:80] }}{% if notification.message|length > 80 %}...{% endif %}</p>
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-4">
+        <i class="fas fa-bell-slash fa-2x text-muted mb-3"></i>
+        <p class="text-muted mb-0">Aucune notification</p>
+    </div>
+    {% endif %}
+    
+    <div class="text-center py-2 border-top">
+        <a href="{{ url_for('notifications.liste_notifications') }}" class="text-decoration-none small">
+            <i class="fas fa-list me-1"></i> Voir toutes les notifications
+        </a>
+    </div>
+</div>

@@ -1,0 +1,843 @@
+{% extends "base.html" %}
+
+{% block title %}Logigrammes Archivés - FabriceKonan Corporate{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h4 mb-2">
+                <i class="fas fa-archive me-2 text-warning"></i>
+                Logigrammes Archivés
+            </h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Tableau de bord</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('liste_logigrammes') }}">Logigrammes</a></li>
+                    <li class="breadcrumb-item active">Archives</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ url_for('liste_logigrammes') }}" class="fk-btn fk-btn-outline">
+                <i class="fas fa-arrow-left me-2"></i>
+                Retour aux logigrammes actifs
+            </a>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="fk-card h-100">
+                <div class="fk-card-body text-center">
+                    <div class="mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-warning bg-opacity-10 p-3">
+                            <i class="fas fa-archive fa-2x text-warning"></i>
+                        </div>
+                    </div>
+                    <h3 class="mb-1">{{ logigrammes|length }}</h3>
+                    <p class="text-muted mb-0">Logigrammes archivés</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="fk-card h-100">
+                <div class="fk-card-body text-center">
+                    <div class="mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 p-3">
+                            <i class="fas fa-shapes fa-2x text-success"></i>
+                        </div>
+                    </div>
+                    <h3 class="mb-1">{{ total_elements }}</h3>
+                    <p class="text-muted mb-0">Éléments total</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-3">
+            <div class="fk-card h-100">
+                <div class="fk-card-body text-center">
+                    <div class="mb-3">
+                        <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-info bg-opacity-10 p-3">
+                            <i class="fas fa-link fa-2x text-info"></i>
+                        </div>
+                    </div>
+                    <h3 class="mb-1">{{ total_liens }}</h3>
+                    <p class="text-muted mb-0">Connexions total</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barre de recherche -->
+    <div class="fk-card mb-4">
+        <div class="fk-card-body">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0">
+                            <i class="fas fa-search text-muted"></i>
+                        </span>
+                        <input type="text" class="form-control fk-form-control border-start-0" 
+                               id="searchArchivesInput" placeholder="Rechercher dans les archives...">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select fk-form-control" id="triArchivesSelect">
+                        <option value="recent">Archivage récent → ancien</option>
+                        <option value="ancien">Archivage ancien → récent</option>
+                        <option value="nom">Par nom (A-Z)</option>
+                        <option value="elements">Plus d'éléments</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <button class="fk-btn fk-btn-outline w-100" id="btnExporterArchives">
+                        <i class="fas fa-download me-2"></i>Exporter la liste
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if logigrammes %}
+    <!-- Tableau des archives -->
+    <div class="fk-card">
+        <div class="fk-card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-list me-2"></i>
+                Liste des logigrammes archivés
+            </h5>
+        </div>
+        <div class="fk-card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="tableArchives">
+                    <thead>
+                        <tr>
+                            <th width="25%">Nom</th>
+                            <th width="25%">Description</th>
+                            <th width="15%">Direction/Service</th>
+                            <th width="10%">Statistiques</th>
+                            <th width="15%">Dates</th>
+                            <th width="10%" class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="archivesList">
+                        {% for logigramme in logigrammes %}
+                        <tr class="logigramme-archive-item" 
+                            data-id="{{ logigramme.id }}"
+                            data-nom="{{ logigramme.nom|lower }}"
+                            data-description="{{ (logigramme.description or '')|lower }}"
+                            data-elements="{{ logigramme.nb_elements }}"
+                            data-date="{{ logigramme.archived_at.timestamp() if logigramme.archived_at else '' }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-warning bg-opacity-10 rounded p-2 me-3">
+                                        <i class="fas fa-project-diagram text-warning"></i>
+                                    </div>
+                                    <div>
+                                        <strong class="d-block">{{ logigramme.nom }}</strong>
+                                        <small class="text-muted">
+                                            ID: {{ logigramme.id }} | Créé par: 
+                                            {% if logigramme.createur %}
+                                                {{ logigramme.createur.username }}
+                                            {% else %}
+                                                N/A
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if logigramme.description %}
+                                    <p class="mb-0 small">{{ logigramme.description|truncate(100) }}</p>
+                                {% else %}
+                                    <span class="text-muted small"><em>Aucune description</em></span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column gap-1">
+                                    {% if logigramme.direction %}
+                                    <span class="fk-badge fk-badge-primary small">
+                                        <i class="fas fa-sitemap me-1"></i>{{ logigramme.direction.nom }}
+                                    </span>
+                                    {% endif %}
+                                    {% if logigramme.service %}
+                                    <span class="fk-badge fk-badge-secondary small">
+                                        <i class="fas fa-building me-1"></i>{{ logigramme.service.nom }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-column small">
+                                    <span class="mb-1">
+                                        <i class="fas fa-shapes text-primary me-1"></i>
+                                        <strong>{{ logigramme.nb_elements }}</strong> éléments
+                                    </span>
+                                    <span>
+                                        <i class="fas fa-link text-info me-1"></i>
+                                        <strong>{{ logigramme.nb_liens }}</strong> liens
+                                    </span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">
+                                    <div class="mb-1">
+                                        <span class="text-muted">Créé:</span>
+                                        <div class="fw-semibold">
+                                            {{ logigramme.created_at.strftime('%d/%m/%Y') if logigramme.created_at else 'N/A' }}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="text-muted">Archivé:</span>
+                                        <div class="fw-semibold text-warning">
+                                            {{ logigramme.archived_at.strftime('%d/%m/%Y') if logigramme.archived_at else 'N/A' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="d-flex justify-content-end gap-1">
+                                    <button class="fk-btn fk-btn-outline btn-sm restaurer-logigramme" 
+                                            data-id="{{ logigramme.id }}" 
+                                            data-nom="{{ logigramme.nom }}"
+                                            title="Restaurer">
+                                        <i class="fas fa-undo"></i>
+                                    </button>
+                                    <a href="{{ url_for('editer_logigramme', id=logigramme.id) }}" 
+                                       class="fk-btn fk-btn-outline btn-sm" 
+                                       title="Voir en lecture seule"
+                                       onclick="return confirm('Ce logigramme est archivé. Vous ne pourrez pas le modifier. Souhaitez-vous continuer ?')">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="fk-btn fk-btn-danger btn-sm supprimer-definitivement" 
+                                            data-id="{{ logigramme.id }}"
+                                            data-nom="{{ logigramme.nom }}"
+                                            title="Supprimer définitivement">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="d-flex justify-content-between align-items-center mt-3">
+                <div class="text-muted small">
+                    Affichage de <span id="countVisible">{{ logigrammes|length }}</span> sur {{ logigrammes|length }} logigrammes archivés
+                </div>
+                <div class="btn-group">
+                    <button class="fk-btn fk-btn-outline btn-sm" id="btnPrevPage" disabled>
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="fk-btn fk-btn-outline btn-sm disabled">
+                        Page <span id="currentPage">1</span>
+                    </span>
+                    <button class="fk-btn fk-btn-outline btn-sm" id="btnNextPage" disabled>
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- État vide -->
+    <div class="fk-card">
+        <div class="fk-card-body text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-archive fa-4x text-muted opacity-25"></i>
+            </div>
+            <h4 class="mb-3">Aucun logigramme archivé</h4>
+            <p class="text-muted mb-4">
+                Les logigrammes que vous archivez apparaîtront ici.
+            </p>
+            <a href="{{ url_for('liste_logigrammes') }}" class="fk-btn fk-btn-primary">
+                <i class="fas fa-project-diagram me-2"></i>
+                Voir les logigrammes actifs
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de confirmation pour la restauration -->
+<div class="modal fade" id="modalRestaurerLogigramme" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header fk-card-header bg-warning text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-undo me-2"></i>
+                    Restaurer le logigramme
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir restaurer le logigramme <strong id="nom-logigramme-restaurer"></strong> ?</p>
+                <div class="fk-alert fk-alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Le logigramme redeviendra actif et apparaîtra dans votre liste principale.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="fk-btn fk-btn-outline" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Annuler
+                </button>
+                <button type="button" class="fk-btn fk-btn-warning" id="btn-confirmer-restauration">
+                    <i class="fas fa-undo me-2"></i>Restaurer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation pour la suppression définitive -->
+<div class="modal fade" id="modalSupprimerDefinitivement" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header fk-card-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Suppression définitive
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous ABSOLUMENT sûr de vouloir supprimer définitivement <strong id="nom-logigramme-supprimer"></strong> ?</p>
+                <div class="fk-alert fk-alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>ATTENTION : Cette action est irréversible !</strong><br>
+                    Tous les éléments, liens et données associées seront définitivement supprimés.
+                </div>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="confirmationSuppression">
+                    <label class="form-check-label" for="confirmationSuppression">
+                        Je confirme vouloir supprimer définitivement ce logigramme
+                    </label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="fk-btn fk-btn-outline" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Annuler
+                </button>
+                <button type="button" class="fk-btn fk-btn-danger" id="btn-confirmer-suppression" disabled>
+                    <i class="fas fa-trash me-2"></i>Supprimer définitivement
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles spécifiques pour les archives */
+.fk-card-header.bg-warning {
+    background: linear-gradient(135deg, var(--fk-warning) 0%, #FBBF24 100%) !important;
+}
+
+.fk-card-header.bg-danger {
+    background: linear-gradient(135deg, var(--fk-danger) 0%, #EF4444 100%) !important;
+}
+
+.logigramme-archive-item {
+    transition: all 0.2s ease;
+}
+
+.logigramme-archive-item:hover {
+    background-color: rgba(var(--fk-warning-rgb), 0.05) !important;
+    transform: translateX(4px);
+}
+
+#archivesList tr {
+    cursor: pointer;
+}
+
+.fk-badge.fk-badge-primary {
+    background: linear-gradient(135deg, var(--fk-primary) 0%, #3B82F6 100%);
+    color: white;
+    border: none;
+}
+
+.fk-badge.fk-badge-secondary {
+    background: linear-gradient(135deg, #6B7280 0%, #9CA3AF 100%);
+    color: white;
+    border: none;
+}
+
+/* Animation pour les actions */
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.fade-out {
+    animation: fadeOut 0.5s ease-out forwards;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .d-flex.justify-content-end.gap-1 {
+        flex-direction: column;
+        gap: 0.25rem !important;
+    }
+    
+    .fk-btn.btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+}
+</style>
+{% endblock %}
+{% block scripts %}
+<script>
+// ============================================
+// FONCTIONS UTILITAIRES
+// ============================================
+
+function getCsrfToken() {
+    return document.querySelector('meta[name="csrf-token"]')?.content || 
+           document.querySelector('input[name="csrf_token"]')?.value || '';
+}
+
+async function fetchWithCSRF(url, options = {}) {
+    const csrfToken = getCsrfToken();
+    
+    const headers = {
+        'X-CSRFToken': csrfToken,
+        ...options.headers
+    };
+    
+    // Pour les requêtes POST/PUT/DELETE, ajouter Content-Type JSON si non défini
+    if (['POST', 'PUT', 'DELETE'].includes(options.method?.toUpperCase())) {
+        if (!headers['Content-Type'] && !(options.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
+    }
+    
+    const fetchOptions = {
+        ...options,
+        headers: headers
+    };
+    
+    try {
+        const response = await fetch(url, fetchOptions);
+        
+        if (!response.ok) {
+            let errorMessage = `Erreur ${response.status}`;
+            try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.message || errorMessage;
+                // Formater l'erreur comme un objet JSON pour le parsing
+                throw new Error(JSON.stringify({ error: errorMessage }));
+            } catch {
+                // Ce n'est pas du JSON, essayer de lire comme texte
+                try {
+                    const text = await response.text();
+                    if (text) errorMessage = text;
+                } catch {
+                    // Ne rien faire, garder le message d'erreur par défaut
+                }
+                throw new Error(errorMessage);
+            }
+        }
+        
+        const data = await response.json();
+        return data;
+        
+    } catch (error) {
+        console.error('Erreur fetchWithCSRF:', error);
+        throw error;
+    }
+}
+
+function showToast(message, type = 'info') {
+    // Utiliser Bootstrap Toast si disponible
+    const toastContainer = document.getElementById('toast-container') || (() => {
+        const container = document.createElement('div');
+        container.id = 'toast-container';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
+        return container;
+    })();
+    
+    const typeConfig = {
+        'success': { bg: 'success', icon: 'fa-check-circle' },
+        'error': { bg: 'danger', icon: 'fa-exclamation-circle' },
+        'warning': { bg: 'warning', icon: 'fa-exclamation-triangle' },
+        'info': { bg: 'info', icon: 'fa-info-circle' }
+    };
+    
+    const config = typeConfig[type] || typeConfig.info;
+    
+    const toastId = 'toast-' + Date.now();
+    const toast = document.createElement('div');
+    toast.id = toastId;
+    toast.className = `toast align-items-center text-white bg-${config.bg} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas ${config.icon} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    const bsToast = new bootstrap.Toast(toast, {
+        autohide: true,
+        delay: 5000
+    });
+    
+    bsToast.show();
+    
+    toast.addEventListener('hidden.bs.toast', function() {
+        toast.remove();
+    });
+}
+
+// ============================================
+// GESTION DES ARCHIVES - VERSION CORRIGÉE
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Variables globales
+    let logigrammeActionId = null;
+    let logigrammeActionNom = null;
+    const itemsPerPage = 10;
+    let currentPage = 1;
+    let filteredItems = [];
+    
+    // ============================================
+    // INITIALISATION
+    // ============================================
+    
+    // Initialiser le filtrage
+    function initFiltrage() {
+        const items = Array.from(document.querySelectorAll('.logigramme-archive-item'));
+        filteredItems = items;
+        updatePagination();
+        updateCount();
+    }
+    
+    // Mettre à jour la pagination
+    function updatePagination() {
+        const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+        const startIndex = (currentPage - 1) * itemsPerPage;
+        const endIndex = startIndex + itemsPerPage;
+        
+        // Cacher/montrer les éléments
+        filteredItems.forEach((item, index) => {
+            if (index >= startIndex && index < endIndex) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        
+        // Mettre à jour les contrôles de pagination
+        document.getElementById('currentPage').textContent = currentPage;
+        document.getElementById('btnPrevPage').disabled = currentPage <= 1;
+        document.getElementById('btnNextPage').disabled = currentPage >= totalPages;
+    }
+    
+    // Mettre à jour le compteur
+    function updateCount() {
+        document.getElementById('countVisible').textContent = filteredItems.length;
+    }
+    
+    // Filtrer et trier les éléments
+    function filtrerEtTrier() {
+        const searchTerm = document.getElementById('searchArchivesInput').value.toLowerCase();
+        const triSelect = document.getElementById('triArchivesSelect').value;
+        
+        const items = Array.from(document.querySelectorAll('.logigramme-archive-item'));
+        
+        // Filtrer
+        filteredItems = items.filter(item => {
+            const nom = item.dataset.nom || '';
+            const description = item.dataset.description || '';
+            
+            if (!searchTerm) return true;
+            
+            return nom.includes(searchTerm) || description.includes(searchTerm);
+        });
+        
+        // Trier
+        filteredItems.sort((a, b) => {
+            switch(triSelect) {
+                case 'recent':
+                    return (parseFloat(b.dataset.date) || 0) - (parseFloat(a.dataset.date) || 0);
+                case 'ancien':
+                    return (parseFloat(a.dataset.date) || 0) - (parseFloat(b.dataset.date) || 0);
+                case 'nom':
+                    return (a.dataset.nom || '').localeCompare(b.dataset.nom || '');
+                case 'elements':
+                    return (parseFloat(b.dataset.elements) || 0) - (parseFloat(a.dataset.elements) || 0);
+                default:
+                    return 0;
+            }
+        });
+        
+        // Réinitialiser la pagination
+        currentPage = 1;
+        updatePagination();
+        updateCount();
+    }
+    
+    // ============================================
+    // GESTION DES ÉVÉNEMENTS
+    // ============================================
+    
+    // Recherche
+    document.getElementById('searchArchivesInput').addEventListener('input', filtrerEtTrier);
+    
+    // Tri
+    document.getElementById('triArchivesSelect').addEventListener('change', filtrerEtTrier);
+    
+    // Pagination
+    document.getElementById('btnPrevPage').addEventListener('click', function() {
+        if (currentPage > 1) {
+            currentPage--;
+            updatePagination();
+        }
+    });
+    
+    document.getElementById('btnNextPage').addEventListener('click', function() {
+        const totalPages = Math.ceil(filteredItems.length / itemsPerPage);
+        if (currentPage < totalPages) {
+            currentPage++;
+            updatePagination();
+        }
+    });
+    
+    // Export
+    document.getElementById('btnExporterArchives').addEventListener('click', function() {
+        const data = filteredItems.map(item => ({
+            id: item.dataset.id,
+            nom: item.querySelector('strong').textContent,
+            description: item.querySelector('td:nth-child(2) p')?.textContent || 'N/A',
+            elements: item.dataset.elements,
+            date: new Date(parseFloat(item.dataset.date) * 1000).toLocaleDateString()
+        }));
+        
+        const csv = [
+            ['ID', 'Nom', 'Description', 'Éléments', 'Date d\'archivage'],
+            ...data.map(item => [item.id, item.nom, item.description, item.elements, item.date])
+        ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `archives-logigrammes-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        
+        showToast('Liste exportée avec succès', 'success');
+    });
+    
+    // ============================================
+    // GESTION DES ACTIONS (RESTAURATION/SUPPRESSION)
+    // ============================================
+    
+    // Restaurer un logigramme
+    document.addEventListener('click', function(e) {
+        // Restaurer
+        if (e.target.closest('.restaurer-logigramme')) {
+            e.preventDefault();
+            const btn = e.target.closest('.restaurer-logigramme');
+            logigrammeActionId = btn.dataset.id;
+            logigrammeActionNom = btn.dataset.nom;
+            
+            document.getElementById('nom-logigramme-restaurer').textContent = logigrammeActionNom;
+            const modal = new bootstrap.Modal(document.getElementById('modalRestaurerLogigramme'));
+            modal.show();
+        }
+        
+        // Supprimer définitivement
+        if (e.target.closest('.supprimer-definitivement')) {
+            e.preventDefault();
+            const btn = e.target.closest('.supprimer-definitivement');
+            logigrammeActionId = btn.dataset.id;
+            logigrammeActionNom = btn.dataset.nom;
+            
+            document.getElementById('nom-logigramme-supprimer').textContent = logigrammeActionNom;
+            document.getElementById('confirmationSuppression').checked = false;
+            document.getElementById('btn-confirmer-suppression').disabled = true;
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalSupprimerDefinitivement'));
+            modal.show();
+        }
+    });
+    
+    // Confirmation checkbox pour suppression
+    document.getElementById('confirmationSuppression').addEventListener('change', function() {
+        document.getElementById('btn-confirmer-suppression').disabled = !this.checked;
+    });
+    
+    // ============================================
+    // ACTIONS API - VERSIONS CORRIGÉES
+    // ============================================
+    
+    // Confirmer la restauration - CORRIGÉ
+    document.getElementById('btn-confirmer-restauration').addEventListener('click', async function() {
+        if (!logigrammeActionId) return;
+        
+        const btn = this;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Restauration...';
+        
+        try {
+            const response = await fetchWithCSRF(`/api/logigramme/${logigrammeActionId}/restaurer`, {
+                method: 'POST'
+            });
+            
+            // Si on arrive ici, c'est que fetchWithCSRF n'a pas lancé d'erreur
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalRestaurerLogigramme'));
+            if (modal) modal.hide();
+            
+            showToast('Logigramme restauré avec succès', 'success');
+            
+            // Supprimer la ligne du tableau avec animation
+            const row = document.querySelector(`.logigramme-archive-item[data-id="${logigrammeActionId}"]`);
+            if (row) {
+                row.classList.add('fade-out');
+                setTimeout(() => {
+                    row.remove();
+                    initFiltrage(); // Recalculer le filtrage
+                    showToast(`"${logigrammeActionNom}" a été restauré et est maintenant dans la liste des logigrammes actifs`, 'info');
+                }, 500);
+            }
+            
+        } catch (error) {
+            console.error('Erreur restauration:', error);
+            
+            // Message d'erreur propre
+            let errorMessage = 'Erreur lors de la restauration';
+            if (error.message) {
+                try {
+                    const errorData = JSON.parse(error.message);
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch {
+                    errorMessage = error.message;
+                }
+            }
+            
+            showToast(errorMessage, 'error');
+            
+            // Réactiver le bouton
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+    
+    // Confirmer la suppression définitive - CORRIGÉ
+    document.getElementById('btn-confirmer-suppression').addEventListener('click', async function() {
+        if (!logigrammeActionId) return;
+        
+        const btn = this;
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Suppression...';
+        
+        try {
+            const response = await fetchWithCSRF(`/api/logigramme/${logigrammeActionId}/supprimer-definitivement`, {
+                method: 'DELETE'
+            });
+            
+            // Si on arrive ici, c'est que fetchWithCSRF n'a pas lancé d'erreur
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalSupprimerDefinitivement'));
+            if (modal) modal.hide();
+            
+            showToast('Logigramme supprimé définitivement', 'success');
+            
+            // Supprimer la ligne du tableau avec animation
+            const row = document.querySelector(`.logigramme-archive-item[data-id="${logigrammeActionId}"]`);
+            if (row) {
+                row.classList.add('fade-out');
+                setTimeout(() => {
+                    row.remove();
+                    initFiltrage(); // Recalculer le filtrage
+                }, 500);
+            }
+            
+        } catch (error) {
+            console.error('Erreur suppression:', error);
+            
+            // Message d'erreur propre
+            let errorMessage = 'Erreur lors de la suppression';
+            if (error.message) {
+                try {
+                    const errorData = JSON.parse(error.message);
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch {
+                    errorMessage = error.message;
+                }
+            }
+            
+            showToast(errorMessage, 'error');
+            
+            // Réactiver le bouton
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+    
+    // ============================================
+    // INITIALISATION FINALE
+    // ============================================
+    
+    // Initialiser le filtrage au chargement
+    initFiltrage();
+    
+    // Gestion des erreurs non capturées
+    window.addEventListener('error', function(event) {
+        console.error('Erreur JavaScript:', event.error);
+    });
+    
+    window.addEventListener('unhandledrejection', function(event) {
+        console.error('Promesse rejetée:', event.reason);
+    });
+    
+    // Animation des cartes
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+    
+    document.querySelectorAll('.fk-card').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'all 0.6s ease-out';
+        observer.observe(el);
+    });
+});
+</script>
+{% endblock %}

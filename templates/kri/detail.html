@@ -1,0 +1,826 @@
+<!-- templates/kri/detail.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="h3 mb-2">
+                        <i class="fas {{ kri.get_icon_type() }} me-2 text-{{ kri.get_couleur_type() }}"></i>
+                        {{ kri.nom }}
+                        <span class="badge bg-{{ kri.get_couleur_type() }} ms-2">
+                            {{ kri.get_type_display() }}
+                        </span>
+                    </h1>
+                    <p class="text-muted">
+                        {% if kri.risque %}
+                        Associé au risque: 
+                        <a href="{{ url_for('detail_risque', id=kri.risque.id) }}" class="text-decoration-none">
+                            <strong class="text-primary">{{ kri.risque.reference }}</strong>
+                        </a>
+                        {% else %}
+                        <span class="text-muted">Indicateur indépendant</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('liste_kri') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour
+                    </a>
+                    <a href="{{ url_for('modifier_kri', kri_id=kri.id) }}" class="btn btn-primary">
+                        <i class="fas fa-edit"></i> Modifier
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Colonne gauche : Informations générales -->
+        <div class="col-lg-4 mb-4">
+            <!-- Carte informations générales -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>Informations générales
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if kri.description %}
+                    <div class="mb-3">
+                        <strong class="d-block text-muted small">Description</strong>
+                        <p>{{ kri.description|nl2br }}</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong class="d-block text-muted small">Unité de mesure</strong>
+                        <strong>{{ kri.unite_mesure or 'Non spécifiée' }}</strong>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong class="d-block text-muted small">Fréquence de mesure</strong>
+                        <strong>{{ kri.frequence_mesure|title }}</strong>
+                    </div>
+                    
+                    {% if kri.formule_calcul %}
+                    <div class="mb-3">
+                        <strong class="d-block text-muted small">Formule de calcul</strong>
+                        <code class="bg-light p-2 rounded d-block">{{ kri.formule_calcul }}</code>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <strong class="d-block text-muted small">Responsable</strong>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-circle me-2 text-muted"></i>
+                            <strong>{{ kri.responsable_mesure.username if kri.responsable_mesure else 'Non assigné' }}</strong>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong class="d-block text-muted small">Sens d'évaluation</strong>
+                        <div class="alert alert-{{ 'info' if kri.sens_evaluation_seuil == 'inferieur' else 'primary' }} py-2 mb-0">
+                            <i class="fas fa-arrow-{{ 'down' if kri.sens_evaluation_seuil == 'inferieur' else 'up' }} me-2"></i>
+                            {{ kri.get_description_sens_evaluation() }}
+                        </div>
+                    </div>
+                    
+                    {% if kri.risque %}
+                    <div class="border-top pt-3">
+                        <strong class="d-block text-muted small">Risque associé</strong>
+                        <a href="{{ url_for('detail_risque', id=kri.risque.id) }}" class="text-decoration-none">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-exclamation-triangle me-2 text-danger"></i>
+                                <div>
+                                    <strong class="text-primary">{{ kri.risque.reference }}</strong><br>
+                                    <small class="text-muted">{{ kri.risque.intitule|truncate(50) }}</small>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Carte seuils d'alerte -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-bell me-2"></i>Seuils d'alerte
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-light">
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <span class="badge bg-success p-2">Normal</span>
+                                <small class="d-block mt-1">
+                                    {% if kri.sens_evaluation_seuil == 'inferieur' %}
+                                        Valeur > seuil alerte
+                                    {% else %}
+                                        Valeur < seuil alerte
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-4">
+                                <span class="badge bg-warning p-2">Alerte</span>
+                                <small class="d-block mt-1">
+                                    {% if kri.sens_evaluation_seuil == 'inferieur' %}
+                                        Seuil critique < valeur ≤ seuil alerte
+                                    {% else %}
+                                        Seuil alerte ≤ valeur < seuil critique
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-4">
+                                <span class="badge bg-danger p-2">Critique</span>
+                                <small class="d-block mt-1">
+                                    {% if kri.sens_evaluation_seuil == 'inferieur' %}
+                                        Valeur ≤ seuil critique
+                                    {% else %}
+                                        Valeur ≥ seuil critique
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if kri.seuil_alerte %}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <strong class="d-block text-muted small">Seuil d'alerte</strong>
+                            <h4 class="mb-0 text-warning">{{ kri.seuil_alerte }} {{ kri.unite_mesure }}</h4>
+                        </div>
+                        <span class="badge bg-warning">ALERTE</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if kri.seuil_critique %}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong class="d-block text-muted small">Seuil critique</strong>
+                            <h4 class="mb-0 text-danger">{{ kri.seuil_critique }} {{ kri.unite_mesure }}</h4>
+                        </div>
+                        <span class="badge bg-danger">CRITIQUE</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if not kri.seuil_alerte and not kri.seuil_critique %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-bell-slash fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Aucun seuil configuré</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Carte métadonnées -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-cog me-2"></i>Métadonnées
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if kri.categorie %}
+                    <div class="mb-3">
+                        <strong class="d-block text-muted small">Catégorie</strong>
+                        <span class="badge bg-secondary">{{ kri.categorie|title }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if kri.source_donnees %}
+                    <div class="mb-3">
+                        <strong class="d-block text-muted small">Source de données</strong>
+                        <span>{{ kri.source_donnees }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    {% if kri.notes_internes %}
+                    <div class="mb-3">
+                        <strong class="d-block text-muted small">Notes internes</strong>
+                        <div class="bg-light p-2 rounded">
+                            {{ kri.notes_internes|nl2br }}
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="border-top pt-3">
+                        <small class="text-muted d-block">
+                            <i class="far fa-calendar me-1"></i>Créé le {{ kri.created_at.strftime('%d/%m/%Y') }}
+                            {% if kri.createur %}
+                            par {{ kri.createur.username }}
+                            {% endif %}
+                        </small>
+                        {% if kri.updated_at %}
+                        <small class="text-muted d-block">
+                            <i class="fas fa-sync-alt me-1"></i>Dernière modification {{ kri.updated_at.strftime('%d/%m/%Y') }}
+                        </small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Carte statistiques -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>Statistiques
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% set stats = kri.get_statistiques() %}
+                    {% if stats and stats.nb_mesures > 0 %}
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <small class="text-muted d-block">Moyenne</small>
+                            <h4 class="mb-0">{{ "%.2f"|format(stats.moyenne) }}</h4>
+                            <small class="text-muted">{{ kri.unite_mesure }}</small>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <small class="text-muted d-block">Tendance</small>
+                            <h4 class="mb-0">
+                                {% set derniere_mesure = kri.get_derniere_mesure() %}
+                                {% if derniere_mesure %}
+                                <span class="badge bg-{{ kri.get_couleur_etat(derniere_mesure.valeur) }}">
+                                    {{ kri.get_libelle_etat(derniere_mesure.valeur) }}
+                                </span>
+                                {% else %}
+                                <span class="badge bg-secondary">N/A</span>
+                                {% endif %}
+                            </h4>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Minimum</small>
+                            <h4 class="mb-0">{{ "%.2f"|format(stats.min) }}</h4>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Maximum</small>
+                            <h4 class="mb-0">{{ "%.2f"|format(stats.max) }}</h4>
+                        </div>
+                    </div>
+                    <div class="text-center mt-3">
+                        <small class="text-muted">sur {{ stats.nb_mesures }} mesures</small>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-3">
+                        <i class="fas fa-chart-bar fa-2x text-muted mb-2"></i>
+                        <p class="text-muted mb-0">Aucune donnée statistique disponible</p>
+                        <small class="text-muted">Ajoutez des mesures pour voir les statistiques</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne droite : Historique et actions -->
+        <div class="col-lg-8">
+            <!-- Section nouvelle mesure -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-plus-circle me-2"></i>Nouvelle mesure
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('ajouter_mesure_periodique', kri_id=kri.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Valeur *</label>
+                                <div class="input-group">
+                                    <input type="number" step="0.01" class="form-control" name="valeur" required>
+                                    <span class="input-group-text">{{ kri.unite_mesure }}</span>
+                                </div>
+                                {% if kri.seuil_alerte or kri.seuil_critique %}
+                                <small class="text-muted">
+                                    Seuils: 
+                                    {% if kri.seuil_alerte %}{{ kri.seuil_alerte }} (alerte){% endif %}
+                                    {% if kri.seuil_critique %} | {{ kri.seuil_critique }} (critique){% endif %}
+                                </small>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Date de mesure *</label>
+                                <input type="date" class="form-control" name="date_mesure" 
+                                       value="{{ datetime.now().strftime('%Y-%m-%d') }}" required>
+                            </div>
+                            <div class="col-md-4 mb-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-save me-1"></i>Enregistrer
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Commentaire justificatif</label>
+                            <textarea class="form-control" name="commentaire" rows="3" 
+                                      placeholder="Expliquez la valeur mesurée, les facteurs influents, les actions prises..."></textarea>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Section fichiers associés -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-paperclip me-2"></i>Fichiers associés
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Formulaire d'ajout de fichier -->
+                    <div class="mb-4">
+                        <form method="POST" action="{{ url_for('ajouter_fichier_kri', kri_id=kri.id) }}" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Fichier</label>
+                                    <input type="file" class="form-control" name="fichier" accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png,.txt" required>
+                                    <small class="text-muted">
+                                        Formats acceptés: PDF, Word, Excel, images, texte (max 10Mo)
+                                    </small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Catégorie</label>
+                                    <select class="form-select" name="categorie">
+                                        <option value="document">Document</option>
+                                        <option value="analyse">Analyse</option>
+                                        <option value="graphique">Graphique</option>
+                                        <option value="autre">Autre</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Description</label>
+                                <input type="text" class="form-control" name="description" 
+                                       placeholder="Description du fichier...">
+                            </div>
+                            
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload me-1"></i>Ajouter le fichier
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    
+                    <!-- Liste des fichiers -->
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nom</th>
+                                    <th>Catégorie</th>
+                                    <th>Description</th>
+                                    <th>Ajouté le</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% if kri.fichiers %}
+                                {% for fichier in kri.fichiers %}
+                                <tr>
+                                    <td>
+                                        <i class="fas 
+                                            {% if fichier.nom_fichier.endswith('.pdf') %}fa-file-pdf text-danger
+                                            {% elif fichier.nom_fichier.endswith(('.doc', '.docx')) %}fa-file-word text-primary
+                                            {% elif fichier.nom_fichier.endswith(('.xls', '.xlsx')) %}fa-file-excel text-success
+                                            {% elif fichier.nom_fichier.endswith(('.jpg', '.jpeg', '.png', '.gif')) %}fa-file-image text-info
+                                            {% else %}fa-file text-secondary{% endif %}
+                                            me-2"></i>
+                                        {{ fichier.nom_fichier|truncate(30) }}
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ fichier.categorie|title }}</span>
+                                    </td>
+                                    <td>
+                                        <small>{{ fichier.description|truncate(30) if fichier.description else '-' }}</small>
+                                    </td>
+                                    <td>
+                                        <small>{{ fichier.created_at.strftime('%d/%m/%Y') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{{ url_for('telecharger_fichier_kri', fichier_id=fichier.id) }}" 
+                                               class="btn btn-outline-primary" title="Télécharger">
+                                                <i class="fas fa-download"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="supprimerFichier({{ fichier.id }})" title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                                {% else %}
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <i class="fas fa-folder-open fa-2x text-muted mb-3"></i>
+                                        <p class="text-muted mb-0">Aucun fichier associé</p>
+                                        <small class="text-muted">Ajoutez des fichiers pour les conserver avec cet indicateur</small>
+                                    </td>
+                                </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section historique des mesures -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>Historique complet des mesures
+                        {% if mesures %}
+                        <span class="badge bg-secondary ms-2">{{ mesures|length }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if mesures %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Valeur</th>
+                                    <th>État</th>
+                                    <th>Commentaire</th>
+                                    <th>Saisi par</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for mesure in mesures %}
+                                <tr id="mesure-{{ mesure.id }}">
+                                    <td>
+                                        <strong>{{ mesure.date_mesure.strftime('%d/%m/%Y') }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ mesure.date_mesure.strftime('%H:%M') }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <strong class="h6 mb-0">{{ "%.2f"|format(mesure.valeur) }}</strong>
+                                            <small class="text-muted ms-2">{{ kri.unite_mesure }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ kri.get_couleur_etat(mesure.valeur) }}">
+                                            {{ kri.get_libelle_etat(mesure.valeur) }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if mesure.commentaire %}
+                                        <div class="commentaire-truncate">
+                                            <small>{{ mesure.commentaire|truncate(50) }}</small>
+                                            {% if mesure.commentaire|length > 50 %}
+                                            <button class="btn btn-link btn-sm p-0 ms-1" 
+                                                    onclick="toggleCommentaire({{ mesure.id }})">
+                                                <small>Voir plus</small>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                        <div class="commentaire-complet d-none" id="commentaire-{{ mesure.id }}">
+                                            <small>{{ mesure.commentaire|nl2br }}</small>
+                                            <button class="btn btn-link btn-sm p-0 ms-1" 
+                                                    onclick="toggleCommentaire({{ mesure.id }})">
+                                                <small>Voir moins</small>
+                                            </button>
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ mesure.createur.username }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <!-- Bouton Modifier -->
+                                            <button type="button" class="btn btn-outline-warning" 
+                                                    onclick="editerMesure({{ mesure.id }})" 
+                                                    title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            
+                                            <!-- Bouton Supprimer -->
+                                            <button type="button" class="btn btn-outline-danger" 
+                                                    onclick="supprimerMesure({{ mesure.id }})" 
+                                                    title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination -->
+                    {% if mesures_pagination and mesures_pagination.pages > 1 %}
+                    <nav aria-label="Pagination des mesures">
+                        <ul class="pagination justify-content-center">
+                            {% if mesures_pagination.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('detail_kri', kri_id=kri.id, page=mesures_pagination.prev_num) }}">
+                                    Précédent
+                                </a>
+                            </li>
+                            {% endif %}
+                            
+                            {% for page_num in mesures_pagination.iter_pages() %}
+                            {% if page_num %}
+                            <li class="page-item {% if page_num == mesures_pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('detail_kri', kri_id=kri.id, page=page_num) }}">
+                                    {{ page_num }}
+                                </a>
+                            </li>
+                            {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                            {% endif %}
+                            {% endfor %}
+                            
+                            {% if mesures_pagination.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('detail_kri', kri_id=kri.id, page=mesures_pagination.next_num) }}">
+                                    Suivant
+                                </a>
+                            </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+                        <h4 class="text-muted">Aucune mesure enregistrée</h4>
+                        <p class="text-muted">Commencez par ajouter une mesure ci-dessus</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Vue par période (optionnel) -->
+            {% if mesures_par_periode %}
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i>Vue par période
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% for periode, mesures_periode in mesures_par_periode.items() %}
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2">{{ periode }}</h6>
+                        <div class="row">
+                            {% for mesure in mesures_periode %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-light">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <small class="text-muted">{{ mesure.date_mesure.strftime('%d/%m') }}</small>
+                                                <h6 class="mb-1">{{ "%.2f"|format(mesure.valeur) }} {{ kri.unite_mesure }}</h6>
+                                            </div>
+                                            <span class="badge bg-{{ kri.get_couleur_etat(mesure.valeur) }}">
+                                                {{ kri.get_libelle_etat(mesure.valeur)[:1] }}
+                                            </span>
+                                        </div>
+                                        {% if mesure.commentaire %}
+                                        <p class="mt-2 mb-0 small text-muted">{{ mesure.commentaire|truncate(30) }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal d'édition de mesure -->
+<div class="modal fade" id="editerMesureModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifier la mesure</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="modal-editer-mesure-content">
+                <!-- Contenu chargé dynamiquement -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation de suppression -->
+<div class="modal fade" id="confirmationSuppressionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmation de suppression</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir supprimer cette mesure ?</p>
+                <p class="text-danger"><strong>Cette action est irréversible !</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmSupprimerMesure">Supprimer</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Variables globales
+let mesureASupprimer = null;
+
+// Fonction pour basculer l'affichage du commentaire
+function toggleCommentaire(mesureId) {
+    const truncate = document.querySelector(`#mesure-${mesureId} .commentaire-truncate`);
+    const complet = document.querySelector(`#mesure-${mesureId} .commentaire-complet`);
+    
+    if (truncate.classList.contains('d-none')) {
+        truncate.classList.remove('d-none');
+        complet.classList.add('d-none');
+    } else {
+        truncate.classList.add('d-none');
+        complet.classList.remove('d-none');
+    }
+}
+
+// Fonction pour éditer une mesure
+function editerMesure(mesureId) {
+    fetch(`/kri/mesure/${mesureId}/editer`)
+        .then(response => response.text())
+        .then(html => {
+            document.getElementById('modal-editer-mesure-content').innerHTML = html;
+            const modal = new bootstrap.Modal(document.getElementById('editerMesureModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            alert('Erreur lors du chargement du formulaire d\'édition');
+        });
+}
+
+// Fonction pour supprimer une mesure
+function supprimerMesure(mesureId) {
+    mesureASupprimer = mesureId;
+    const modal = new bootstrap.Modal(document.getElementById('confirmationSuppressionModal'));
+    modal.show();
+}
+
+// Confirmation de suppression
+document.getElementById('confirmSupprimerMesure').addEventListener('click', function() {
+    if (!mesureASupprimer) return;
+    
+    fetch(`/kri/mesure/${mesureASupprimer}/supprimer`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `csrf_token=${encodeURIComponent(document.querySelector('input[name="csrf_token"]').value)}`
+    })
+    .then(response => {
+        if (response.ok) {
+            return response.json();
+        }
+        throw new Error('Erreur réseau');
+    })
+    .then(data => {
+        if (data.success) {
+            // Supprimer la ligne du tableau
+            const ligne = document.getElementById(`mesure-${mesureASupprimer}`);
+            if (ligne) {
+                ligne.remove();
+            }
+            
+            // Afficher un message de succès
+            showToast('Mesure supprimée avec succès', 'success');
+            
+            // Fermer le modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('confirmationSuppressionModal'));
+            modal.hide();
+            
+            // Recharger les statistiques si nécessaire
+            location.reload();
+        } else {
+            throw new Error(data.error || 'Erreur lors de la suppression');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur: ' + error.message, 'error');
+    });
+});
+
+// Fonction pour supprimer un fichier
+function supprimerFichier(fichierId) {
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce fichier ?')) {
+        fetch(`/kri/fichier/${fichierId}/supprimer`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `csrf_token=${encodeURIComponent(document.querySelector('input[name="csrf_token"]').value)}`
+        })
+        .then(response => {
+            if (response.ok) {
+                showToast('Fichier supprimé avec succès', 'success');
+                location.reload();
+            } else {
+                throw new Error('Erreur lors de la suppression');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur lors de la suppression du fichier', 'error');
+        });
+    }
+}
+
+// Fonction utilitaire pour afficher des messages toast
+function showToast(message, type = 'info') {
+    const toastContainer = document.getElementById('toast-container') || createToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    toastContainer.appendChild(toast);
+    
+    const bsToast = new bootstrap.Toast(toast, {
+        autohide: true,
+        delay: 5000
+    });
+    bsToast.show();
+    
+    // Supprimer le toast après sa fermeture
+    toast.addEventListener('hidden.bs.toast', function() {
+        toast.remove();
+    });
+}
+
+function createToastContainer() {
+    const container = document.createElement('div');
+    container.id = 'toast-container';
+    container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+    container.style.zIndex = '9999';
+    document.body.appendChild(container);
+    return container;
+}
+
+// Validation du formulaire de mesure
+document.querySelector('form[action*="ajouter_mesure_periodique"]')?.addEventListener('submit', function(e) {
+    const valeur = this.querySelector('input[name="valeur"]');
+    const date = this.querySelector('input[name="date_mesure"]');
+    
+    if (!valeur.value || !date.value) {
+        e.preventDefault();
+        showToast('Veuillez remplir tous les champs obligatoires', 'warning');
+    }
+});
+
+// Initialisation des tooltips Bootstrap
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+{% endblock %}
