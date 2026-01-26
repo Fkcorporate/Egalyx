@@ -16238,8 +16238,14 @@ def check_client_access(entite):
 # ROUTES PRINCIPALES
 # ========================
 @app.route('/')
-@login_required
 def dashboard():
+    """Route racine - affiche home si non connecté, sinon dashboard"""
+    
+    # Si l'utilisateur n'est PAS connecté, rediriger vers home
+    if not current_user.is_authenticated:
+        return redirect(url_for('home'))
+    
+    # Si l'utilisateur est connecté, afficher le dashboard
     """Tableau de bord principal avec isolation multi-tenant complète"""
     from sqlalchemy import func, and_
     
