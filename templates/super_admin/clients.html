@@ -96,10 +96,12 @@
                                 </span>
                             </td>
                             <td>
-                                {{ client.nb_utilisateurs }} / {{ client.max_utilisateurs }}
+                                {{ client.nb_utilisateurs or 0 }} / {{ client.max_utilisateurs or 0 }}
                                 <div class="progress mt-1" style="height: 5px;">
-                                    <div class="progress-bar bg-{{ 'danger' if client.nb_utilisateurs >= client.max_utilisateurs else 'success' }}" 
-                                         style="width: {{ (client.nb_utilisateurs / client.max_utilisateurs * 100)|round }}%"></div>
+                                    {% set nb_util = client.nb_utilisateurs or 0 %}
+                                    {% set max_util = client.max_utilisateurs or 1 %}  {# Utiliser 1 pour éviter division par 0 #}
+                                    <div class="progress-bar bg-{{ 'danger' if nb_util >= max_util else 'success' }}" 
+                                         style="width: {{ (nb_util / max_util * 100)|round }}%"></div>
                                 </div>
                             </td>
                             <td>
