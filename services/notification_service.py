@@ -17,27 +17,49 @@ class NotificationService:
             return None
         
         # Vérifier si l'utilisateur a mis en pause les notifications
-        prefs = user.preferences_notifications
-        pause_until = prefs.get('pause_until')
+        prefs = getattr(user, 'preferences_notifications', None)
+        if prefs:
+            # Si prefs est un dictionnaire
+            if isinstance(prefs, dict):
+                pause_until = prefs.get('pause_until')
+            # Si prefs est un objet avec attributs
+            else:
+                pause_until = getattr(prefs, 'pause_until', None)
+        else:
+            pause_until = None
+        
+        # Vérifier la pause si elle existe
         if pause_until:
             try:
-                pause_date = datetime.fromisoformat(pause_until)
-                if datetime.utcnow() < pause_date:
+                # Gérer différents formats de date
+                if isinstance(pause_until, str):
+                    pause_date = datetime.fromisoformat(pause_until.replace('Z', '+00:00'))
+                elif isinstance(pause_until, datetime):
+                    pause_date = pause_until
+                else:
+                    pause_date = None
+                
+                if pause_date and datetime.utcnow() < pause_date:
                     current_app.logger.info(f"Notifications en pause pour l'utilisateur {destinataire_id}")
                     return None
-            except (ValueError, TypeError):
-                pass
+            except (ValueError, TypeError, AttributeError) as e:
+                current_app.logger.warning(f"Erreur parsing pause_until: {e}")
+                # Continuer même en cas d'erreur de parsing
         
-        # Vérifier la préférence web
-        if not user.get_notification_preference('web', type_notif):
-            current_app.logger.info(f"Notification web désactivée pour {type_notif}")
-            # On crée quand même la notification, mais on pourra la filtrer côté client
+        # Vérifier la préférence web avec gestion d'erreur
+        try:
+            if not user.get_notification_preference('web', type_notif):
+                current_app.logger.info(f"Notification web désactivée pour {type_notif}")
+                # On crée quand même la notification, mais on pourra la filtrer côté client
+        except AttributeError:
+            # La méthode n'existe pas, on continue
+            current_app.logger.debug(f"Méthode get_notification_preference non disponible")
         
         # Déterminer l'urgence automatiquement
         urgence = kwargs.get('urgence', Notification.URGENCE_NORMAL)
         if type_notif in [Notification.TYPE_ECHEANCE, Notification.TYPE_RETARD, Notification.TYPE_KRI_ALERTE]:
             urgence = Notification.URGENCE_IMPORTANT
-        elif 'urgent' in titre.lower() or 'critique' in titre.lower():
+        elif titre and ('urgent' in titre.lower() or 'critique' in titre.lower()):
             urgence = Notification.URGENCE_URGENT
         
         # Déterminer la date d'expiration
@@ -59,14 +81,12 @@ class NotificationService:
                 entite_type=kwargs.get('entite_type'),
                 entite_id=kwargs.get('entite_id'),
                 actions_possibles=kwargs.get('actions', []),
-                donnees_supplementaires=kwargs.get('donnees', {}),  # Renommé
+                donnees_supplementaires=kwargs.get('donnees', {}),
                 expires_at=expires_at,
                 created_at=datetime.utcnow()
             )
             
             db.session.add(notification)
-            db.session.flush()
-            
             db.session.commit()
             
             current_app.logger.info(f"✅ Notification créée: {notification.id} pour utilisateur {destinataire_id}")
