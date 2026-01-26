@@ -42737,7 +42737,6 @@ def telecharger_fichier_rapport_audit(fichier_id):
 # ROUTES PAGES PUBLIQUES
 # ========================
 
-
 # Page d'accueil principale (landing page)
 @app.route('/home')
 def home():
@@ -42807,7 +42806,6 @@ def logout():
     logout_user()
     flash('Vous avez été déconnecté avec succès.', 'info')
     return redirect(url_for('home'))  # Redirige vers la nouvelle page d'accueil
-
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5005)
