@@ -1,0 +1,396 @@
+{% extends "base.html" %}
+{% block title %}Créer un nouvel utilisateur - Gestionnaire{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Navigation -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('gestionnaire_utilisateurs') }}">Gestion des utilisateurs</a></li>
+            <li class="breadcrumb-item active">Créer un utilisateur</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-plus me-2"></i>Créer un nouvel utilisateur
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Statistiques de la formule -->
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle fa-lg me-3"></i>
+                            <div class="flex-grow-1">
+                                <p class="mb-1"><strong>Client :</strong> {{ client.nom }} ({{ client.reference }})</p>
+                                <p class="mb-1"><strong>Formule :</strong> {{ client.formule.nom if client.formule else 'Standard' }}</p>
+                                <p class="mb-0"><strong>Limite utilisateurs :</strong> {{ utilisateurs_actuels }}/{{ limite }}</p>
+                                
+                                {% if utilisateurs_actuels >= limite %}
+                                <div class="alert alert-danger mt-2 mb-0">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>
+                                    <strong>Limite atteinte !</strong> Vous ne pouvez plus créer d'utilisateurs.
+                                </div>
+                                {% else %}
+                                <div class="progress mt-2" style="height: 8px;">
+                                    <div class="progress-bar 
+                                        {% if (utilisateurs_actuels/limite*100) >= 90 %}bg-danger
+                                        {% elif (utilisateurs_actuels/limite*100) >= 70 %}bg-warning
+                                        {% else %}bg-success{% endif %}" 
+                                        style="width: {{ (utilisateurs_actuels/limite*100) if (utilisateurs_actuels/limite*100) <= 100 else 100 }}%">
+                                    </div>
+                                </div>
+                                <small class="text-muted">
+                                    {{ (utilisateurs_actuels/limite*100)|round(1) }}% utilisé
+                                    ({{ limite - utilisateurs_actuels }} places restantes)
+                                </small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Formulaire -->
+                    <form method="POST" action="">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Informations de base -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.username.label }}</label>
+                                {{ form.username(class="form-control", placeholder="ex: jean.dupont") }}
+                                {% if form.username.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.username.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    Utilisé pour se connecter au système
+                                </small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.email.label }}</label>
+                                {{ form.email(class="form-control", type="email", placeholder="ex: jean.dupont@entreprise.com") }}
+                                {% if form.email.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.email.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Mot de passe -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.password.label }}</label>
+                                {{ form.password(class="form-control", placeholder="Minimum 6 caractères") }}
+                                {% if form.password.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.password.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                                <small class="text-muted">
+                                    Le mot de passe sera chiffré de manière sécurisée
+                                </small>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <label class="form-label">{{ form.confirm_password.label }}</label>
+                                {{ form.confirm_password(class="form-control", placeholder="Identique au mot de passe") }}
+                                {% if form.confirm_password.errors %}
+                                <div class="text-danger small">
+                                    {% for error in form.confirm_password.errors %}
+                                    {{ error }}
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Rôle -->
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.role.label }}</label>
+                            {{ form.role(class="form-select") }}
+                            {% if form.role.errors %}
+                            <div class="text-danger small">
+                                {% for error in form.role.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="text-muted">
+                                Le rôle définit les permissions métier de l'utilisateur
+                            </small>
+                        </div>
+                        
+                        <!-- Département -->
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.department.label }}</label>
+                            {{ form.department(class="form-control", placeholder="ex: Direction Financière, RH...") }}
+                            <small class="text-muted">
+                                Optionnel - Pour l'organisation interne
+                            </small>
+                        </div>
+                        
+                        <!-- Statut -->
+                        <div class="mb-4">
+                            <div class="form-check">
+                                {{ form.is_active(class="form-check-input") }}
+                                <label class="form-check-label">{{ form.is_active.label.text }}</label>
+                            </div>
+                            <small class="text-muted">
+                                L'utilisateur pourra se connecter immédiatement si activé
+                            </small>
+                        </div>
+                        
+                        <!-- Boutons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('gestionnaire_utilisateurs') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Retour
+                            </a>
+                            <button type="submit" class="btn btn-primary" 
+                                    {% if utilisateurs_actuels >= limite %}disabled{% endif %}>
+                                <i class="fas fa-check me-1"></i> Créer l'utilisateur
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informations sur les rôles -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-question-circle me-2"></i>Guide des rôles
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6 class="mb-2">Description des rôles :</h6>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="badge bg-secondary me-2">Standard</span>
+                                <strong>Utilisateur Standard</strong>
+                            </div>
+                            <small class="text-muted">
+                                Accès en consultation. Peut voir les risques, audits et rapports.
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="badge bg-info me-2">Auditeur</span>
+                                <strong>Auditeur</strong>
+                            </div>
+                            <small class="text-muted">
+                                Peut créer et gérer des audits, ajouter des constatations.
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="badge bg-warning me-2">Manager</span>
+                                <strong>Manager</strong>
+                            </div>
+                            <small class="text-muted">
+                                Gestion des risques, indicateurs KRI, validation des évaluations.
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="badge bg-success me-2">Conformité</span>
+                                <strong>Responsable Conformité</strong>
+                            </div>
+                            <small class="text-muted">
+                                Gestion de la veille réglementaire et des actions de conformité.
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="badge bg-purple me-2">Consultant</span>
+                                <strong>Consultant</strong>
+                            </div>
+                            <small class="text-muted">
+                                Accès en consultation avec possibilité de commentaires.
+                            </small>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="alert alert-light">
+                        <h6 class="mb-2">
+                            <i class="fas fa-lightbulb me-1"></i>Conseils :
+                        </h6>
+                        <ul class="small mb-0">
+                            <li>Choisissez un rôle adapté aux besoins de l'utilisateur</li>
+                            <li>Les managers ont accès à la gestion complète des risques</li>
+                            <li>Les auditeurs peuvent gérer le programme d'audit</li>
+                            <li>Créez un compte inactif si l'utilisateur doit attendre pour démarrer</li>
+                        </ul>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small text-muted">
+                        <p class="mb-0">
+                            <i class="fas fa-shield-alt me-1"></i>
+                            <strong>Note :</strong> Les permissions des utilisateurs sont prédéfinies selon leur rôle.
+                            Seuls les administrateurs peuvent modifier les permissions avancées.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript pour la validation -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    // Validation côté client
+    form.addEventListener('submit', function(e) {
+        const password = document.querySelector('input[name="password"]').value;
+        const confirmPassword = document.querySelector('input[name="confirm_password"]').value;
+        
+        // Vérifier les mots de passe
+        if (password !== confirmPassword) {
+            e.preventDefault();
+            alert('Les mots de passe ne correspondent pas');
+            return false;
+        }
+        
+        // Vérifier la longueur du mot de passe
+        if (password.length < 6) {
+            e.preventDefault();
+            alert('Le mot de passe doit contenir au moins 6 caractères');
+            return false;
+        }
+        
+        // Vérifier les limites
+        const currentUsers = {{ utilisateurs_actuels }};
+        const maxUsers = {{ limite }};
+        
+        if (currentUsers >= maxUsers) {
+            e.preventDefault();
+            alert('Limite d\'utilisateurs atteinte. Vous ne pouvez pas créer de nouveaux utilisateurs.');
+            return false;
+        }
+        
+        // Afficher un loader
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Création en cours...';
+            submitBtn.disabled = true;
+        }
+        
+        return true;
+    });
+    
+    // Validation en temps réel des mots de passe
+    const passwordInput = document.querySelector('input[name="password"]');
+    const confirmInput = document.querySelector('input[name="confirm_password"]');
+    
+    function validatePasswords() {
+        if (passwordInput.value && confirmInput.value) {
+            if (passwordInput.value !== confirmInput.value) {
+                confirmInput.classList.add('is-invalid');
+                confirmInput.classList.remove('is-valid');
+            } else {
+                confirmInput.classList.remove('is-invalid');
+                confirmInput.classList.add('is-valid');
+            }
+        }
+        
+        // Vérifier la longueur
+        if (passwordInput.value.length < 6 && passwordInput.value.length > 0) {
+            passwordInput.classList.add('is-invalid');
+            passwordInput.classList.remove('is-valid');
+        } else if (passwordInput.value.length >= 6) {
+            passwordInput.classList.remove('is-invalid');
+            passwordInput.classList.add('is-valid');
+        }
+    }
+    
+    passwordInput.addEventListener('input', validatePasswords);
+    confirmInput.addEventListener('input', validatePasswords);
+    
+    // Auto-suggestion pour le département basé sur le rôle
+    const roleSelect = document.querySelector('select[name="role"]');
+    const departmentInput = document.querySelector('input[name="department"]');
+    
+    roleSelect.addEventListener('change', function() {
+        const suggestions = {
+            'auditeur': 'Audit Interne',
+            'compliance': 'Conformité',
+            'manager': 'Direction des Risques',
+            'consultant': 'Consulting',
+            'utilisateur': ''
+        };
+        
+        const selectedRole = this.value;
+        if (suggestions[selectedRole] && (!departmentInput.value || departmentInput.value === '')) {
+            departmentInput.value = suggestions[selectedRole];
+        }
+    });
+    
+    // Vérification de l'email en temps réel
+    const emailInput = document.querySelector('input[name="email"]');
+    emailInput.addEventListener('blur', function() {
+        const email = this.value;
+        if (email && !email.includes('@')) {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+        } else if (email.includes('@')) {
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+        }
+    });
+});
+</script>
+
+<style>
+.bg-purple {
+    background-color: #8B5CF6 !important;
+}
+
+.text-purple {
+    color: #8B5CF6 !important;
+}
+
+.form-control.is-valid {
+    border-color: #10B981 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2310B981' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+}
+
+.form-control.is-invalid {
+    border-color: #DC2626 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23DC2626'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23DC2626' stroke='none'/%3e%3c/svg%3e");
+}
+
+.progress {
+    background-color: #E5E7EB;
+}
+
+.progress-bar {
+    transition: width 0.6s ease;
+}
+</style>
+{% endblock %}

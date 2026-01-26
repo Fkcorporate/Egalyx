@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-plus"></i> Nouvelle Cartographie des Risques
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Informations de la Cartographie</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.nom.label(class="form-label") }}
+                        {{ form.nom(class="form-control") }}
+                        {% for error in form.nom.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows="4") }}
+                        {% for error in form.description.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.direction_id.label(class="form-label") }}
+                                {{ form.direction_id(class="form-select") }}
+                                {% for error in form.direction_id.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.service_id.label(class="form-label") }}
+                                {{ form.service_id(class="form-select") }}
+                                {% for error in form.service_id.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('liste_cartographies') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Retour
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Créer la Cartographie
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Information</h6>
+            </div>
+            <div class="card-body">
+                <p>La cartographie des risques permet d'identifier et d'évaluer les risques par direction ou service.</p>
+                <p>Une fois créée, vous pourrez :</p>
+                <ul>
+                    <li>Ajouter des risques</li>
+                    <li>Évaluer leur impact et probabilité</li>
+                    <li>Visualiser la matrice des risques</li>
+                    <li>Générer le tableau de Bordeaux</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

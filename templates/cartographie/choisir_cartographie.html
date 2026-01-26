@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1 text-gray-900">Choisir une Cartographie</h1>
+            <p class="text-muted">Sélectionnez la cartographie pour votre nouveau risque</p>
+        </div>
+        <a href="{{ url_for('nouvelle_cartographie') }}" class="btn btn-outline-primary">
+            <i class="fas fa-plus me-2"></i>Nouvelle Cartographie
+        </a>
+    </div>
+
+    <div class="row">
+        {% for cartographie in cartographies %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card clickable-card h-100" 
+                 onclick="location.href='{{ url_for('nouveau_risque', cartographie_id=cartographie.id) }}'">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title">{{ cartographie.nom }}</h5>
+                        <span class="badge bg-primary">{{ cartographie.risques|length }}</span>
+                    </div>
+                    
+                    <p class="card-text text-muted mb-3">
+                        {{ cartographie.description or 'Aucune description' }}
+                    </p>
+                    
+                    <div class="cartographie-info">
+                        <div class="d-flex justify-content-between text-muted small mb-2">
+                            <span>Direction:</span>
+                            <span class="fw-semibold">{{ cartographie.direction.nom }}</span>
+                        </div>
+                        
+                        {% if cartographie.service %}
+                        <div class="d-flex justify-content-between text-muted small mb-2">
+                            <span>Service:</span>
+                            <span class="fw-semibold">{{ cartographie.service.nom }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        <div class="d-flex justify-content-between text-muted small">
+                            <span>Créée le:</span>
+                            <span>{{ cartographie.created_at.strftime('%d/%m/%Y') }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <button class="btn btn-primary w-100">
+                        <i class="fas fa-plus me-2"></i>Ajouter un risque
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if not cartographies %}
+    <div class="text-center py-5">
+        <i class="fas fa-map fa-3x text-muted mb-3"></i>
+        <h4 class="text-muted">Aucune cartographie disponible</h4>
+        <p class="text-muted mb-4">Commencez par créer une cartographie pour organiser vos risques.</p>
+        <a href="{{ url_for('nouvelle_cartographie') }}" class="btn btn-primary btn-lg">
+            <i class="fas fa-plus me-2"></i>Créer une cartographie
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Ajouter les interactions hover
+    document.querySelectorAll('.clickable-card').forEach(card => {
+        card.style.cursor = 'pointer';
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-3px)';
+            this.style.boxShadow = '0 4px 15px rgba(0,0,0,0.1)';
+        });
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+    });
+});
+</script>
+
+<style>
+.clickable-card {
+    transition: all 0.3s ease;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+}
+
+.clickable-card:hover {
+    border-color: #007bff;
+}
+
+.card-title {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.cartographie-info {
+    border-top: 1px solid #e9ecef;
+    padding-top: 1rem;
+}
+</style>
+{% endblock %}

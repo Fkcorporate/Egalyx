@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-map-marker-alt"></i> Positionnement du Risque : {{ risque_cible.reference }}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('detail_cartographie', id=cartographie.id) }}" class="btn btn-secondary me-2">
+            <i class="fas fa-arrow-left"></i> Retour à la cartographie
+        </a>
+        <a href="{{ url_for('detail_risque', id=risque_cible.id) }}" class="btn btn-outline-primary">
+            <i class="fas fa-eye"></i> Voir détail du risque
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0">
+                    <i class="fas fa-bullseye"></i> Matrice - {{ risque_cible.reference }} en surbrillance
+                </h6>
+            </div>
+            <div class="card-body text-center">
+                <img src="data:image/png;base64,{{ matrice_surbrillance }}" alt="Matrice avec risque en surbrillance" class="img-fluid" style="max-height: 600px;">
+                
+                <div class="mt-3">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle"></i> Information du risque</h6>
+                        <p class="mb-1"><strong>Référence:</strong> {{ risque_cible.reference }}</p>
+                        <p class="mb-1"><strong>Intitulé:</strong> {{ risque_cible.intitule }}</p>
+                        <p class="mb-1"><strong>Catégorie:</strong> {{ risque_cible.categorie }}</p>
+                        
+                        {% set derniere_eval = risque_cible.evaluations|sort(attribute='created_at', reverse=true)|first %}
+                        {% if derniere_eval %}
+                        <p class="mb-1"><strong>Dernière évaluation:</strong> {{ derniere_eval.created_at.strftime('%d/%m/%Y') }}</p>
+                        <p class="mb-1"><strong>Impact:</strong> {{ derniere_eval.impact }}/5</p>
+                        <p class="mb-1"><strong>Probabilité:</strong> {{ derniere_eval.probabilite }}/5</p>
+                        <p class="mb-0"><strong>Score:</strong> 
+                            <span class="badge bg-{% if derniere_eval.niveau_risque == 'Critique' %}danger{% elif derniere_eval.niveau_risque == 'Élevé' %}warning{% elif derniere_eval.niveau_risque == 'Moyen' %}info{% else %}success{% endif %}">
+                                {{ derniere_eval.score_risque }} - {{ derniere_eval.niveau_risque }}
+                            </span>
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-list"></i> Autres risques de la cartographie</h6>
+            </div>
+            <div class="card-body">
+                {% for risque in cartographie.risques %}
+                    {% if risque.id != risque_cible.id %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 p-2 border rounded">
+                        <div>
+                            <a href="{{ url_for('matrice_risque_specifique', cartographie_id=cartographie.id, risque_id=risque.id) }}" 
+                               class="text-decoration-none">
+                                <strong>{{ risque.reference }}</strong>
+                            </a>
+                            <br>
+                            <small class="text-muted">{{ risque.intitule|truncate(40) }}</small>
+                        </div>
+                        <div>
+                            {% set derniere_eval = risque.evaluations|sort(attribute='created_at', reverse=true)|first %}
+                            {% if derniere_eval %}
+                                <span class="badge bg-{% if derniere_eval.niveau_risque == 'Critique' %}danger{% elif derniere_eval.niveau_risque == 'Élevé' %}warning{% elif derniere_eval.niveau_risque == 'Moyen' %}info{% else %}success{% endif %}">
+                                    {{ derniere_eval.niveau_risque }}
+                                </span>
+                            {% else %}
+                                <span class="badge bg-secondary">Non évalué</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

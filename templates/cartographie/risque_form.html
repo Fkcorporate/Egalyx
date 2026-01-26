@@ -1,0 +1,605 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-edit"></i> 
+        {% if action == 'modifier' %}
+            Modifier le Risque : {{ risque.reference }}
+        {% else %}
+            Nouveau Risque
+        {% endif %}
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        {% if action == 'modifier' %}
+            <a href="{{ url_for('detail_risque', id=risque.id) }}" class="btn btn-secondary me-2">
+                <i class="fas fa-arrow-left"></i> Retour au risque
+            </a>
+            <a href="{{ url_for('detail_cartographie', id=risque.cartographie_id) }}" class="btn btn-outline-info">
+                <i class="fas fa-map"></i> Voir la cartographie
+            </a>
+        {% else %}
+            <a href="{{ url_for('detail_cartographie', id=cartographie.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour à la cartographie
+            </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-info-circle"></i> 
+                    {% if action == 'modifier' %}
+                        Informations du Risque
+                    {% else %}
+                        Création d'un Nouveau Risque
+                    {% endif %}
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="POST" enctype="multipart/form-data" id="risqueForm">
+                    {{ form.hidden_tag() }}
+                    
+                    <!-- Section Informations Générales -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-info-circle text-primary"></i> Informations Générales
+                        </h5>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.intitule.label(class="form-label fw-bold") }}
+                                {{ form.intitule(class="form-control" + (" is-invalid" if form.intitule.errors else "")) }}
+                                {% if form.intitule.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.intitule.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Titre court et descriptif du risque</div>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.categorie.label(class="form-label fw-bold") }}
+                                {% if categories_liste and categories_liste.valeurs %}
+                                    <select class="form-select" name="categorie" id="categorie" required>
+                                        <option value="">Sélectionnez une catégorie</option>
+                                        {% for item in categories_liste.valeurs %}
+                                        <option value="{{ item.valeur }}" 
+                                                {% if (action == 'modifier' and risque.categorie == item.valeur) or form.categorie.data == item.valeur %}selected{% endif %}>
+                                            {{ item.label|default(item.valeur) }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                {% else %}
+                                    {{ form.categorie(class="form-select" + (" is-invalid" if form.categorie.errors else "")) }}
+                                {% endif %}
+                                {% if form.categorie.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.categorie.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                {{ form.type_risque.label(class="form-label fw-bold") }}
+                                {% if types_risque_liste and types_risque_liste.valeurs %}
+                                    <select class="form-select" name="type_risque" id="type_risque">
+                                        <option value="">Sélectionnez un type</option>
+                                        {% for item in types_risque_liste.valeurs %}
+                                        <option value="{{ item.valeur }}" 
+                                                {% if (action == 'modifier' and risque.type_risque == item.valeur) or form.type_risque.data == item.valeur %}selected{% endif %}>
+                                            {{ item.label|default(item.valeur) }}
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                {% else %}
+                                    {{ form.type_risque(class="form-control" + (" is-invalid" if form.type_risque.errors else "")) }}
+                                {% endif %}
+                                {% if form.type_risque.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.type_risque.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.processus_concerne.label(class="form-label fw-bold") }}
+                                {{ form.processus_concerne(class="form-control" + (" is-invalid" if form.processus_concerne.errors else "")) }}
+                                {% if form.processus_concerne.errors %}
+                                    <div class="invalid-feedback">
+                                        {% for error in form.processus_concerne.errors %}
+                                            {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Processus métier concerné par ce risque</div>
+                            </div>
+                        </div>
+
+                        <!-- Champs personnalisés de la section 'general' -->
+                        {% for champ in champs_configures if champ.section == 'general' and champ.est_actif %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                {{ champ.nom_affichage }}
+                                {% if champ.est_obligatoire %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            
+                            {% if champ.type_champ == 'texte' %}
+                                <input type="text" 
+                                       class="form-control" 
+                                       name="champ_{{ champ.nom_technique }}"
+                                       value="{{ valeurs_existantes.get(champ.nom_technique, '') }}"
+                                       {% if champ.est_obligatoire %}required{% endif %}
+                                       {% if champ.regex_validation %}pattern="{{ champ.regex_validation }}"{% endif %}>
+                            
+                            {% elif champ.type_champ == 'textarea' %}
+                                <textarea class="form-control" 
+                                          name="champ_{{ champ.nom_technique }}"
+                                          rows="3"
+                                          {% if champ.est_obligatoire %}required{% endif %}>{{ valeurs_existantes.get(champ.nom_technique, '') }}</textarea>
+                            
+                            {% elif champ.type_champ == 'select' %}
+                                <select class="form-select" 
+                                        name="champ_{{ champ.nom_technique }}"
+                                        {% if champ.est_obligatoire %}required{% endif %}>
+                                    <option value="">Sélectionnez...</option>
+                                    {% if champ.valeurs_possibles %}
+                                        {% for valeur in champ.valeurs_possibles %}
+                                        <option value="{{ valeur }}" 
+                                                {% if valeurs_existantes.get(champ.nom_technique) == valeur %}selected{% endif %}>
+                                            {{ valeur }}
+                                        </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            
+                            {% elif champ.type_champ == 'checkbox' %}
+                                <div class="form-check">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           name="champ_{{ champ.nom_technique }}"
+                                           value="true"
+                                           {% if valeurs_existantes.get(champ.nom_technique) %}checked{% endif %}>
+                                    <label class="form-check-label">Coché</label>
+                                </div>
+                            
+                            {% elif champ.type_champ == 'date' %}
+                                <input type="date" 
+                                       class="form-control" 
+                                       name="champ_{{ champ.nom_technique }}"
+                                       value="{{ valeurs_existantes.get(champ.nom_technique, '') }}"
+                                       {% if champ.est_obligatoire %}required{% endif %}>
+                            
+                            {% elif champ.type_champ == 'fichier' %}
+                                <input type="file" 
+                                       class="form-control" 
+                                       name="fichier_{{ champ.nom_technique }}"
+                                       accept="{% for ext in config_fichiers.extensions %}.{{ ext }}{% if not loop.last %},{% endif %}{% endfor %}">
+                                       {% if valeurs_existantes.get(champ.nom_technique) %}
+                                <div class="mt-2">
+                                    <small class="text-muted">
+                                        Fichier actuel : {{ valeurs_existantes.get(champ.nom_technique) }}
+                                    </small>
+                                </div>
+                                {% endif %}
+                            {% endif %}
+                            
+                            {% if champ.aide_texte %}
+                            <div class="form-text">{{ champ.aide_texte }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Section Analyse du Risque -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-search text-warning"></i> Analyse du Risque
+                        </h5>
+
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label fw-bold") }}
+                            {{ form.description(class="form-control" + (" is-invalid" if form.description.errors else ""), rows=4) }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Description détaillée du risque</div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.cause_racine.label(class="form-label fw-bold") }}
+                            {{ form.cause_racine(class="form-control" + (" is-invalid" if form.cause_racine.errors else ""), rows=3) }}
+                            {% if form.cause_racine.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.cause_racine.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Cause fondamentale à l'origine du risque</div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.consequences.label(class="form-label fw-bold") }}
+                            {{ form.consequences(class="form-control" + (" is-invalid" if form.consequences.errors else ""), rows=3) }}
+                            {% if form.consequences.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.consequences.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <div class="form-text">Impacts potentiels sur l'organisation</div>
+                        </div>
+
+                        <!-- Champs personnalisés de la section 'analyse' -->
+                        {% for champ in champs_configures if champ.section == 'analyse' and champ.est_actif %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                {{ champ.nom_affichage }}
+                                {% if champ.est_obligatoire %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            
+                            {% if champ.type_champ == 'textarea' %}
+                                <textarea class="form-control" 
+                                          name="champ_{{ champ.nom_technique }}"
+                                          rows="3"
+                                          {% if champ.est_obligatoire %}required{% endif %}>{{ valeurs_existantes.get(champ.nom_technique, '') }}</textarea>
+                            
+                            {% elif champ.type_champ == 'select' %}
+                                <select class="form-select" 
+                                        name="champ_{{ champ.nom_technique }}"
+                                        {% if champ.est_obligatoire %}required{% endif %}>
+                                    <option value="">Sélectionnez...</option>
+                                    {% if champ.valeurs_possibles %}
+                                        {% for valeur in champ.valeurs_possibles %}
+                                        <option value="{{ valeur }}" 
+                                                {% if valeurs_existantes.get(champ.nom_technique) == valeur %}selected{% endif %}>
+                                            {{ valeur }}
+                                        </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            
+                            {% elif champ.type_champ == 'multiselect' %}
+                                <select class="form-select" 
+                                        name="champ_{{ champ.nom_technique }}" 
+                                        multiple
+                                        size="4"
+                                        {% if champ.est_obligatoire %}required{% endif %}>
+                                    {% if champ.valeurs_possibles %}
+                                        {% for valeur in champ.valeurs_possibles %}
+                                        <option value="{{ valeur }}"
+                                                {% if valeur in (valeurs_existantes.get(champ.nom_technique, []) or []) %}selected{% endif %}>
+                                            {{ valeur }}
+                                        </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                                <small class="form-text text-muted">Maintenez Ctrl (Cmd sur Mac) pour sélectionner plusieurs valeurs</small>
+                            
+                            {% elif champ.type_champ == 'checkbox' %}
+                                <div class="form-check">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           name="champ_{{ champ.nom_technique }}"
+                                           value="true"
+                                           {% if valeurs_existantes.get(champ.nom_technique) %}checked{% endif %}>
+                                    <label class="form-check-label">Coché</label>
+                                </div>
+                            {% endif %}
+                            
+                            {% if champ.aide_texte %}
+                            <div class="form-text">{{ champ.aide_texte }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- Section Documentation -->
+                    {% if champs_configures|selectattr('section', 'equalto', 'documentation')|selectattr('est_actif')|list %}
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-file text-info"></i> Documentation
+                        </h5>
+                        
+                        {% for champ in champs_configures if champ.section == 'documentation' and champ.est_actif %}
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">
+                                {{ champ.nom_affichage }}
+                                {% if champ.est_obligatoire %}<span class="text-danger">*</span>{% endif %}
+                            </label>
+                            
+                            {% if champ.type_champ == 'fichier' %}
+                                <input type="file" 
+                                       class="form-control" 
+                                       name="fichier_{{ champ.nom_technique }}"
+                                       accept="{{ config_fichiers.extensions|map('concat', '.')|join(',') }}"
+                                       {% if champ.est_obligatoire and not valeurs_existantes.get(champ.nom_technique) %}required{% endif %}>
+                                
+                                {% if valeurs_existantes.get(champ.nom_technique) %}
+                                <div class="mt-2">
+                                    <div class="alert alert-info p-2">
+                                        <i class="fas fa-file me-2"></i>
+                                        Fichier actuel : {{ valeurs_existantes.get(champ.nom_technique) }}
+                                        <a href="#" class="float-end text-decoration-none" 
+                                           onclick="event.preventDefault(); document.getElementById('supprimer_{{ champ.nom_technique }}').value = 'true'; this.parentElement.style.display = 'none';">
+                                            <i class="fas fa-times text-danger"></i>
+                                        </a>
+                                        <input type="hidden" name="supprimer_fichier_{{ champ.nom_technique }}" 
+                                               id="supprimer_{{ champ.nom_technique }}" value="false">
+                                    </div>
+                                </div>
+                                {% endif %}
+                            
+                            {% elif champ.type_champ == 'textarea' %}
+                                <textarea class="form-control" 
+                                          name="champ_{{ champ.nom_technique }}"
+                                          rows="3"
+                                          {% if champ.est_obligatoire %}required{% endif %}>{{ valeurs_existantes.get(champ.nom_technique, '') }}</textarea>
+                            
+                            {% elif champ.type_champ == 'select' %}
+                                <select class="form-select" 
+                                        name="champ_{{ champ.nom_technique }}"
+                                        {% if champ.est_obligatoire %}required{% endif %}>
+                                    <option value="">Sélectionnez...</option>
+                                    {% if champ.valeurs_possibles %}
+                                        {% for valeur in champ.valeurs_possibles %}
+                                        <option value="{{ valeur }}" 
+                                                {% if valeurs_existantes.get(champ.nom_technique) == valeur %}selected{% endif %}>
+                                            {{ valeur }}
+                                        </option>
+                                        {% endfor %}
+                                    {% endif %}
+                                </select>
+                            {% endif %}
+                            
+                            {% if champ.aide_texte %}
+                            <div class="form-text">{{ champ.aide_texte }}</div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Section Fichiers additionnels -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2 mb-3">
+                            <i class="fas fa-paperclip text-success"></i> Fichiers additionnels
+                        </h5>
+                        
+                        <div id="fichiers-container">
+                            {% for i in range(3) %}
+                            <div class="mb-3 fichier-group">
+                                <div class="row g-2">
+                                    <div class="col-md-8">
+                                        <input type="file" 
+                                               class="form-control" 
+                                               name="fichier_additionnel_{{ i }}"
+                                               accept="{% for ext in config_fichiers.extensions %}.{{ ext }}{% if not loop.last %},{% endif %}{% endfor %}">
+                                            </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" name="categorie_fichier_{{ i }}">
+                                            <option value="document">Document</option>
+                                            <option value="image">Image</option>
+                                            <option value="analyse">Analyse</option>
+                                            <option value="autre">Autre</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="mt-1">
+                                    <input type="text" 
+                                           class="form-control form-control-sm" 
+                                           name="description_fichier_{{ i }}"
+                                           placeholder="Description du fichier...">
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <button type="button" class="btn btn-sm btn-outline-success" id="ajouter-fichier">
+                            <i class="fas fa-plus"></i> Ajouter un autre fichier
+                        </button>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        {% if action == 'modifier' %}
+                            <a href="{{ url_for('detail_risque', id=risque.id) }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Annuler
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('detail_cartographie', id=cartographie.id) }}" class="btn btn-secondary me-md-2">
+                                <i class="fas fa-times"></i> Annuler
+                            </a>
+                        {% endif %}
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 
+                            {% if action == 'modifier' %}
+                                Modifier le Risque
+                            {% else %}
+                                Créer le Risque
+                            {% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Informations contextuelles -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informations</h6>
+            </div>
+            <div class="card-body">
+                {% if action == 'modifier' %}
+                    <h6>Risque existant</h6>
+                    <p class="small text-muted">
+                        Vous modifiez le risque <strong>{{ risque.reference }}</strong>.
+                        Toutes les modifications seront tracées dans l'historique.
+                    </p>
+                    
+                    <div class="mt-3">
+                        <strong>Cartographie :</strong>
+                        <br>
+                        <a href="{{ url_for('detail_cartographie', id=risque.cartographie_id) }}" class="text-decoration-none">
+                            {{ risque.cartographie.nom }}
+                        </a>
+                    </div>
+                    
+                    {% if risque.evaluations %}
+                    <div class="mt-2">
+                        <strong>Évaluations :</strong>
+                        <br>
+                        <span class="badge bg-primary">{{ risque.evaluations|length }}</span> évaluation(s)
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-2">
+                        <strong>Créé le :</strong>
+                        <br>
+                        <small class="text-muted">{{ risque.created_at.strftime('%d/%m/%Y à %H:%M') }}</small>
+                    </div>
+                    
+                {% else %}
+                    <h6>Nouveau risque</h6>
+                    <p class="small text-muted">
+                        Vous créez un nouveau risque dans la cartographie 
+                        <strong>{{ cartographie.nom }}</strong>.
+                    </p>
+                    
+                    <div class="alert alert-info mt-3">
+                        <small>
+                            <i class="fas fa-lightbulb"></i> 
+                            <strong>Conseil :</strong> Une fois créé, vous pourrez évaluer 
+                            ce risque et lui associer des indicateurs KRI.
+                        </small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Aide à la saisie -->
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-question-circle"></i> Aide</h6>
+            </div>
+            <div class="card-body">
+                <div class="small">
+                    <p><strong>Champs obligatoires :</strong> Les champs marqués d'un * sont obligatoires.</p>
+                    <p><strong>Fichiers :</strong> Formats autorisés : {{ config_fichiers.extensions|join(', ') }} (max {{ config_fichiers.taille_max_mo }} Mo)</p>
+                    <p><strong>Validation :</strong> Certains champs peuvent avoir des règles de validation spécifiques.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion de l'ajout dynamique de fichiers
+    let fichierCounter = 3; // Commence après les 3 premiers
+    
+    document.getElementById('ajouter-fichier').addEventListener('click', function() {
+        const container = document.getElementById('fichiers-container');
+        const newGroup = document.createElement('div');
+        newGroup.className = 'mb-3 fichier-group';
+        newGroup.innerHTML = `
+            <div class="row g-2">
+                <div class="col-md-8">
+                    <input type="file" 
+                           class="form-control" 
+                           name="fichier_additionnel_${fichierCounter}"
+                           accept="{% for ext in config_fichiers.extensions %}.{{ ext }}{% if not loop.last %},{% endif %}{% endfor %}">
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" name="categorie_fichier_${fichierCounter}">
+                        <option value="document">Document</option>
+                        <option value="image">Image</option>
+                        <option value="analyse">Analyse</option>
+                        <option value="autre">Autre</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mt-1">
+                <input type="text" 
+                       class="form-control form-control-sm" 
+                       name="description_fichier_${fichierCounter}"
+                       placeholder="Description du fichier...">
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger mt-1 supprimer-fichier">
+                <i class="fas fa-times"></i> Supprimer
+            </button>
+        `;
+        
+        container.appendChild(newGroup);
+        fichierCounter++;
+    });
+    
+    // Délégation d'événement pour les boutons de suppression
+    document.getElementById('fichiers-container').addEventListener('click', function(e) {
+        if (e.target.closest('.supprimer-fichier')) {
+            e.target.closest('.fichier-group').remove();
+        }
+    });
+    
+    // Validation des fichiers
+    document.getElementById('risqueForm').addEventListener('submit', function(e) {
+        const fileInputs = this.querySelectorAll('input[type="file"]');
+        const maxSize = {{ config_fichiers.taille_max_mo }} * 1024 * 1024; // Convertir en octets
+        
+        for (const input of fileInputs) {
+            if (input.files.length > 0) {
+                const file = input.files[0];
+                const extension = file.name.split('.').pop().toLowerCase();
+                const allowedExtensions = {{ config_fichiers.extensions|tojson }};
+                
+                // Vérifier l'extension
+                if (!allowedExtensions.includes(extension)) {
+                    e.preventDefault();
+                    alert(`L'extension .${extension} n'est pas autorisée. Formats autorisés : ${allowedExtensions.join(', ')}`);
+                    input.focus();
+                    return;
+                }
+                
+                // Vérifier la taille
+                if (file.size > maxSize) {
+                    e.preventDefault();
+                    alert(`Le fichier ${file.name} est trop volumineux (${(file.size / 1024 / 1024).toFixed(2)} Mo). Taille maximale : {{ config_fichiers.taille_max_mo }} Mo`);
+                    input.focus();
+                    return;
+                }
+            }
+        }
+    });
+});
+</script>
+
+<style>
+.fichier-group {
+    padding: 10px;
+    border: 1px dashed #dee2e6;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+}
+
+.fichier-group:hover {
+    background-color: #e9ecef;
+    border-color: #adb5bd;
+}
+</style>
+{% endblock %}

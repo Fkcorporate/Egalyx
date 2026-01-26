@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-archive me-2"></i>Risques Archivés
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if risques %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Référence</th>
+                                        <th>Intitulé</th>
+                                        <th>Catégorie</th>
+                                        <th>Date d'archivage</th>
+                                        <th>Raison</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for risque in risques %}
+                                    <tr>
+                                        <td>{{ risque.reference }}</td>
+                                        <td>{{ risque.intitule }}</td>
+                                        <td>{{ risque.categorie }}</td>
+                                        <td>
+                                            {% if risque.archived_at %}
+                                                {{ risque.archived_at.strftime('%d/%m/%Y %H:%M') }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if risque.archive_reason %}
+                                                {{ risque.archive_reason }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <!-- Formulaire de restauration SIMPLIFIÉ -->
+                                            <form method="POST" action="{{ url_for('restaurer_risque', id=risque.id) }}" style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-success btn-sm" title="Restaurer">
+                                                    <i class="fas fa-undo"></i>
+                                                </button>
+                                            </form>
+                                            
+                                            <!-- Formulaire de suppression (admin seulement) -->
+                                            {% if current_user.role == 'admin' %}
+                                            <form method="POST" action="{{ url_for('supprimer_definitivement_risque', id=risque.id) }}" 
+                                                  onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer définitivement ce risque ?');"
+                                                  style="display: inline;">
+                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                <button type="submit" class="btn btn-danger btn-sm" title="Supprimer définitivement">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aucun risque archivé.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

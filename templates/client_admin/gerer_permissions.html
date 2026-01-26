@@ -1,0 +1,219 @@
+<!-- templates/gestionnaire/gerer_permissions.html -->
+{% extends "base.html" %}
+
+{% block title %}Gérer les permissions - {{ user.username }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('gestionnaire_utilisateurs') }}">Gestion Utilisateurs</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('gestionnaire_editer_utilisateur', id=user.id) }}">{{ user.username }}</a></li>
+                    <li class="breadcrumb-item active">Permissions</li>
+                </ol>
+            </nav>
+            
+            <div class="card card-modern">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-key me-2"></i>
+                        Gérer les permissions de {{ user.username }}
+                    </h5>
+                    <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
+                        {{ 'Actif' if user.is_active else 'Inactif' }}
+                    </span>
+                </div>
+                
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('gestionnaire_gerer_permissions', id=user.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Informations utilisateur -->
+                        <div class="alert alert-info mb-4">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-info-circle fa-2x me-3"></i>
+                                <div>
+                                    <strong>Utilisateur :</strong> {{ user.username }} ({{ user.email }})<br>
+                                    <strong>Rôle :</strong> {{ user.get_role_display_name() }}<br>
+                                    <strong>Client :</strong> {{ client.nom }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Permissions de base -->
+                        <div class="mb-5">
+                            <h5 class="mb-3 border-bottom pb-2">
+                                <i class="fas fa-user-shield me-2"></i>
+                                Permissions de base
+                            </h5>
+                            
+                            <div class="row">
+                                {% for perm_key, perm_data in all_permissions.permissions_de_base.items() %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               id="{{ perm_key }}" 
+                                               name="{{ perm_key }}"
+                                               {{ 'checked' if user.permissions.get(perm_key, perm_data.default) and perm_data.can_activate else '' }}
+                                               {{ 'disabled' if not perm_data.can_activate else '' }}>
+                                        <label class="form-check-label {{ 'text-muted' if not perm_data.can_activate else '' }}" 
+                                               for="{{ perm_key }}">
+                                            <strong>{{ perm_data.label }}</strong>
+                                            {% if perm_data.description %}
+                                            <br><small class="text-muted">{{ perm_data.description }}</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Permissions de gestion -->
+                        <div class="mb-5">
+                            <h5 class="mb-3 border-bottom pb-2">
+                                <i class="fas fa-users-cog me-2"></i>
+                                Permissions de gestion
+                            </h5>
+                            
+                            <div class="row">
+                                {% for perm_key, perm_data in all_permissions.permissions_gestion.items() %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               id="{{ perm_key }}" 
+                                               name="{{ perm_key }}"
+                                               {{ 'checked' if user.permissions.get(perm_key, perm_data.default) and perm_data.can_activate else '' }}
+                                               {{ 'disabled' if not perm_data.can_activate else '' }}>
+                                        <label class="form-check-label {{ 'text-muted' if not perm_data.can_activate else '' }}" 
+                                               for="{{ perm_key }}">
+                                            <strong>{{ perm_data.label }}</strong>
+                                            {% if perm_data.description %}
+                                            <br><small class="text-muted">{{ perm_data.description }}</small>
+                                            {% endif %}
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <!-- Modules d'application -->
+                        <div class="mb-5">
+                            <h5 class="mb-3 border-bottom pb-2">
+                                <i class="fas fa-cubes me-2"></i>
+                                Modules d'application
+                            </h5>
+                            
+                            {% if all_permissions.modules %}
+                            <div class="row">
+                                {% for module_key, module_data in all_permissions.modules.items() %}
+                                <div class="col-md-6 mb-4">
+                                    <div class="card h-100 border-{{ 'success' if module_data.can_activate else 'secondary' }}">
+                                        <div class="card-body">
+                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                                <div>
+                                                    <h6 class="mb-1">
+                                                        <i class="{{ module_data.icon }} me-2"></i>
+                                                        {{ module_data.label }}
+                                                    </h6>
+                                                    <small class="text-muted">{{ module_data.description }}</small>
+                                                </div>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" 
+                                                           type="checkbox" 
+                                                           id="module_{{ module_key }}" 
+                                                           name="module_{{ module_key }}"
+                                                           {{ 'checked' if user.permissions.get('module_' ~ module_key, true) and module_data.can_activate else '' }}
+                                                           {{ 'disabled' if not module_data.can_activate else '' }}>
+                                                </div>
+                                            </div>
+                                            
+                                            {% if module_data.permissions %}
+                                            <div class="border-top pt-2">
+                                                <small class="text-muted d-block mb-1">Permissions incluses :</small>
+                                                <div class="d-flex flex-wrap gap-1">
+                                                    {% for perm in module_data.permissions %}
+                                                    <span class="badge bg-info">{{ perm|replace('can_', '')|replace('_', ' ')|title }}</span>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% else %}
+                            <div class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle me-2"></i>
+                                Aucun module disponible pour ce client
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Boutons d'action -->
+                        <div class="mt-4 pt-3 border-top">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Enregistrer les permissions
+                            </button>
+                            <a href="{{ url_for('gestionnaire_utilisateurs') }}" class="btn btn-secondary">Annuler</a>
+                            <button type="button" class="btn btn-outline-primary float-end" onclick="selectAll(true)">
+                                Tout sélectionner
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary float-end me-2" onclick="selectAll(false)">
+                                Tout désélectionner
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function selectAll(select) {
+    document.querySelectorAll('input[type="checkbox"]:not(:disabled)').forEach(checkbox => {
+        checkbox.checked = select;
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Désactiver la soumission si aucune permission n'est sélectionnée
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const checkedPermissions = document.querySelectorAll('input[type="checkbox"]:checked:not(:disabled)');
+        if (checkedPermissions.length === 0) {
+            e.preventDefault();
+            alert('Veuillez sélectionner au moins une permission.');
+            return false;
+        }
+        return true;
+    });
+});
+</script>
+
+<style>
+.card-modern {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.form-check-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+</style>
+{% endblock %}

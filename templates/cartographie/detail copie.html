@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-map"></i> {{ cartographie.nom }}</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="{{ url_for('nouveau_risque', cartographie_id=cartographie.id) }}" class="btn btn-success me-2">
+            <i class="fas fa-plus"></i> Nouveau Risque
+        </a>
+        <a href="{{ url_for('liste_cartographies') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Retour
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Informations générales -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Informations</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Direction:</strong> {{ cartographie.direction.nom }}</p>
+                <p><strong>Service:</strong> {{ cartographie.service.nom if cartographie.service else 'Non spécifié' }}</p>
+                <p><strong>Description:</strong> {{ cartographie.description }}</p>
+                <p><strong>Créée le:</strong> {{ cartographie.created_at.strftime('%d/%m/%Y') }}</p>
+                <p><strong>Nombre de risques:</strong> {{ cartographie.risques|length }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matrice des risques -->
+    <div class="col-md-8 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h6 class="mb-0"><i class="fas fa-th"></i> Matrice des Risques</h6>
+            </div>
+            <div class="card-body text-center">
+                <img src="data:image/png;base64,{{ matrice_image }}" alt="Matrice des risques" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tableau de Bordeaux -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h6 class="mb-0"><i class="fas fa-table"></i> Tableau de Bordeaux</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="card bg-danger text-white mb-3">
+                            <div class="card-header">Actions Prioritaires</div>
+                            <div class="card-body">
+                                {% for risque in tableau_bordeaux.actions_prioritaires %}
+                                <p class="card-text small">{{ risque.reference }}: {{ risque.intitule }}</p>
+                                {% else %}
+                                <p class="card-text small">Aucun risque</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-warning text-dark mb-3">
+                            <div class="card-header">Surveillance Renforcée</div>
+                            <div class="card-body">
+                                {% for risque in tableau_bordeaux.surveillance_renforcee %}
+                                <p class="card-text small">{{ risque.reference }}: {{ risque.intitule }}</p>
+                                {% else %}
+                                <p class="card-text small">Aucun risque</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-info text-white mb-3">
+                            <div class="card-header">Surveillance Courante</div>
+                            <div class="card-body">
+                                {% for risque in tableau_bordeaux.surveillance_courante %}
+                                <p class="card-text small">{{ risque.reference }}: {{ risque.intitule }}</p>
+                                {% else %}
+                                <p class="card-text small">Aucun risque</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-success text-white mb-3">
+                            <div class="card-header">Actions Limitées</div>
+                            <div class="card-body">
+                                {% for risque in tableau_bordeaux.actions_limitees %}
+                                <p class="card-text small">{{ risque.reference }}: {{ risque.intitule }}</p>
+                                {% else %}
+                                <p class="card-text small">Aucun risque</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des risques -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="fas fa-exclamation-triangle"></i> Liste des Risques</h6>
+            </div>
+            <div class="card-body">
+                {% if cartographie.risques %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Référence</th>
+                                <th>Intitulé</th>
+                                <th>Catégorie</th>
+                                <th>Dernière Évaluation</th>
+                                <th>Niveau</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for risque in cartographie.risques %}
+                            <tr>
+                                <td>{{ risque.reference }}</td>
+                                <td>{{ risque.intitule }}</td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ risque.categorie }}</span>
+                                </td>
+                                <td>
+                                    {% set derniere_eval = risque.evaluations|sort(attribute='created_at', reverse=true)|first %}
+                                    {% if derniere_eval %}
+                                        {{ derniere_eval.created_at.strftime('%d/%m/%Y') }}
+                                    {% else %}
+                                        <span class="text-muted">Non évalué</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% set derniere_eval = risque.evaluations|sort(attribute='created_at', reverse=true)|first %}
+                                    {% if derniere_eval %}
+                                        {% if derniere_eval.niveau_risque == 'Critique' %}
+                                        <span class="badge bg-danger">{{ derniere_eval.niveau_risque }}</span>
+                                        {% elif derniere_eval.niveau_risque == 'Élevé' %}
+                                        <span class="badge bg-warning">{{ derniere_eval.niveau_risque }}</span>
+                                        {% elif derniere_eval.niveau_risque == 'Moyen' %}
+                                        <span class="badge bg-info">{{ derniere_eval.niveau_risque }}</span>
+                                        {% else %}
+                                        <span class="badge bg-success">{{ derniere_eval.niveau_risque }}</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-secondary">Non évalué</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('evaluer_risque', id=risque.id) }}" 
+                                       class="btn btn-sm btn-outline-primary" 
+                                       title="Évaluer le risque">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </a>
+                                    {% if not risque.kri %}
+                                    <a href="{{ url_for('nouveau_kri', risque_id=risque.id) }}" 
+                                       class="btn btn-sm btn-outline-success"
+                                       title="Créer un KRI">
+                                        <i class="fas fa-chart-line"></i>
+                                    </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <p class="mb-0">Aucun risque n'a été identifié pour cette cartographie.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,271 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-{{ 'edit' if action == 'modifier' else 'plus' }}"></i> 
+        {{ 'Modifier' if action == 'modifier' else 'Nouvelle' }} Cartographie des Risques
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header {{ 'bg-info' if action == 'modifier' else 'bg-primary' }} text-white">
+                <h5 class="mb-0">{{ 'Modification' if action == 'modifier' else 'Création' }} de la Cartographie</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" id="cartographieForm">
+                    {{ form.hidden_tag() }}
+                    
+                    {% if action == 'modifier' and cartographie %}
+                    <input type="hidden" name="cartographie_id" value="{{ cartographie.id }}">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle"></i> Modification de la cartographie : 
+                        <strong>{{ cartographie.nom }}</strong>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        {{ form.nom.label(class="form-label") }}
+                        {{ form.nom(class="form-control", placeholder="Ex: Cartographie des risques - Direction Financière") }}
+                        {% for error in form.nom.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows="4", placeholder="Description de la cartographie...") }}
+                        {% for error in form.description.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Type de cartographie -->
+                    <div class="mb-3">
+                        <label class="form-label">Type de cartographie *</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="type_cartographie" id="type_direction" 
+                                   value="direction" {{ 'checked' if not cartographie or not cartographie.service_id else '' }}>
+                            <label class="form-check-label" for="type_direction">
+                                <i class="fas fa-building me-1"></i> Cartographie par Direction
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="type_cartographie" id="type_service" 
+                                   value="service" {{ 'checked' if cartographie and cartographie.service_id else '' }}>
+                            <label class="form-check-label" for="type_service">
+                                <i class="fas fa-cogs me-1"></i> Cartographie par Service
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Sélection Direction (toujours visible) -->
+                    <div class="mb-3" id="directionField">
+                        {{ form.direction_id.label(class="form-label") }}
+                        {{ form.direction_id(class="form-select") }}
+                        {% for error in form.direction_id.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Sélection Service (caché par défaut) -->
+                    <div class="mb-3" id="serviceField" style="display: {{ 'block' if cartographie and cartographie.service_id else 'none' }};">
+                        {{ form.service_id.label(class="form-label") }}
+                        {{ form.service_id(class="form-select") }}
+                        {% for error in form.service_id.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Informations supplémentaires pour la modification -->
+                    {% if action == 'modifier' and cartographie %}
+                    <div class="alert alert-warning mt-4">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Note importante :</strong> La modification d'une cartographie existante déclenchera une 
+                        synchronisation automatique de tous les risques associés.
+                    </div>
+                    {% endif %}
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <a href="{{ url_for('liste_cartographies') }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Retour à la liste
+                        </a>
+                        <button type="submit" class="btn {{ 'btn-info' if action == 'modifier' else 'btn-primary' }}">
+                            <i class="fas fa-{{ 'save' if action == 'modifier' else 'plus-circle' }}"></i> 
+                            {{ 'Enregistrer les modifications' if action == 'modifier' else 'Créer la Cartographie' }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header {{ 'bg-warning' if action == 'modifier' else 'bg-info' }} text-white">
+                <h6 class="mb-0">
+                    <i class="fas fa-{{ 'edit' if action == 'modifier' else 'info-circle' }}"></i> 
+                    {{ 'Modification' if action == 'modifier' else 'Guide' }}
+                </h6>
+            </div>
+            <div class="card-body">
+                {% if action == 'modifier' %}
+                <p><strong>Ce que vous pouvez modifier :</strong></p>
+                <ul class="small">
+                    <li>Nom et description de la cartographie</li>
+                    <li>Direction et/ou service associé</li>
+                    <li>Type de cartographie</li>
+                </ul>
+                
+                <p><strong>Effets de la modification :</strong></p>
+                <ul class="small">
+                    <li>Tous les risques seront mis à jour avec la nouvelle direction/service</li>
+                    <li>Les indicateurs seront recalculés automatiquement</li>
+                    <li>Les matrices seront régénérées</li>
+                </ul>
+                
+                <div class="alert alert-info mt-3">
+                    <small>
+                        <i class="fas fa-sync-alt"></i>
+                        <strong>Synchronisation :</strong> Les modifications déclenchent une synchronisation complète.
+                    </small>
+                </div>
+                
+                {% else %}
+                <p><strong>Types de cartographie :</strong></p>
+                <ul class="small">
+                    <li><strong>Par Direction :</strong> Couvre l'ensemble des risques d'une direction</li>
+                    <li><strong>Par Service :</strong> Se concentre sur les risques spécifiques d'un service</li>
+                </ul>
+                
+                <p><strong>Exemples :</strong></p>
+                <ul class="small">
+                    <li><strong>Direction :</strong> "Cartographie Direction Financière"</li>
+                    <li><strong>Service :</strong> "Cartographie Service Comptabilité"</li>
+                </ul>
+                
+                <div class="alert alert-warning mt-3">
+                    <small>
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Important :</strong> Une cartographie ne peut être associée qu'à une direction OU à un service, pas aux deux.
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeDirection = document.getElementById('type_direction');
+    const typeService = document.getElementById('type_service');
+    const directionField = document.getElementById('directionField');
+    const serviceField = document.getElementById('serviceField');
+    const directionSelect = document.getElementById('direction_id');
+    const serviceSelect = document.getElementById('service_id');
+    
+    // Gestion du changement de type
+    function updateFormFields() {
+        if (typeDirection.checked) {
+            directionField.style.display = 'block';
+            serviceField.style.display = 'none';
+            // Réinitialiser la sélection du service
+            serviceSelect.value = '';
+        } else {
+            directionField.style.display = 'block';
+            serviceField.style.display = 'block';
+        }
+    }
+    
+    // Écouter les changements
+    if (typeDirection) typeDirection.addEventListener('change', updateFormFields);
+    if (typeService) typeService.addEventListener('change', updateFormFields);
+    
+    // Chargement dynamique des services
+    if (directionSelect && serviceSelect) {
+        // Initialiser les services si une direction est déjà sélectionnée
+        if (directionSelect.value) {
+            chargerServices(directionSelect.value);
+        }
+        
+        directionSelect.addEventListener('change', function() {
+            const directionId = this.value;
+            chargerServices(directionId);
+        });
+        
+        // Initialiser l'état du formulaire
+        updateFormFields();
+    }
+    
+    function chargerServices(directionId) {
+        if (!directionId || directionId === '0') {
+            serviceSelect.innerHTML = '<option value="">Sélectionnez d\'abord une direction</option>';
+            return;
+        }
+        
+        serviceSelect.innerHTML = '<option value="">Chargement...</option>';
+        
+        fetch(`/api/services/${directionId}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erreur réseau');
+                }
+                return response.json();
+            })
+            .then(services => {
+                let options = '<option value="">Sélectionnez un service</option>';
+                
+                services.forEach(service => {
+                    const selected = service.id == {{ cartographie.service_id if cartographie else 0 }} ? 'selected' : '';
+                    options += `<option value="${service.id}" ${selected}>${service.nom}</option>`;
+                });
+                
+                serviceSelect.innerHTML = options;
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                serviceSelect.innerHTML = '<option value="">Erreur de chargement</option>';
+            });
+    }
+    
+    // Validation du formulaire
+    const form = document.getElementById('cartographieForm');
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            const typeCartographie = document.querySelector('input[name="type_cartographie"]:checked');
+            
+            if (!typeCartographie) {
+                e.preventDefault();
+                alert('Veuillez sélectionner un type de cartographie.');
+                return false;
+            }
+            
+            if (typeCartographie.value === 'service' && (!serviceSelect.value || serviceSelect.value === '0')) {
+                e.preventDefault();
+                alert('Veuillez sélectionner un service pour une cartographie par service.');
+                return false;
+            }
+            
+            if (!directionSelect.value || directionSelect.value === '0') {
+                e.preventDefault();
+                alert('Veuillez sélectionner une direction.');
+                return false;
+            }
+            
+            // Message de confirmation pour la modification
+            if ('{{ action }}' === 'modifier') {
+                if (!confirm('Confirmez-vous la modification de cette cartographie ?\n\nCette action synchronisera tous les risques associés.')) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

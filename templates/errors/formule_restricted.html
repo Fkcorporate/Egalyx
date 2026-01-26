@@ -1,0 +1,282 @@
+<!-- templates/errors/formule_restricted.html -->
+{% extends "base.html" %}
+
+{% block title %}Fonctionnalité non disponible - {{ current_user.client.formule.nom if current_user.client.formule else 'Formule actuelle' }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-xl-6">
+            <!-- Carte d'erreur élégante -->
+            <div class="fk-card">
+                <!-- Header avec icône et statut -->
+                <div class="fk-card-header">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-circle bg-white bg-opacity-25 p-3">
+                                <i class="fas fa-lock fa-2x text-white"></i>
+                            </div>
+                            <div>
+                                <h1 class="h4 mb-1 text-white">Accès restreint</h1>
+                                <p class="text-white text-opacity-75 mb-0">Cette fonctionnalité n'est pas incluse dans votre formule</p>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-light text-dark fw-bold px-3 py-2">
+                                <i class="fas fa-tag me-2"></i>
+                                {{ current_user.client.formule.nom if current_user.client.formule else 'Standard' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fk-card-body p-4">
+                    <!-- Message principal -->
+                    <div class="text-center mb-5">
+                        <div class="mb-4">
+                            <i class="fas fa-lock fa-4x text-fk-accent opacity-50"></i>
+                        </div>
+                        <h2 class="h3 mb-3">Fonctionnalité non disponible</h2>
+                        <p class="text-muted mb-0">
+                            Pour accéder à cette fonctionnalité, une mise à niveau de votre formule est nécessaire.
+                        </p>
+                    </div>
+
+                    <!-- Détails de la formule actuelle -->
+                    {% if current_user.client.formule %}
+                    <div class="card border-0 bg-fk-platinum mb-5">
+                        <div class="card-body p-4">
+                            <h5 class="card-title mb-3 d-flex align-items-center gap-2">
+                                <i class="fas fa-layer-group text-fk-accent"></i>
+                                Votre formule actuelle
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="rounded-circle bg-primary bg-opacity-10 p-2">
+                                            <i class="fas fa-check-circle text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">Modules inclus</h6>
+                                            <p class="text-muted mb-0 small">
+                                                <strong>{{ current_user.client.formule.get_modules_list()|length }}</strong> modules disponibles
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="rounded-circle bg-success bg-opacity-10 p-2">
+                                            <i class="fas fa-star text-success"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">Fonctionnalités</h6>
+                                            <p class="text-muted mb-0 small">
+                                                <strong>{{ current_user.client.formule.get_features_list()|length }}</strong> fonctionnalités actives
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="alert alert-info border-0 mb-0">
+                                        <div class="d-flex gap-3">
+                                            <i class="fas fa-info-circle text-info fa-lg mt-1"></i>
+                                            <div>
+                                                <h6 class="alert-heading mb-1">Limitations actuelles</h6>
+                                                <p class="mb-0 small">
+                                                    Votre formule <strong>{{ current_user.client.formule.nom }}</strong> offre un accès limité 
+                                                    aux fonctionnalités avancées du système.
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Suggestions d'upgrade -->
+                    {% if upgrade_suggestions %}
+                    <div class="mb-5">
+                        <h4 class="mb-4 text-center">Formules supérieures disponibles</h4>
+                        
+                        <div class="row g-4">
+                            {% for formule in upgrade_suggestions %}
+                            <div class="col-md-6">
+                                <div class="card border h-100 {% if formule.prix_mensuel > (current_user.client.formule.prix_mensuel if current_user.client.formule else 0) %}border-primary border-2{% endif %}">
+                                    <div class="card-body p-4">
+                                        <!-- En-tête formule -->
+                                        <div class="d-flex justify-content-between align-items-start mb-3">
+                                            <div>
+                                                <h5 class="card-title mb-1">{{ formule.nom }}</h5>
+                                                <p class="text-muted small mb-0">{{ formule.description|truncate(100) }}</p>
+                                            </div>
+                                            {% if formule.prix_mensuel > (current_user.client.formule.prix_mensuel if current_user.client.formule else 0) %}
+                                            <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2">
+                                                Recommandé
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Prix -->
+                                        <div class="mb-3">
+                                            <div class="d-flex align-items-baseline">
+                                                <span class="h3 fw-bold text-dark">{{ formule.prix_mensuel }}€</span>
+                                                <span class="text-muted ms-2">/mois</span>
+                                            </div>
+                                            {% if formule.prix_annuel %}
+                                            <p class="text-muted small mb-0">
+                                                <i class="fas fa-calendar-alt me-1"></i>
+                                                {{ formule.prix_annuel }}€/an (économisez {{ formule.prix_mensuel * 12 - formule.prix_annuel }}€)
+                                            </p>
+                                            {% endif %}
+                                        </div>
+                                        
+                                        <!-- Fonctionnalités clés -->
+                                        <ul class="list-unstyled mb-4">
+                                            {% for feature in formule.get_features_list()[:3] %}
+                                            <li class="mb-2">
+                                                <i class="fas fa-check-circle text-success me-2"></i>
+                                                <span class="small">{{ feature }}</span>
+                                            </li>
+                                            {% endfor %}
+                                            {% if formule.get_features_list()|length > 3 %}
+                                            <li class="text-muted small">
+                                                + {{ formule.get_features_list()|length - 3 }} autres fonctionnalités
+                                            </li>
+                                            {% endif %}
+                                        </ul>
+                                        
+                                        <!-- Bouton d'action -->
+                                        <div class="d-grid">
+                                            <a href="#" class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-chart-line me-2"></i>
+                                                Comparer les formules
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Action buttons -->
+                    <div class="border-top pt-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <a href="{{ url_for('dashboard') }}" class="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2 py-3">
+                                    <i class="fas fa-arrow-left"></i>
+                                    Retour au tableau de bord
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="{{ url_for('client_admin_usage') if url_exists('client_admin_usage') else url_for('profil_utilisateur') }}" 
+                                   class="btn btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-2 py-3">
+                                    <i class="fas fa-chart-pie"></i>
+                                    Voir mon utilisation
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Contact support -->
+                        <div class="text-center mt-4">
+                            <p class="text-muted small mb-2">
+                                Pour mettre à niveau votre formule ou pour toute question :
+                            </p>
+                            <div class="d-flex justify-content-center gap-3">
+                                {% if current_user.is_client_admin %}
+                                <a href="{{ url_for('client_admin_dashboard') if url_exists('client_admin_dashboard') else '#' }}" 
+                                   class="btn btn-sm btn-outline-dark">
+                                    <i class="fas fa-user-cog me-2"></i>
+                                    Contacter l'admin
+                                </a>
+                                {% endif %}
+                                
+                                <a href="mailto:support@fabricekonan.com" class="btn btn-sm btn-outline-dark">
+                                    <i class="fas fa-headset me-2"></i>
+                                    Support technique
+                                </a>
+                                
+                                {% if current_user.role == 'super_admin' or current_user.username == 'fabricekonan' %}
+                                <a href="{{ url_for('super_admin_formules') if url_exists('super_admin_formules') else '#' }}" 
+                                   class="btn btn-sm btn-outline-warning">
+                                    <i class="fas fa-crown me-2"></i>
+                                    Gérer les formules
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Information complémentaire -->
+            <div class="mt-4 text-center">
+                <p class="text-muted small mb-0">
+                    <i class="fas fa-shield-alt me-2"></i>
+                    FabriceKonan Corporate Intelligence - Système de contrôle interne
+                    <br>
+                    <span class="text-muted">Toutes les fonctionnalités sont soumises aux termes de votre contrat de licence.</span>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Styles spécifiques pour la page de restriction */
+.fk-card {
+    border: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.bg-fk-platinum {
+    background-color: var(--fk-platinum);
+}
+
+.bg-primary.bg-opacity-10 {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.bg-success.bg-opacity-10 {
+    background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.text-fk-accent {
+    color: var(--fk-accent) !important;
+}
+
+[data-bs-theme="dark"] .bg-fk-platinum {
+    background-color: #1E293B !important;
+}
+
+[data-bs-theme="dark"] .border {
+    border-color: #334155 !important;
+}
+
+[data-bs-theme="dark"] .text-dark {
+    color: #E2E8F0 !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: #334155 !important;
+}
+
+[data-bs-theme="dark"] .btn-outline-dark {
+    border-color: #475569;
+    color: #E2E8F0;
+}
+
+[data-bs-theme="dark"] .btn-outline-dark:hover {
+    background-color: #475569;
+    border-color: #475569;
+}
+</style>
+
+{% endblock %}

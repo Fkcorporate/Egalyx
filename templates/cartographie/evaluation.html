@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chart-bar"></i> Évaluation du Risque
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Évaluation - {{ risque.reference }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6>Risque à évaluer:</h6>
+                    <p class="mb-0"><strong>{{ risque.intitule }}</strong></p>
+                    <small>{{ risque.description }}</small>
+                </div>
+                
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.impact.label(class="form-label") }}
+                                {{ form.impact(class="form-select") }}
+                                {% for error in form.impact.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                                <small class="form-text text-muted">
+                                    Gravité des conséquences
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.probabilite.label(class="form-label") }}
+                                {{ form.probabilite(class="form-select") }}
+                                {% for error in form.probabilite.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                                <small class="form-text text-muted">
+                                    Fréquence d'occurrence
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                {{ form.niveau_maitrise.label(class="form-label") }}
+                                {{ form.niveau_maitrise(class="form-select") }}
+                                {% for error in form.niveau_maitrise.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                                <small class="form-text text-muted">
+                                    Contrôles existants
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.commentaire.label(class="form-label") }}
+                        {{ form.commentaire(class="form-control", rows="4", placeholder="Commentaires sur l'évaluation...") }}
+                        {% for error in form.commentaire.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Aperçu du score -->
+                    <div class="card mb-3">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Aperçu du score de risque</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="scorePreview" class="text-center">
+                                <p class="text-muted">Le score apparaîtra après sélection</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('detail_cartographie', id=risque.cartographie_id) }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Enregistrer l'Évaluation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Légende de cotation -->
+        <div class="card shadow mb-4">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Échelle d'Impact</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li><strong>1 - Négligeable:</strong> Impact mineur, sans conséquence</li>
+                    <li><strong>2 - Mineur:</strong> Impact limité, conséquences faibles</li>
+                    <li><strong>3 - Modéré:</strong> Impact notable, conséquences moyennes</li>
+                    <li><strong>4 - Important:</strong> Impact significatif, conséquences fortes</li>
+                    <li><strong>5 - Critique:</strong> Impact majeur, conséquences graves</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-info-circle"></i> Échelle de Probabilité</h6>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li><strong>1 - Très rare:</strong> Exceptionnel, presque impossible</li>
+                    <li><strong>2 - Rare:</strong> Peu probable, occurrence rare</li>
+                    <li><strong>3 - Possible:</strong> Peut se produire occasionnellement</li>
+                    <li><strong>4 - Probable:</strong> Susceptible de se produire</li>
+                    <li><strong>5 - Très probable:</strong> Presque certain, fréquent</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const impactSelect = document.getElementById('impact');
+    const probabiliteSelect = document.getElementById('probabilite');
+    const scorePreview = document.getElementById('scorePreview');
+    
+    function updateScorePreview() {
+        const impact = parseInt(impactSelect.value);
+        const probabilite = parseInt(probabiliteSelect.value);
+        
+        if (impact && probabilite) {
+            const score = impact * probabilite;
+            let niveau = '';
+            let couleur = '';
+            
+            if (score <= 4) {
+                niveau = 'Faible';
+                couleur = 'success';
+            } else if (score <= 10) {
+                niveau = 'Moyen';
+                couleur = 'warning';
+            } else if (score <= 16) {
+                niveau = 'Élevé';
+                couleur = 'danger';
+            } else {
+                niveau = 'Critique';
+                couleur = 'dark';
+            }
+            
+            scorePreview.innerHTML = `
+                <h3 class="text-${couleur}">Score: ${score}</h3>
+                <span class="badge bg-${couleur}">${niveau}</span>
+                <p class="small text-muted mt-2">Impact (${impact}) × Probabilité (${probabilite})</p>
+            `;
+        }
+    }
+    
+    impactSelect.addEventListener('change', updateScorePreview);
+    probabiliteSelect.addEventListener('change', updateScorePreview);
+});
+</script>
+{% endblock %}

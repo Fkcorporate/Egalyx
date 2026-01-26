@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+{% block title %}Dashboard Client{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- En-tête Client -->
+    <div class="fk-card mb-4">
+        <div class="fk-card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="h3 mb-1">{{ client.nom }}</h1>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-id-card me-1"></i>{{ client.reference }} • 
+                        <i class="fas fa-envelope me-1"></i>{{ client.contact_email }} • 
+                        Plan: <span class="badge bg-info">{{ client.plan|title }}</span>
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="d-flex justify-content-md-end gap-2">
+                        <a href="{{ url_for('client_admin_utilisateurs') }}" class="fk-btn fk-btn-primary">
+                            <i class="fas fa-users me-2"></i>Gérer les utilisateurs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="fk-card h-100">
+                <div class="fk-card-body text-center">
+                    <h2 class="display-6 text-primary">{{ stats.utilisateurs }}</h2>
+                    <p class="text-muted mb-0">Utilisateurs</p>
+                    <small class="text-muted">{{ stats.utilisateurs }} / {{ stats.limite_utilisateurs }}</small>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar bg-primary" 
+                             style="width: {{ (stats.utilisateurs / stats.limite_utilisateurs * 100)|round }}%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="fk-card h-100">
+                <div class="fk-card-body text-center">
+                    <h2 class="display-6 text-warning">{{ stats.risques }}</h2>
+                    <p class="text-muted mb-0">Risques</p>
+                    <small class="text-muted">{{ stats.risques }} / {{ stats.limite_risques }}</small>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar bg-warning" 
+                             style="width: {{ (stats.risques / stats.limite_risques * 100)|round }}%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="fk-card h-100">
+                <div class="fk-card-body text-center">
+                    <h2 class="display-6 text-success">{{ stats.audits }}</h2>
+                    <p class="text-muted mb-0">Audits</p>
+                    <small class="text-muted">{{ stats.audits }} / {{ stats.limite_audits }}</small>
+                    <div class="progress mt-2" style="height: 5px;">
+                        <div class="progress-bar bg-success" 
+                             style="width: {{ (stats.audits / stats.limite_audits * 100)|round }}%">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="fk-card h-100">
+                <div class="fk-card-body text-center">
+                    <h2 class="display-6 text-info">{{ stats.utilisateurs_actifs }}</h2>
+                    <p class="text-muted mb-0">Utilisateurs actifs</p>
+                    <small class="text-muted">{{ client.derniere_activite|format_datetime if client.derniere_activite else 'Aucune activité' }}</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Activités récentes -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="fk-card">
+                <div class="fk-card-header">
+                    <h5 class="mb-0">Activités récentes</h5>
+                </div>
+                <div class="fk-card-body">
+                    <div class="list-group list-group-flush">
+                        {% for activite in activites %}
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-{{ 'user-plus' if 'creation' in activite.action else 'user-edit' if 'modification' in activite.action else 'bell' }} text-primary me-2"></i>
+                                    {{ activite.details|tojson|safe }}
+                                </div>
+                                <small class="text-muted">{{ activite.created_at|format_datetime }}</small>
+                            </div>
+                            {% if activite.utilisateur %}
+                            <small class="text-muted">Par {{ activite.utilisateur.username }}</small>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-history fa-2x text-muted mb-2"></i>
+                            <p class="text-muted mb-0">Aucune activité récente</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Derniers utilisateurs -->
+        <div class="col-md-4">
+            <div class="fk-card">
+                <div class="fk-card-header">
+                    <h5 class="mb-0">Derniers utilisateurs</h5>
+                </div>
+                <div class="fk-card-body">
+                    <div class="list-group list-group-flush">
+                        {% for user in utilisateurs_recents %}
+                        <div class="list-group-item">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="rounded-circle bg-light p-2">
+                                        <i class="fas fa-user text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h6 class="mb-0">{{ user.username }}</h6>
+                                    <small class="text-muted">{{ user.email }}</small>
+                                </div>
+                                <span class="badge bg-{{ 'success' if user.is_active else 'danger' }}">
+                                    {{ 'Actif' if user.is_active else 'Inactif' }}
+                                </span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('client_admin_utilisateurs') }}" class="btn btn-outline-primary btn-sm">
+                            Voir tous les utilisateurs
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,368 @@
+{% extends "base.html" %}
+{% block title %}Éditer Utilisateur - Gestionnaire{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Navigation -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('gestionnaire_utilisateurs') }}">Gestion des utilisateurs</a></li>
+            <li class="breadcrumb-item active">
+                {% if is_self_edit %}Mon Profil{% else %}Éditer {{ user.username }}{% endif %}
+            </li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if is_self_edit %}
+                        <i class="fas fa-user-edit me-2"></i>Modifier mon profil
+                        {% else %}
+                        <i class="fas fa-user-cog me-2"></i>Éditer l'utilisateur {{ user.username }}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if is_self_edit %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Modification de votre propre profil</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Vous pouvez modifier vos informations personnelles</li>
+                            <li>Vous ne pouvez pas modifier votre propre rôle</li>
+                            <li>Certaines options sont désactivées pour des raisons de sécurité</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST" action="">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Informations de base -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.username.label }}</label>
+                                {{ form.username(class="form-control") }}
+                                {% if form.username.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.username.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.email.label }}</label>
+                                {{ form.email(class="form-control") }}
+                                {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.email.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Mot de passe (optionnel) -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.password.label }}</label>
+                                {{ form.password(class="form-control", placeholder="Laisser vide pour ne pas changer") }}
+                                {% if form.password.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.password.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.confirm_password.label }}</label>
+                                {{ form.confirm_password(class="form-control", placeholder="Laisser vide si pas de changement") }}
+                                {% if form.confirm_password.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.confirm_password.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Rôle et département -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.role.label }}</label>
+                                {% if is_self_edit %}
+                                <input type="text" class="form-control" value="{{ user.get_role_display_name() }}" disabled>
+                                <small class="text-muted">Vous ne pouvez pas modifier votre propre rôle</small>
+                                {{ form.role(class="d-none") }}  <!-- Champ caché mais requis pour validation -->
+                                {% else %}
+                                {{ form.role(class="form-select") }}
+                                {% endif %}
+                                {% if form.role.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.role.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.department.label }}</label>
+                                {{ form.department(class="form-control", placeholder="Ex: Direction Financière, RH...") }}
+                                {% if form.department.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.department.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Statut -->
+                        {% if not is_self_edit and current_user.has_permission('can_deactivate_users') %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_active(class="form-check-input") }}
+                                <label class="form-check-label">{{ form.is_active.label.text }}</label>
+                            </div>
+                            <small class="text-muted">
+                                Si désactivé, l'utilisateur ne pourra plus se connecter
+                            </small>
+                        </div>
+                        {% elif is_self_edit %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" checked disabled>
+                                <label class="form-check-label">Votre compte est actif</label>
+                            </div>
+                            <small class="text-muted">Vous ne pouvez pas désactiver votre propre compte</small>
+                            {{ form.is_active(class="d-none", value="True") }}  <!-- Champ caché avec valeur True -->
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Boutons -->
+                        <div class="mt-4">
+                            {{ form.submit(class="btn btn-modern-primary") }}
+                            <a href="{{ url_for('gestionnaire_utilisateurs') }}" class="btn btn-modern-outline">Annuler</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informations complémentaires -->
+        <div class="col-lg-4">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Informations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6 class="mb-2">Statut actuel :</h6>
+                        {% if user.is_active %}
+                        <span class="badge bg-success">Actif</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inactif</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="mb-2">Rôle actuel :</h6>
+                        <span class="badge-modern 
+                            {% if user.role == 'admin' or user.is_client_admin %}badge-danger
+                            {% elif user.role == 'manager' %}badge-warning
+                            {% elif user.role == 'auditeur' %}badge-info
+                            {% elif user.role == 'consultant' %}badge-success
+                            {% else %}badge-secondary{% endif %}">
+                            {{ user.get_role_display_name() }}
+                            {% if user.is_client_admin %}
+                            <i class="fas fa-crown ms-1"></i>
+                            {% endif %}
+                            {% if user.can_manage_users and not user.is_client_admin %}
+                            <i class="fas fa-user-shield ms-1 text-info"></i>
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="mb-2">Informations du compte :</h6>
+                        <ul class="list-unstyled small mb-0">
+                            <li><strong>Créé le :</strong> {{ user.created_at.strftime('%d/%m/%Y') }}</li>
+                            <li><strong>Modifié le :</strong> {{ user.updated_at.strftime('%d/%m/%Y') if user.updated_at else '-' }}</li>
+                            {% if user.last_login %}
+                            <li><strong>Dernière connexion :</strong> {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}</li>
+                            {% else %}
+                            <li><strong>Dernière connexion :</strong> Jamais</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small text-muted">
+                        <p><strong>Notes pour les gestionnaires :</strong></p>
+                        <ul class="mb-0">
+                            {% if is_self_edit %}
+                            <li>Vous modifiez votre propre profil</li>
+                            <li>Certains champs sont désactivés pour des raisons de sécurité</li>
+                            {% else %}
+                            <li>Vous ne pouvez pas modifier votre propre compte ici</li>
+                            <li>Vous ne pouvez pas modifier d'autres gestionnaires</li>
+                            <li>Vous ne pouvez pas modifier les administrateurs client</li>
+                            <li>Les modifications prennent effet immédiatement</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Avertissements -->
+            {% if not is_self_edit %}
+            <div class="card card-modern mt-3">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0 text-white">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Restrictions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning mb-0">
+                        <small>
+                            <strong>En tant que gestionnaire, vous ne pouvez pas :</strong>
+                            <ul class="mb-0 mt-1">
+                                <li>Modifier les administrateurs client</li>
+                                <li>Modifier d'autres gestionnaires</li>
+                                <li>Gérer les permissions avancées</li>
+                                <li>Modifier les templates de permissions</li>
+                                <li>Supprimer définitivement des utilisateurs</li>
+                            </ul>
+                        </small>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript pour la validation -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const passwordInput = document.querySelector('input[name="password"]');
+    const confirmInput = document.querySelector('input[name="confirm_password"]');
+    
+    // Validation des mots de passe en temps réel
+    function validatePasswords() {
+        if (passwordInput.value && confirmInput.value) {
+            if (passwordInput.value !== confirmInput.value) {
+                confirmInput.classList.add('is-invalid');
+                confirmInput.classList.remove('is-valid');
+            } else {
+                confirmInput.classList.remove('is-invalid');
+                confirmInput.classList.add('is-valid');
+            }
+        }
+        
+        // Vérifier la longueur
+        if (passwordInput.value && passwordInput.value.length < 6) {
+            passwordInput.classList.add('is-invalid');
+            passwordInput.classList.remove('is-valid');
+        } else if (passwordInput.value && passwordInput.value.length >= 6) {
+            passwordInput.classList.remove('is-invalid');
+            passwordInput.classList.add('is-valid');
+        }
+    }
+    
+    if (passwordInput && confirmInput) {
+        passwordInput.addEventListener('input', validatePasswords);
+        confirmInput.addEventListener('input', validatePasswords);
+    }
+    
+    // Validation avant soumission
+    form.addEventListener('submit', function(e) {
+        if (passwordInput && confirmInput) {
+            if (passwordInput.value && passwordInput.value !== confirmInput.value) {
+                e.preventDefault();
+                alert('Les mots de passe ne correspondent pas');
+                return false;
+            }
+            
+            if (passwordInput.value && passwordInput.value.length < 6) {
+                e.preventDefault();
+                alert('Le mot de passe doit contenir au moins 6 caractères');
+                return false;
+            }
+        }
+        
+        // Afficher un loader sur le bouton submit
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Mise à jour...';
+            submitBtn.disabled = true;
+        }
+        
+        return true;
+    });
+});
+</script>
+
+<style>
+.form-control.is-valid {
+    border-color: #10B981 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3e%3cpath fill='%2310B981' d='M2.3 6.73L.6 4.53c-.4-1.04.46-1.4 1.1-.8l1.1 1.4 3.4-3.8c.6-.63 1.6-.27 1.2.7l-4 4.6c-.43.5-.8.4-1.1.1z'/%3e%3c/svg%3e");
+}
+
+.form-control.is-invalid {
+    border-color: #DC2626 !important;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' width='12' height='12' fill='none' stroke='%23DC2626'%3e%3ccircle cx='6' cy='6' r='4.5'/%3e%3cpath stroke-linejoin='round' d='M5.8 3.6h.4L6 6.5z'/%3e%3ccircle cx='6' cy='8.2' r='.6' fill='%23DC2626' stroke='none'/%3e%3c/svg%3e");
+}
+
+.badge-modern {
+    padding: 0.4rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+}
+
+.badge-danger {
+    background: linear-gradient(135deg, #DC2626, #EF4444);
+    color: white;
+}
+
+.badge-warning {
+    background: linear-gradient(135deg, #F59E0B, #FBBF24);
+    color: #000;
+}
+
+.badge-info {
+    background: linear-gradient(135deg, #3B82F6, #60A5FA);
+    color: white;
+}
+
+.badge-success {
+    background: linear-gradient(135deg, #10B981, #34D399);
+    color: white;
+}
+
+.badge-secondary {
+    background: linear-gradient(135deg, #6B7280, #9CA3AF);
+    color: white;
+}
+
+.d-none {
+    display: none !important;
+}
+</style>
+{% endblock %}

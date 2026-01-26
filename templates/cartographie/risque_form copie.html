@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-exclamation-triangle"></i> Nouveau Risque
+    </h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">Identification du Risque</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.intitule.label(class="form-label") }}
+                        {{ form.intitule(class="form-control", placeholder="Décrivez brièvement le risque") }}
+                        {% for error in form.intitule.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.description.label(class="form-label") }}
+                        {{ form.description(class="form-control", rows="4", placeholder="Description détaillée du risque...") }}
+                        {% for error in form.description.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.categorie.label(class="form-label") }}
+                                {{ form.categorie(class="form-select") }}
+                                {% for error in form.categorie.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                {{ form.type_risque.label(class="form-label") }}
+                                {{ form.type_risque(class="form-select") }}
+                                {% for error in form.type_risque.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.processus_concerne.label(class="form-label") }}
+                        {{ form.processus_concerne(class="form-control", placeholder="Processus concerné par ce risque") }}
+                        {% for error in form.processus_concerne.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.cause_racine.label(class="form-label") }}
+                        {{ form.cause_racine(class="form-control", rows="3", placeholder="Cause racine du risque...") }}
+                        {% for error in form.cause_racine.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.consequences.label(class="form-label") }}
+                        {{ form.consequences(class="form-control", rows="3", placeholder="Conséquences potentielles...") }}
+                        {% for error in form.consequences.errors %}
+                        <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('detail_cartographie', id=cartographie_id) }}" class="btn btn-secondary me-md-2">
+                            <i class="fas fa-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save"></i> Créer le Risque
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-lightbulb"></i> Conseils</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Intitulé du risque:</strong> Soyez précis et concis.</p>
+                <p><strong>Description:</strong> Décrivez le contexte et les spécificités.</p>
+                <p><strong>Cause racine:</strong> Identifiez l'origine du problème.</p>
+                <p><strong>Conséquences:</strong> Listez les impacts potentiels.</p>
+                
+                <div class="mt-3">
+                    <h6>Catégories de risques:</h6>
+                    <ul class="small">
+                        <li><strong>Opérationnel:</strong> Processus métier</li>
+                        <li><strong>Financier:</strong> Pertes financières</li>
+                        <li><strong>Juridique:</strong> Conformité légale</li>
+                        <li><strong>Réputation:</strong> Image de l'entreprise</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

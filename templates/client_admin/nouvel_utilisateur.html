@@ -1,0 +1,315 @@
+<!-- templates/client_admin/creer_utilisateur.html -->
+{% extends "base.html" %}
+
+{% block title %}Créer un nouvel utilisateur - Admin Client{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Créer un nouvel utilisateur</h1>
+    
+    <!-- Informations sur la limite -->
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i>
+        <strong>Limite d'utilisateurs :</strong> 
+        {{ utilisateurs_actuels }}/{{ limite }} utilisateurs actifs
+        <div class="progress mt-2">
+            <div class="progress-bar {% if pourcentage > 80 %}bg-warning{% elif pourcentage > 90 %}bg-danger{% else %}bg-success{% endif %}" 
+                 role="progressbar" 
+                 style="width: {{ pourcentage }}%">
+                {{ pourcentage|round|int }}%
+            </div>
+        </div>
+    </div>
+    
+    <!-- Messages d'erreur -->
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <h5>Erreurs dans le formulaire :</h5>
+        <ul class="mb-0">
+            {% for field, errors in form.errors.items() %}
+                {% for error in errors %}
+                    <li><strong>{{ form[field].label.text }} :</strong> {{ error }}</li>
+                {% endfor %}
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <!-- Formulaire -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Informations de l'utilisateur</h5>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('client_admin_creer_utilisateur') }}">
+                {{ form.hidden_tag() }}
+                
+                <div class="row">
+                    <!-- Nom d'utilisateur -->
+                    <div class="col-md-6 mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.username.errors[0] }}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Le nom d'utilisateur sera utilisé pour la connexion
+                        </small>
+                    </div>
+                    
+                    <!-- Email -->
+                    <div class="col-md-6 mb-3">
+                        {{ form.email.label(class="form-label") }}
+                        {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else ""), type="email") }}
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.email.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Mot de passe -->
+                    <div class="col-md-6 mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), id="password-field") }}
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password-field')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        {% if form.password.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.password.errors[0] }}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Minimum 6 caractères
+                        </small>
+                    </div>
+                    
+                    <!-- Confirmation du mot de passe -->
+                    <div class="col-md-6 mb-3">
+                        {{ form.confirm_password.label(class="form-label") }}
+                        <div class="input-group">
+                            {{ form.confirm_password(class="form-control" + (" is-invalid" if form.confirm_password.errors else ""), id="confirm-password-field") }}
+                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm-password-field')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        {% if form.confirm_password.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.confirm_password.errors[0] }}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Doit correspondre au mot de passe ci-dessus
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Rôle -->
+                    <div class="col-md-6 mb-3">
+                        {{ form.role.label(class="form-label") }}
+                        {{ form.role(class="form-select" + (" is-invalid" if form.role.errors else "")) }}
+                        {% if form.role.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.role.errors[0] }}
+                            </div>
+                        {% endif %}
+                        <small class="form-text text-muted">
+                            Définit les permissions de base
+                        </small>
+                    </div>
+                    
+                    <!-- Département -->
+                    <div class="col-md-6 mb-3">
+                        {{ form.department.label(class="form-label") }}
+                        {{ form.department(class="form-control" + (" is-invalid" if form.department.errors else "")) }}
+                        {% if form.department.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.department.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Statut actif -->
+                <div class="mb-3">
+                    <div class="form-check form-switch">
+                        {{ form.is_active(class="form-check-input") }}
+                        {{ form.is_active.label(class="form-check-label") }}
+                    </div>
+                    <small class="form-text text-muted">
+                        L'utilisateur pourra se connecter immédiatement si activé
+                    </small>
+                </div>
+                
+                <!-- Template de permissions -->
+                {% if form.template_permissions %}
+                <div class="mb-4">
+                    {{ form.template_permissions.label(class="form-label") }}
+                    {{ form.template_permissions(class="form-select" + (" is-invalid" if form.template_permissions.errors else "")) }}
+                    {% if form.template_permissions.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.template_permissions.errors[0] }}
+                        </div>
+                    {% endif %}
+                    <small class="form-text text-muted">
+                        Applique automatiquement un jeu de permissions prédéfini (optionnel)
+                    </small>
+                </div>
+                {% endif %}
+                
+                <!-- Boutons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <a href="{{ url_for('admin_utilisateurs') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour à la liste
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-user-plus"></i> Créer l'utilisateur
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Information sur les rôles -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">Explication des rôles</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6><span class="badge bg-primary">Utilisateur Standard</span></h6>
+                    <p>Accès en consultation uniquement. Peut voir les risques, audits et rapports.</p>
+                    
+                    <h6><span class="badge bg-warning text-dark">Auditeur</span></h6>
+                    <p>Peut créer et gérer les audits, recommandations et plans d'action.</p>
+                </div>
+                <div class="col-md-6">
+                    <h6><span class="badge bg-info">Responsable Conformité</span></h6>
+                    <p>Accès complet aux modules veille réglementaire et conformité.</p>
+                    
+                    <h6><span class="badge bg-success">Manager</span></h6>
+                    <p>Peut gérer les risques, KRI et valider les évaluations.</p>
+                    
+                    <h6><span class="badge bg-secondary">Consultant</span></h6>
+                    <p>Accès consultation avec possibilité de commenter et suggérer.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Fonction pour afficher/masquer le mot de passe
+function togglePassword(fieldId) {
+    var field = document.getElementById(fieldId);
+    if (field.type === "password") {
+        field.type = "text";
+    } else {
+        field.type = "password";
+    }
+}
+
+// Validation côté client
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const passwordField = document.getElementById('password-field');
+    const confirmPasswordField = document.getElementById('confirm-password-field');
+    
+    // Validation en temps réel de la correspondance des mots de passe
+    function validatePasswordMatch() {
+        const password = passwordField.value;
+        const confirmPassword = confirmPasswordField.value;
+        
+        if (password && confirmPassword && password !== confirmPassword) {
+            confirmPasswordField.classList.add('is-invalid');
+            // Ajouter un message d'erreur
+            let errorDiv = confirmPasswordField.nextElementSibling;
+            if (!errorDiv || !errorDiv.classList.contains('invalid-feedback')) {
+                errorDiv = document.createElement('div');
+                errorDiv.className = 'invalid-feedback';
+                confirmPasswordField.parentNode.insertBefore(errorDiv, confirmPasswordField.nextSibling);
+            }
+            errorDiv.textContent = 'Les mots de passe ne correspondent pas';
+        } else {
+            confirmPasswordField.classList.remove('is-invalid');
+            // Supprimer le message d'erreur s'il existe
+            let errorDiv = confirmPasswordField.nextElementSibling;
+            if (errorDiv && errorDiv.classList.contains('invalid-feedback')) {
+                errorDiv.remove();
+            }
+        }
+    }
+    
+    // Écouter les changements dans les champs de mot de passe
+    if (passwordField && confirmPasswordField) {
+        passwordField.addEventListener('input', validatePasswordMatch);
+        confirmPasswordField.addEventListener('input', validatePasswordMatch);
+    }
+    
+    // Validation avant soumission
+    form.addEventListener('submit', function(event) {
+        let isValid = true;
+        
+        // Vérifier le mot de passe
+        if (passwordField.value.length < 6) {
+            passwordField.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        // Vérifier la correspondance des mots de passe
+        if (passwordField.value !== confirmPasswordField.value) {
+            confirmPasswordField.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            event.preventDefault();
+            
+            // Afficher une alerte
+            alert('Veuillez corriger les erreurs dans le formulaire.');
+        }
+    });
+});
+</script>
+
+<style>
+/* Styles pour améliorer l'apparence */
+.progress {
+    height: 20px;
+}
+
+.progress-bar {
+    font-weight: bold;
+}
+
+.form-switch .form-check-input {
+    width: 3em;
+    height: 1.5em;
+}
+
+.badge {
+    font-size: 0.8em;
+    padding: 0.4em 0.8em;
+}
+
+/* Animation pour les messages d'erreur */
+.is-invalid {
+    animation: shake 0.5s;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+</style>
+{% endblock %}

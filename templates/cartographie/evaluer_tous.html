@@ -1,0 +1,107 @@
+<!-- cartographie/evaluer_tous.html -->
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="h3 mb-2">
+                <i class="fas fa-play-circle me-2"></i>Évaluation de la campagne
+            </h1>
+            <p class="text-muted">
+                {{ campagne.nom }} - {{ cartographie.nom }}
+            </p>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Liste des risques à évaluer</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th width="50">#</th>
+                                    <th>Référence</th>
+                                    <th>Intitulé</th>
+                                    <th>Catégorie</th>
+                                    <th>Statut</th>
+                                    <th>Dernière évaluation</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in risques_avec_evaluation %}
+                                <tr class="{% if item.est_evalue %}table-success{% endif %}">
+                                    <td>{{ loop.index }}</td>
+                                    <td>
+                                        <strong>{{ item.risque.reference }}</strong>
+                                    </td>
+                                    <td>{{ item.risque.intitule }}</td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ item.risque.categorie }}</span>
+                                    </td>
+                                    <td>
+                                        {% if item.est_evalue %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check me-1"></i>Évalué
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-clock me-1"></i>À évaluer
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.evaluation %}
+                                            {% if item.evaluation.date_confirmation %}
+                                                Confirmé le {{ item.evaluation.date_confirmation.strftime('%d/%m/%Y') }}
+                                            {% elif item.evaluation.date_validation %}
+                                                Validé le {{ item.evaluation.date_validation.strftime('%d/%m/%Y') }}
+                                            {% elif item.evaluation.date_pre_evaluation %}
+                                                Pré-évalué le {{ item.evaluation.date_pre_evaluation.strftime('%d/%m/%Y') }}
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="text-muted">Jamais évalué</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ url_for('evaluer_risque_campagne', 
+                                                         risque_id=item.risque.id, 
+                                                         campagne_id=campagne.id) }}" 
+                                           class="btn btn-sm {% if item.est_evalue %}btn-outline-primary{% else %}btn-primary{% endif %}">
+                                            <i class="fas fa-chart-bar me-1"></i>
+                                            {% if item.est_evalue %}Modifier{% else %}Évaluer{% endif %}
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="mt-4 text-center">
+                        <div class="progress" style="height: 20px;">
+                            {% set nb_evalues = risques_avec_evaluation|selectattr('est_evalue')|list|length %}
+                            {% set total = risques_avec_evaluation|length %}
+                            {% set pourcentage = (nb_evalues / total * 100) if total > 0 else 0 %}
+                            <div class="progress-bar bg-success" 
+                                 style="width: {{ pourcentage }}%"
+                                 role="progressbar">
+                                {{ nb_evalues }}/{{ total }} évalués
+                            </div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            Progression de la campagne
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,373 @@
+{% extends "base.html" %}
+
+{% block title %}Éditer Utilisateur - Admin Client{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Navigation -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('client_admin_dashboard') }}">Admin Client</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('client_admin_utilisateurs') }}">Utilisateurs</a></li>
+            <li class="breadcrumb-item active">
+                {% if is_self_edit %}Mon Profil{% else %}Éditer {{ user.username }}{% endif %}
+            </li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        {% if is_self_edit %}
+                        <i class="fas fa-user-edit me-2"></i>Modifier mon profil
+                        {% else %}
+                        <i class="fas fa-user-cog me-2"></i>Éditer l'utilisateur {{ user.username }}
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if is_self_edit %}
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Modification de votre propre profil</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>Vous pouvez modifier vos informations personnelles</li>
+                            <li>Vous ne pouvez pas modifier votre propre rôle</li>
+                            <li>Vous ne pouvez pas appliquer de template de permissions sur votre compte</li>
+                            <li>Pour modifier ces éléments, contactez un administrateur système</li>
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST" action="">
+                        {{ form.hidden_tag() }}
+                        
+                        <!-- Informations de base -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.username.label }}</label>
+                                {{ form.username(class="form-control") }}
+                                {% if form.username.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.username.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.email.label }}</label>
+                                {{ form.email(class="form-control") }}
+                                {% if form.email.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.email.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Mot de passe (optionnel) -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.password.label }}</label>
+                                {{ form.password(class="form-control", placeholder="Laisser vide pour ne pas changer") }}
+                                {% if form.password.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.password.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.confirm_password.label }}</label>
+                                {{ form.confirm_password(class="form-control", placeholder="Laisser vide si pas de changement") }}
+                                {% if form.confirm_password.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.confirm_password.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Rôle et département -->
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.role.label }}</label>
+                                {% if is_self_edit %}
+                                <input type="text" class="form-control" value="{{ user.get_role_display_name() }}" disabled>
+                                <small class="text-muted">Vous ne pouvez pas modifier votre propre rôle</small>
+                                {{ form.role(class="d-none") }}  <!-- Champ caché mais requis pour validation -->
+                                {% else %}
+                                {{ form.role(class="form-select") }}
+                                {% endif %}
+                                {% if form.role.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.role.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{ form.department.label }}</label>
+                                {{ form.department(class="form-control", placeholder="Ex: Direction Financière, RH...") }}
+                                {% if form.department.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.department.errors %}
+                                    <small>{{ error }}</small>
+                                    {% endfor %}
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <!-- Template de permissions -->
+                        {% if not is_self_edit %}
+                        <div class="mb-3">
+                            <label class="form-label">{{ form.template_permissions.label }}</label>
+                            {{ form.template_permissions(class="form-select") }}
+                            <small class="text-muted">
+                                Sélectionnez un template pour appliquer un ensemble de permissions prédéfini
+                            </small>
+                            {% if form.template_permissions.errors %}
+                            <div class="text-danger">
+                                {% for error in form.template_permissions.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% else %}
+                        <div class="mb-3">
+                            <label class="form-label">Template de permissions</label>
+                            <input type="text" class="form-control" value="Non modifiable sur votre propre compte" disabled>
+                            <small class="text-muted">Contactez un administrateur système pour modifier vos permissions</small>
+                            {{ form.template_permissions(class="d-none", value=0) }}  <!-- Champ caché avec valeur par défaut -->
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Statut -->
+                        {% if not is_self_edit %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.is_active(class="form-check-input") }}
+                                <label class="form-check-label">{{ form.is_active.label.text }}</label>
+                            </div>
+                            <small class="text-muted">
+                                Si désactivé, l'utilisateur ne pourra plus se connecter
+                            </small>
+                        </div>
+                        {% else %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" checked disabled>
+                                <label class="form-check-label">Votre compte est actif</label>
+                            </div>
+                            <small class="text-muted">Vous ne pouvez pas désactiver votre propre compte</small>
+                            {{ form.is_active(class="d-none", value="True") }}  <!-- Champ caché avec valeur True -->
+                        </div>
+                        {% endif %}
+                        
+                        <!-- Boutons -->
+                        <div class="mt-4">
+                            {{ form.submit(class="btn btn-modern-primary") }}
+                            <a href="{{ url_for('client_admin_utilisateurs') }}" class="btn btn-modern-outline">Annuler</a>
+                            
+                            {% if not is_self_edit and user.id != current_user.id and not user.is_client_admin %}
+                            <button type="button" 
+                                    class="btn btn-modern-danger float-end"
+                                    onclick="confirmDeleteUser({{ user.id }}, '{{ user.username }}')">
+                                <i class="fas fa-trash me-2"></i>Supprimer
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informations complémentaires -->
+        <div class="col-lg-4">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0">Informations</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6 class="mb-2">Statut actuel :</h6>
+                        {% if user.is_active %}
+                        <span class="badge bg-success">Actif</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inactif</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="mb-2">Rôle actuel :</h6>
+                        <span class="badge-modern 
+                            {% if user.role == 'admin' or user.is_client_admin %}badge-danger
+                            {% elif user.role == 'manager' %}badge-warning
+                            {% elif user.role == 'auditeur' %}badge-info
+                            {% elif user.role == 'consultant' %}badge-success
+                            {% else %}badge-secondary{% endif %}">
+                            {{ user.get_role_display_name() }}
+                            {% if user.is_client_admin %}
+                            <i class="fas fa-crown ms-1"></i>
+                            {% endif %}
+                        </span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h6 class="mb-2">Informations du compte :</h6>
+                        <ul class="list-unstyled small mb-0">
+                            <li><strong>Créé le :</strong> {{ user.created_at.strftime('%d/%m/%Y') }}</li>
+                            <li><strong>Modifié le :</strong> {{ user.updated_at.strftime('%d/%m/%Y') if user.updated_at else '-' }}</li>
+                            {% if user.last_login %}
+                            <li><strong>Dernière connexion :</strong> {{ user.last_login.strftime('%d/%m/%Y %H:%M') }}</li>
+                            {% else %}
+                            <li><strong>Dernière connexion :</strong> Jamais</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="small text-muted">
+                        <p><strong>Notes :</strong></p>
+                        <ul class="mb-0">
+                            {% if is_self_edit %}
+                            <li>Vous modifiez votre propre profil</li>
+                            <li>Certains champs sont désactivés pour des raisons de sécurité</li>
+                            <li>Contactez un administrateur système pour des changements de rôle/permissions</li>
+                            {% else %}
+                            <li>Vous ne pouvez pas modifier votre propre compte ici</li>
+                            <li>Vous ne pouvez pas modifier d'autres administrateurs client</li>
+                            <li>Les modifications prennent effet immédiatement</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation suppression -->
+{% if not is_self_edit and user.id != current_user.id and not user.is_client_admin %}
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Suppression d'utilisateur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Attention : Cette action est irréversible !</strong>
+                </div>
+                <p id="deleteUserMessage">Êtes-vous absolument sûr de vouloir supprimer cet utilisateur ?</p>
+                <ul class="text-danger small">
+                    <li>Toutes les données associées seront perdues</li>
+                    <li>L'utilisateur ne pourra plus se connecter</li>
+                    <li>Cette action ne peut pas être annulée</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteUser">Supprimer définitivement</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function confirmDeleteUser(userId, username) {
+    // Mettre à jour le message
+    document.getElementById('deleteUserMessage').innerHTML = 
+        `Êtes-vous absolument sûr de vouloir supprimer l'utilisateur <strong>${username}</strong> ?`;
+    
+    // Configurer le bouton de confirmation
+    document.getElementById('confirmDeleteUser').onclick = function() {
+        deleteUser(userId);
+    };
+    
+    // Afficher le modal
+    const modal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+    modal.show();
+}
+
+function deleteUser(userId) {
+    const btn = document.getElementById('confirmDeleteUser');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Suppression...';
+    
+    fetch(`/admin/utilisateur/${userId}/supprimer`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            setTimeout(() => {
+                window.location.href = "{{ url_for('client_admin_utilisateurs') }}";
+            }, 1500);
+        } else {
+            showToast(data.error || 'Erreur lors de la suppression', 'error');
+            btn.disabled = false;
+            btn.textContent = 'Supprimer définitivement';
+        }
+    })
+    .catch(error => {
+        showToast('Erreur réseau', 'error');
+        console.error('Erreur:', error);
+        btn.disabled = false;
+        btn.textContent = 'Supprimer définitivement';
+    });
+}
+
+function showToast(message, type = 'info') {
+    // Votre fonction toast existante
+    const toastHtml = `
+        <div class="toast align-items-center text-bg-${type} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    const toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        const container = document.createElement('div');
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(container);
+    }
+    
+    const container = document.querySelector('.toast-container');
+    container.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = container.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+    toast.show();
+}
+</script>
+{% endblock %}

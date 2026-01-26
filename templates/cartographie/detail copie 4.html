@@ -1,0 +1,1660 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- En-tête amélioré avec mise en évidence de la cartographie -->
+<div class="page-header-modern">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <div class="col">
+                <div class="d-flex align-items-center">
+                    <div class="header-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <div class="header-content ms-3">
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{{ url_for('liste_cartographies') }}" class="text-white-50">Cartographies</a></li>
+                                <li class="breadcrumb-item active text-white" aria-current="page">{{ cartographie.nom }}</li>
+                            </ol>
+                        </nav>
+                        <h1 class="page-title">
+                            <span class="cartographie-badge">CARTE DES RISQUES</span>
+                            {{ cartographie.nom }}
+                        </h1>
+                        <p class="page-subtitle text-white-50">{{ cartographie.description or 'Gestion complète des risques identifiés' }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="btn-toolbar gap-2">
+                    <a href="{{ url_for('nouveau_risque', cartographie_id=cartographie.id) }}" class="btn btn-success btn-modern">
+                        <i class="fas fa-plus-circle me-2"></i> Nouveau Risque
+                    </a>
+                    <a href="{{ url_for('liste_cartographies') }}" class="btn btn-outline-light btn-modern">
+                        <i class="fas fa-arrow-left me-2"></i> Retour
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid mt-4">
+    <!-- Sélecteur de matrice modernisé -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-body">
+                    <div class="matrix-selector">
+                        <div class="selector-label">
+                            <i class="fas fa-sliders-h me-2"></i>VUE DE LA MATRICE
+                        </div>
+                        <div class="selector-buttons">
+                            <button type="button" class="matrix-btn active" onclick="changerMatrice('classique')">
+                                <div class="matrix-icon">
+                                    <i class="fas fa-chart-bar"></i>
+                                </div>
+                                <span>Classique</span>
+                            </button>
+                            <button type="button" class="matrix-btn" onclick="changerMatrice('criticite')">
+                                <div class="matrix-icon">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                </div>
+                                <span>Criticité</span>
+                            </button>
+                            <button type="button" class="matrix-btn" onclick="changerMatrice('priorisation')">
+                                <div class="matrix-icon">
+                                    <i class="fas fa-sort-amount-down-alt"></i>
+                                </div>
+                                <span>Priorisation</span>
+                            </button>
+                            <button type="button" class="matrix-btn" onclick="changerMatrice('surbrillance')">
+                                <div class="matrix-icon">
+                                    <i class="fas fa-bullseye"></i>
+                                </div>
+                                <span>Vue Risques</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Informations générales modernisées -->
+        <div class="col-md-4 mb-4">
+            <div class="card-modern info-panel">
+                <div class="card-header-modern">
+                    <div class="d-flex align-items-center">
+                        <div class="header-icon-sm">
+                            <i class="fas fa-info-circle"></i>
+                        </div>
+                        <h5 class="mb-0 ms-2">Informations Cartographie</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-sitemap"></i>
+                            </div>
+                            <div class="info-content">
+                                <label>Direction</label>
+                                <span class="info-value">{{ cartographie.direction.nom }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-building"></i>
+                            </div>
+                            <div class="info-content">
+                                <label>Service</label>
+                                <span class="info-value">{{ cartographie.service.nom if cartographie.service else 'Non spécifié' }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card">
+                            <div class="info-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="info-content">
+                                <label>Créée le</label>
+                                <span class="info-value">{{ cartographie.created_at.strftime('%d/%m/%Y') }}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="info-card highlight">
+                            <div class="info-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="info-content">
+                                <label>Total Risques</label>
+                                <span class="info-value-large">{{ cartographie.risques|length }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statistiques des risques -->
+                    <div class="stats-section">
+                        <h6 class="section-title">Répartition des Risques</h6>
+                        <div class="stats-grid">
+                            <div class="stat-item critical">
+                                <div class="stat-value">{{ tableau_bordeaux.actions_prioritaires|length }}</div>
+                                <div class="stat-label">Critiques</div>
+                                <div class="stat-bar">
+                                    <div class="stat-progress" style="width: {{ (tableau_bordeaux.actions_prioritaires|length / cartographie.risques|length * 100) if cartographie.risques|length > 0 else 0 }}%"></div>
+                                </div>
+                            </div>
+                            <div class="stat-item high">
+                                <div class="stat-value">{{ tableau_bordeaux.surveillance_renforcee|length }}</div>
+                                <div class="stat-label">Élevés</div>
+                                <div class="stat-bar">
+                                    <div class="stat-progress" style="width: {{ (tableau_bordeaux.surveillance_renforcee|length / cartographie.risques|length * 100) if cartographie.risques|length > 0 else 0 }}%"></div>
+                                </div>
+                            </div>
+                            <div class="stat-item medium">
+                                <div class="stat-value">{{ tableau_bordeaux.surveillance_courante|length }}</div>
+                                <div class="stat-label">Moyens</div>
+                                <div class="stat-bar">
+                                    <div class="stat-progress" style="width: {{ (tableau_bordeaux.surveillance_courante|length / cartographie.risques|length * 100) if cartographie.risques|length > 0 else 0 }}%"></div>
+                                </div>
+                            </div>
+                            <div class="stat-item low">
+                                <div class="stat-value">{{ tableau_bordeaux.actions_limitees|length }}</div>
+                                <div class="stat-label">Faibles</div>
+                                <div class="stat-bar">
+                                    <div class="stat-progress" style="width: {{ (tableau_bordeaux.actions_limitees|length / cartographie.risques|length * 100) if cartographie.risques|length > 0 else 0 }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions rapides -->
+                    <div class="quick-actions-modern">
+                        <h6 class="section-title">Actions Rapides</h6>
+                        <div class="actions-grid-modern">
+                            <a href="{{ url_for('nouveau_risque', cartographie_id=cartographie.id) }}" class="action-btn-modern primary">
+                                <i class="fas fa-plus me-2"></i>
+                                <span>Ajouter Risque</span>
+                            </a>
+                            {% if cartographie.risques %}
+                            <button class="action-btn-modern secondary" onclick="exporterMatrice()">
+                                <i class="fas fa-download me-2"></i>
+                                <span>Exporter Matrice</span>
+                            </button>
+                            <button class="action-btn-modern tertiary" onclick="actualiserMatrice()">
+                                <i class="fas fa-sync-alt me-2"></i>
+                                <span>Actualiser</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Légende modernisée -->
+            <div class="card-modern mt-4">
+                <div class="card-header-modern">
+                    <div class="d-flex align-items-center">
+                        <div class="header-icon-sm">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <h5 class="mb-0 ms-2">Légende</h5>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="legend-modern">
+                        <div class="legend-item">
+                            <div class="legend-color bg-success"></div>
+                            <span class="legend-text">Faible</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color bg-warning"></div>
+                            <span class="legend-text">Moyen</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color bg-orange"></div>
+                            <span class="legend-text">Élevé</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color bg-danger"></div>
+                            <span class="legend-text">Critique</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color bg-primary"></div>
+                            <span class="legend-text">Autres risques</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-color bg-danger with-pulse"></div>
+                            <span class="legend-text">Risque sélectionné</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Matrice des risques modernisée -->
+        <div class="col-md-8 mb-4">
+            <div class="card-modern matrix-container">
+                <div class="card-header-modern d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="header-icon-sm">
+                            <i class="fas fa-chart-network"></i>
+                        </div>
+                        <h5 class="mb-0 ms-2" id="matriceTitre">Matrice des Risques</h5>
+                    </div>
+                    <div class="matrix-controls">
+                        <button class="btn-control" onclick="exporterMatrice()" title="Exporter">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button class="btn-control" onclick="actualiserMatrice()" title="Actualiser">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body p-4 text-center matrix-preview">
+                    <div id="matriceClassique" class="matrice-container">
+                        <img src="data:image/png;base64,{{ matrice_classique }}" alt="Matrice classique" class="img-fluid rounded matrix-image">
+                    </div>
+                    
+                    <div id="matriceCriticite" class="matrice-container" style="display: none;">
+                        <img src="data:image/png;base64,{{ matrice_criticite }}" alt="Matrice de criticité" class="img-fluid rounded matrix-image">
+                    </div>
+                    
+                    <div id="matricePriorisation" class="matrice-container" style="display: none;">
+                        <img src="data:image/png;base64,{{ matrice_priorisation }}" alt="Matrice de priorisation" class="img-fluid rounded matrix-image">
+                    </div>
+
+                    <div id="matriceSurbrillance" class="matrice-container" style="display: none;">
+                        <div class="matrix-alert">
+                            <i class="fas fa-mouse-pointer me-2"></i> 
+                            Cliquez sur un risque dans le tableau pour le voir en surbrillance
+                        </div>
+                        <img src="data:image/png;base64,{{ matrice_surbrillance }}" alt="Matrice avec surbrillance" class="img-fluid rounded matrix-image">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau de Bordeaux modernisé -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <div class="d-flex align-items-center">
+                        <div class="header-icon-sm">
+                            <i class="fas fa-table"></i>
+                        </div>
+                        <h5 class="mb-0 ms-2">Tableau de Bordeaux</h5>
+                        <span class="badge-modern ms-3">{{ cartographie.risques|length }} risques analysés</span>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row g-4">
+                        <!-- Actions Prioritaires -->
+                        <div class="col-xl-3 col-md-6">
+                            <div class="bordeaux-card critical">
+                                <div class="bordeaux-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bordeaux-icon">
+                                                <i class="fas fa-exclamation-circle"></i>
+                                            </div>
+                                            <span class="bordeaux-title">Actions Prioritaires</span>
+                                        </div>
+                                        <span class="bordeaux-count">{{ tableau_bordeaux.actions_prioritaires|length }}</span>
+                                    </div>
+                                </div>
+                                <div class="bordeaux-body">
+                                    {% if tableau_bordeaux.actions_prioritaires %}
+                                        {% for item in tableau_bordeaux.actions_prioritaires %}
+                                        <div class="risk-card-modern">
+                                            <div class="risk-header-modern">
+                                                <a href="{{ url_for('matrice_risque_specifique', cartographie_id=cartographie.id, risque_id=item.risque.id) }}" 
+                                                   class="risk-reference-modern">
+                                                    {{ item.risque.reference }}
+                                                </a>
+                                                <span class="risk-badge-modern critical">Critique</span>
+                                            </div>
+                                            <p class="risk-description-modern">{{ item.risque.intitule }}</p>
+                                            <div class="risk-footer-modern">
+                                                <span class="risk-score-modern">Score: {{ item.score }}</span>
+                                                <div class="risk-actions-modern">
+                                                    <a href="{{ url_for('detail_risque', id=item.risque.id) }}" 
+                                                       class="risk-action-modern">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state-modern">
+                                            <div class="empty-icon">
+                                                <i class="fas fa-check-circle"></i>
+                                            </div>
+                                            <h6>Aucun risque critique</h6>
+                                            <p>Tous les risques sont sous contrôle</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Surveillance Renforcée -->
+                        <div class="col-xl-3 col-md-6">
+                            <div class="bordeaux-card high">
+                                <div class="bordeaux-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bordeaux-icon">
+                                                <i class="fas fa-eye"></i>
+                                            </div>
+                                            <span class="bordeaux-title">Surveillance Renforcée</span>
+                                        </div>
+                                        <span class="bordeaux-count">{{ tableau_bordeaux.surveillance_renforcee|length }}</span>
+                                    </div>
+                                </div>
+                                <div class="bordeaux-body">
+                                    {% if tableau_bordeaux.surveillance_renforcee %}
+                                        {% for item in tableau_bordeaux.surveillance_renforcee %}
+                                        <div class="risk-card-modern">
+                                            <div class="risk-header-modern">
+                                                <a href="{{ url_for('matrice_risque_specifique', cartographie_id=cartographie.id, risque_id=item.risque.id) }}" 
+                                                   class="risk-reference-modern">
+                                                    {{ item.risque.reference }}
+                                                </a>
+                                                <span class="risk-badge-modern high">Élevé</span>
+                                            </div>
+                                            <p class="risk-description-modern">{{ item.risque.intitule }}</p>
+                                            <div class="risk-footer-modern">
+                                                <span class="risk-score-modern">Score: {{ item.score }}</span>
+                                                <div class="risk-actions-modern">
+                                                    <a href="{{ url_for('detail_risque', id=item.risque.id) }}" 
+                                                       class="risk-action-modern">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state-modern">
+                                            <div class="empty-icon">
+                                                <i class="fas fa-check-circle"></i>
+                                            </div>
+                                            <h6>Aucun risque élevé</h6>
+                                            <p>Risques modérés uniquement</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Surveillance Courante -->
+                        <div class="col-xl-3 col-md-6">
+                            <div class="bordeaux-card medium">
+                                <div class="bordeaux-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bordeaux-icon">
+                                                <i class="fas fa-chart-line"></i>
+                                            </div>
+                                            <span class="bordeaux-title">Surveillance Courante</span>
+                                        </div>
+                                        <span class="bordeaux-count">{{ tableau_bordeaux.surveillance_courante|length }}</span>
+                                    </div>
+                                </div>
+                                <div class="bordeaux-body">
+                                    {% if tableau_bordeaux.surveillance_courante %}
+                                        {% for item in tableau_bordeaux.surveillance_courante %}
+                                        <div class="risk-card-modern">
+                                            <div class="risk-header-modern">
+                                                <a href="{{ url_for('matrice_risque_specifique', cartographie_id=cartographie.id, risque_id=item.risque.id) }}" 
+                                                   class="risk-reference-modern">
+                                                    {{ item.risque.reference }}
+                                                </a>
+                                                <span class="risk-badge-modern medium">Moyen</span>
+                                            </div>
+                                            <p class="risk-description-modern">{{ item.risque.intitule }}</p>
+                                            <div class="risk-footer-modern">
+                                                <span class="risk-score-modern">Score: {{ item.score }}</span>
+                                                <div class="risk-actions-modern">
+                                                    <a href="{{ url_for('detail_risque', id=item.risque.id) }}" 
+                                                       class="risk-action-modern">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state-modern">
+                                            <div class="empty-icon">
+                                                <i class="fas fa-check-circle"></i>
+                                            </div>
+                                            <h6>Aucun risque moyen</h6>
+                                            <p>Seulement risques faibles ou critiques</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions Limitées -->
+                        <div class="col-xl-3 col-md-6">
+                            <div class="bordeaux-card low">
+                                <div class="bordeaux-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bordeaux-icon">
+                                                <i class="fas fa-check-circle"></i>
+                                            </div>
+                                            <span class="bordeaux-title">Actions Limitées</span>
+                                        </div>
+                                        <span class="bordeaux-count">{{ tableau_bordeaux.actions_limitees|length }}</span>
+                                    </div>
+                                </div>
+                                <div class="bordeaux-body">
+                                    {% if tableau_bordeaux.actions_limitees %}
+                                        {% for item in tableau_bordeaux.actions_limitees %}
+                                        <div class="risk-card-modern">
+                                            <div class="risk-header-modern">
+                                                <a href="{{ url_for('matrice_risque_specifique', cartographie_id=cartographie.id, risque_id=item.risque.id) }}" 
+                                                   class="risk-reference-modern">
+                                                    {{ item.risque.reference }}
+                                                </a>
+                                                <span class="risk-badge-modern low">Faible</span>
+                                            </div>
+                                            <p class="risk-description-modern">{{ item.risque.intitule }}</p>
+                                            <div class="risk-footer-modern">
+                                                <span class="risk-score-modern">Score: {{ item.score }}</span>
+                                                <div class="risk-actions-modern">
+                                                    <a href="{{ url_for('detail_risque', id=item.risque.id) }}" 
+                                                       class="risk-action-modern">
+                                                        <i class="fas fa-eye"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    {% else %}
+                                        <div class="empty-state-modern">
+                                            <div class="empty-icon">
+                                                <i class="fas fa-check-circle"></i>
+                                            </div>
+                                            <h6>Aucun risque faible</h6>
+                                            <p>Tous les risques nécessitent une attention</p>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste des risques modernisée -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card-modern">
+                <div class="card-header-modern">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <div class="header-icon-sm">
+                                <i class="fas fa-list-ul"></i>
+                            </div>
+                            <h5 class="mb-0 ms-2">Liste des Risques</h5>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="badge-modern">{{ cartographie.risques|length }} risques</span>
+                            <button class="btn-filter" onclick="toggleFiltres()">
+                                <i class="fas fa-filter me-2"></i> Filtres
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if cartographie.risques %}
+                    <div id="filtresSection" class="filters-panel" style="display: none;">
+                        <div class="filter-grid">
+                            <div class="filter-group">
+                                <label class="filter-label">Niveau de risque</label>
+                                <select class="filter-select" onchange="filtrerTableau(this.value)">
+                                    <option value="tous">Tous les niveaux</option>
+                                    <option value="Critique">Critique</option>
+                                    <option value="Élevé">Élevé</option>
+                                    <option value="Moyen">Moyen</option>
+                                    <option value="Faible">Faible</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Catégorie</label>
+                                <select class="filter-select" onchange="filtrerParCategorie(this.value)">
+                                    <option value="tous">Toutes les catégories</option>
+                                    {% set categories = cartographie.risques|map(attribute='categorie')|unique|list %}
+                                    {% for categorie in categories %}
+                                        <option value="{{ categorie }}">{{ categorie }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label class="filter-label">Recherche</label>
+                                <div class="search-box">
+                                    <i class="fas fa-search search-icon"></i>
+                                    <input type="text" class="search-input" placeholder="Référence ou intitulé..." onkeyup="rechercherRisque(this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-modern-container">
+                        <table class="table-modern" id="tableauRisques">
+                            <thead>
+                                <tr>
+                                    <th>RÉFÉRENCE</th>
+                                    <th>INTITULÉ</th>
+                                    <th>CATÉGORIE</th>
+                                    <th>ÉVALUATION</th>
+                                    <th>IMPACT/PROB</th>
+                                    <th>NIVEAU</th>
+                                    <th class="text-end">ACTIONS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for risque in cartographie.risques %}
+                                {% set derniere_eval = risque.evaluations|sort(attribute='created_at', reverse=true)|first %}
+                                <tr class="risk-row-modern" data-niveau="{{ derniere_eval.niveau_risque if derniere_eval else 'Non évalué' }}" 
+                                    data-categorie="{{ risque.categorie }}">
+                                    <td>
+                                        <div class="risk-ref">{{ risque.reference }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="risk-title">{{ risque.intitule }}</div>
+                                        {% if risque.description %}
+                                        <div class="risk-desc">{{ risque.description|truncate(60) }}</div>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <span class="category-tag">{{ risque.categorie }}</span>
+                                    </td>
+                                    <td>
+                                        {% if derniere_eval %}
+                                            <div class="eval-date">{{ derniere_eval.created_at.strftime('%d/%m/%Y') }}</div>
+                                            <div class="eval-by">par {{ derniere_eval.evaluateur.username }}</div>
+                                        {% else %}
+                                            <span class="text-muted">Non évalué</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if derniere_eval %}
+                                            <div class="score-badges">
+                                                <span class="impact-badge">{{ derniere_eval.impact }}/5</span>
+                                                <span class="prob-badge">{{ derniere_eval.probabilite }}/5</span>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">-/-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if derniere_eval %}
+                                            {% if derniere_eval.niveau_risque == 'Critique' %}
+                                            <span class="level-badge critical">{{ derniere_eval.niveau_risque }}</span>
+                                            {% elif derniere_eval.niveau_risque == 'Élevé' %}
+                                            <span class="level-badge high">{{ derniere_eval.niveau_risque }}</span>
+                                            {% elif derniere_eval.niveau_risque == 'Moyen' %}
+                                            <span class="level-badge medium">{{ derniere_eval.niveau_risque }}</span>
+                                            {% else %}
+                                            <span class="level-badge low">{{ derniere_eval.niveau_risque }}</span>
+                                            {% endif %}
+                                        {% else %}
+                                            <span class="level-badge">Non évalué</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <a href="{{ url_for('matrice_risque_specifique', cartographie_id=cartographie.id, risque_id=risque.id) }}" 
+                                               class="btn-action matrix" 
+                                               title="Voir sur matrice">
+                                                <i class="fas fa-bullseye"></i>
+                                            </a>
+                                            <a href="{{ url_for('detail_risque', id=risque.id) }}" 
+                                               class="btn-action view" 
+                                               title="Voir détail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ url_for('evaluer_risque', id=risque.id) }}" 
+                                               class="btn-action evaluate" 
+                                               title="Évaluer">
+                                                <i class="fas fa-chart-bar"></i>
+                                            </a>
+                                            {% if not risque.kri %}
+                                            <a href="{{ url_for('nouveau_kri', risque_id=risque.id) }}" 
+                                               class="btn-action kri"
+                                               title="Créer KRI">
+                                                <i class="fas fa-chart-line"></i>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="empty-state-full">
+                        <div class="empty-illustration">
+                            <i class="fas fa-map-marked-alt"></i>
+                        </div>
+                        <h3 class="empty-title">Aucun risque identifié</h3>
+                        <p class="empty-description">Commencez par ajouter des risques à cette cartographie pour analyser votre exposition.</p>
+                        <a href="{{ url_for('nouveau_risque', cartographie_id=cartographie.id) }}" class="btn-primary-modern">
+                            <i class="fas fa-plus me-2"></i> Ajouter le premier risque
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let matriceActuelle = 'classique';
+
+function changerMatrice(type) {
+    document.querySelectorAll('.matrice-container').forEach(container => {
+        container.style.display = 'none';
+    });
+    
+    document.getElementById('matrice' + type.charAt(0).toUpperCase() + type.slice(1)).style.display = 'block';
+    
+    const titres = {
+        'classique': 'Matrice des Risques',
+        'criticite': 'Matrice de Criticité', 
+        'priorisation': 'Matrice de Priorisation',
+        'surbrillance': 'Visualisation des Risques'
+    };
+    document.getElementById('matriceTitre').textContent = titres[type];
+    
+    document.querySelectorAll('.matrix-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    matriceActuelle = type;
+}
+
+function exporterMatrice() {
+    const container = document.querySelector('.matrice-container[style*="display: block"]');
+    const img = container.querySelector('img');
+    const link = document.createElement('a');
+    link.download = 'matrice-' + matriceActuelle + '-{{ cartographie.nom }}.png';
+    link.href = img.src;
+    link.click();
+}
+
+function actualiserMatrice() {
+    window.location.reload();
+}
+
+function toggleFiltres() {
+    const filtresSection = document.getElementById('filtresSection');
+    filtresSection.style.display = filtresSection.style.display === 'none' ? 'block' : 'none';
+}
+
+function filtrerTableau(niveau) {
+    const lignes = document.querySelectorAll('#tableauRisques tbody tr');
+    lignes.forEach(ligne => {
+        const niveauLigne = ligne.getAttribute('data-niveau');
+        if (niveau === 'tous' || niveauLigne === niveau) {
+            ligne.style.display = '';
+        } else {
+            ligne.style.display = 'none';
+        }
+    });
+}
+
+function filtrerParCategorie(categorie) {
+    const lignes = document.querySelectorAll('#tableauRisques tbody tr');
+    lignes.forEach(ligne => {
+        const categorieLigne = ligne.getAttribute('data-categorie');
+        if (categorie === 'tous' || categorieLigne === categorie) {
+            ligne.style.display = '';
+        } else {
+            ligne.style.display = 'none';
+        }
+    });
+}
+
+function rechercherRisque(terme) {
+    const lignes = document.querySelectorAll('#tableauRisques tbody tr');
+    const termeMin = terme.toLowerCase();
+    
+    lignes.forEach(ligne => {
+        const texteLigne = ligne.textContent.toLowerCase();
+        if (texteLigne.includes(termeMin)) {
+            ligne.style.display = '';
+        } else {
+            ligne.style.display = 'none';
+        }
+    });
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    changerMatrice('classique');
+    
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+});
+</script>
+
+<style>
+/* Variables modernes */
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    --danger-gradient: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --dark-gradient: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+    --shadow-xl: 0 20px 60px rgba(0,0,0,0.15);
+    --border-radius: 16px;
+    --border-radius-sm: 12px;
+}
+
+/* En-tête de page modernisé */
+.page-header-modern {
+    background: var(--dark-gradient);
+    color: white;
+    padding: 2rem 0;
+    margin: -1rem -1rem 2rem -1rem;
+    box-shadow: var(--shadow-lg);
+}
+
+.header-icon {
+    font-size: 2.5rem;
+    color: rgba(255,255,255,0.9);
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: white;
+}
+
+.cartographie-badge {
+    background: rgba(255,255,255,0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.page-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+}
+
+.btn-modern {
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.btn-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+/* Cartes modernes */
+.card-modern {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow-lg);
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.card-modern:hover {
+    box-shadow: var(--shadow-xl);
+    transform: translateY(-2px);
+}
+
+.card-header-modern {
+    background: white;
+    border-bottom: 1px solid #eef2f7;
+    padding: 1.5rem;
+    border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+}
+
+.header-icon-sm {
+    width: 40px;
+    height: 40px;
+    background: var(--primary-gradient);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+}
+
+/* Sélecteur de matrice */
+.matrix-selector {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+}
+
+.selector-label {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.selector-buttons {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+}
+
+.matrix-btn {
+    flex: 1;
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-radius: var(--border-radius-sm);
+    padding: 1.5rem 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    color: #6c757d;
+}
+
+.matrix-btn:hover,
+.matrix-btn.active {
+    background: var(--primary-gradient);
+    color: white;
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.matrix-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.matrix-btn span {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Panel d'informations */
+.info-panel {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+.info-panel .card-header-modern {
+    background: rgba(255,255,255,0.1);
+    color: white;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.info-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.info-card {
+    background: rgba(255,255,255,0.1);
+    border-radius: var(--border-radius-sm);
+    padding: 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    background: rgba(255,255,255,0.15);
+    transform: translateX(5px);
+}
+
+.info-card.highlight {
+    background: rgba(255,255,255,0.2);
+    border: 2px solid rgba(255,255,255,0.3);
+}
+
+.info-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.info-content label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
+.info-value {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.info-value-large {
+    font-size: 1.5rem;
+    font-weight: 700;
+}
+
+/* Statistiques */
+.stats-section {
+    margin-top: 2rem;
+}
+
+.section-title {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
+    color: rgba(255,255,255,0.9);
+    font-weight: 600;
+}
+
+.stats-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.stat-item {
+    background: rgba(255,255,255,0.1);
+    border-radius: var(--border-radius-sm);
+    padding: 1rem;
+    transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+    background: rgba(255,255,255,0.15);
+}
+
+.stat-item.critical { border-left: 4px solid #dc3545; }
+.stat-item.high { border-left: 4px solid #fd7e14; }
+.stat-item.medium { border-left: 4px solid #17a2b8; }
+.stat-item.low { border-left: 4px solid #28a745; }
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    margin-bottom: 0.5rem;
+}
+
+.stat-bar {
+    background: rgba(255,255,255,0.2);
+    height: 4px;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.stat-progress {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.stat-item.critical .stat-progress { background: #dc3545; }
+.stat-item.high .stat-progress { background: #fd7e14; }
+.stat-item.medium .stat-progress { background: #17a2b8; }
+.stat-item.low .stat-progress { background: #28a745; }
+
+/* Actions rapides modernisées */
+.quick-actions-modern {
+    margin-top: 2rem;
+}
+
+.actions-grid-modern {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.action-btn-modern {
+    display: flex;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-radius: var(--border-radius-sm);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    color: white;
+}
+
+.action-btn-modern.primary {
+    background: rgba(255,255,255,0.2);
+}
+
+.action-btn-modern.secondary {
+    background: rgba(255,255,255,0.15);
+}
+
+.action-btn-modern.tertiary {
+    background: rgba(255,255,255,0.1);
+}
+
+.action-btn-modern:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+    color: white;
+}
+
+/* Légende modernisée */
+.legend-modern {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+}
+
+.legend-color.with-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.legend-text {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+/* Contrôles de matrice */
+.matrix-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.btn-control {
+    width: 40px;
+    height: 40px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.btn-control:hover {
+    background: var(--primary-gradient);
+    color: white;
+    transform: translateY(-1px);
+}
+
+.matrix-preview {
+    background: #f8f9fa;
+    border-radius: var(--border-radius-sm);
+}
+
+.matrix-image {
+    max-height: 500px;
+    border-radius: var(--border-radius-sm);
+    box-shadow: var(--shadow-lg);
+}
+
+.matrix-alert {
+    background: var(--warning-gradient);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: var(--border-radius-sm);
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+}
+
+/* Cartes Bordeaux modernisées */
+.bordeaux-card {
+    border-radius: var(--border-radius);
+    overflow: hidden;
+    height: 100%;
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-lg);
+}
+
+.bordeaux-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-xl);
+}
+
+.bordeaux-card.critical { border-top: 4px solid #dc3545; }
+.bordeaux-card.high { border-top: 4px solid #fd7e14; }
+.bordeaux-card.medium { border-top: 4px solid #17a2b8; }
+.bordeaux-card.low { border-top: 4px solid #28a745; }
+
+.bordeaux-header {
+    background: white;
+    padding: 1.5rem;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.bordeaux-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    color: white;
+    font-size: 1rem;
+}
+
+.bordeaux-card.critical .bordeaux-icon { background: #dc3545; }
+.bordeaux-card.high .bordeaux-icon { background: #fd7e14; }
+.bordeaux-card.medium .bordeaux-icon { background: #17a2b8; }
+.bordeaux-card.low .bordeaux-icon { background: #28a745; }
+
+.bordeaux-title {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.bordeaux-count {
+    background: #f8f9fa;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+.bordeaux-card.critical .bordeaux-count { color: #dc3545; }
+.bordeaux-card.high .bordeaux-count { color: #fd7e14; }
+.bordeaux-card.medium .bordeaux-count { color: #17a2b8; }
+.bordeaux-card.low .bordeaux-count { color: #28a745; }
+
+.bordeaux-body {
+    padding: 1.5rem;
+    background: #f8f9fa;
+    height: calc(100% - 80px);
+}
+
+/* Cartes de risque modernisées */
+.risk-card-modern {
+    background: white;
+    border-radius: var(--border-radius-sm);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+    border-left: 4px solid;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.risk-card-modern:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.risk-card-modern .risk-header-modern {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+}
+
+.risk-reference-modern {
+    font-weight: 700;
+    color: #2c3e50;
+    text-decoration: none;
+    font-size: 1.1rem;
+}
+
+.risk-reference-modern:hover {
+    color: #3498db;
+}
+
+.risk-badge-modern {
+    padding: 0.35rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.risk-badge-modern.critical { background: #dc3545; color: white; }
+.risk-badge-modern.high { background: #fd7e14; color: white; }
+.risk-badge-modern.medium { background: #17a2b8; color: white; }
+.risk-badge-modern.low { background: #28a745; color: white; }
+
+.risk-description-modern {
+    color: #6c757d;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.risk-footer-modern {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.risk-score-modern {
+    background: #f8f9fa;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #2c3e50;
+}
+
+.risk-actions-modern {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.risk-action-modern {
+    color: #6c757d;
+    text-decoration: none;
+    padding: 0.5rem;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    background: #f8f9fa;
+}
+
+.risk-action-modern:hover {
+    background: var(--primary-gradient);
+    color: white;
+}
+
+/* États vides modernisés */
+.empty-state-modern {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: #6c757d;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state-modern h6 {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.empty-state-modern p {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.empty-state-full {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.empty-illustration {
+    font-size: 4rem;
+    color: #6c757d;
+    margin-bottom: 1.5rem;
+    opacity: 0.5;
+}
+
+.empty-title {
+    color: #2c3e50;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.empty-description {
+    color: #6c757d;
+    margin-bottom: 2rem;
+    font-size: 1.1rem;
+}
+
+.btn-primary-modern {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 1rem 2rem;
+    border-radius: var(--border-radius-sm);
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn-primary-modern:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+    color: white;
+}
+
+/* Badges modernes */
+.badge-modern {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* Filtres modernisés */
+.filters-panel {
+    background: #f8f9fa;
+    border-radius: var(--border-radius-sm);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+    color: #6c757d;
+    font-weight: 600;
+}
+
+.filter-select {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.filter-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.search-box {
+    position: relative;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6c757d;
+}
+
+.search-input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn-filter {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    color: #6c757d;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-filter:hover {
+    background: #f8f9fa;
+    border-color: #667eea;
+    color: #667eea;
+}
+
+/* Table modernisée */
+.table-modern-container {
+    border-radius: var(--border-radius-sm);
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.table-modern {
+    width: 100%;
+    background: white;
+    border-collapse: collapse;
+}
+
+.table-modern thead {
+    background: #f8f9fa;
+}
+
+.table-modern th {
+    padding: 1.25rem 1rem;
+    font-weight: 600;
+    color: #2c3e50;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.8rem;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.table-modern td {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid #eef2f7;
+}
+
+.risk-row-modern:hover {
+    background: #f8f9fa;
+}
+
+.risk-ref {
+    font-weight: 700;
+    color: #2c3e50;
+}
+
+.risk-title {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+}
+
+.risk-desc {
+    color: #6c757d;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.category-tag {
+    background: #e9ecef;
+    color: #495057;
+    padding: 0.35rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.eval-date {
+    font-weight: 500;
+    color: #2c3e50;
+    margin-bottom: 0.25rem;
+}
+
+.eval-by {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.score-badges {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.impact-badge {
+    background: #667eea;
+    color: white;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.prob-badge {
+    background: #f6d365;
+    color: #2c3e50;
+    padding: 0.35rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.level-badge {
+    padding: 0.5rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.level-badge.critical { background: #dc3545; color: white; }
+.level-badge.high { background: #fd7e14; color: white; }
+.level-badge.medium { background: #17a2b8; color: white; }
+.level-badge.low { background: #28a745; color: white; }
+.level-badge { background: #6c757d; color: white; }
+
+.action-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.btn-action {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+.btn-action.matrix { background: #f8f9fa; color: #dc3545; }
+.btn-action.view { background: #f8f9fa; color: #6c757d; }
+.btn-action.evaluate { background: #f8f9fa; color: #667eea; }
+.btn-action.kri { background: #f8f9fa; color: #28a745; }
+
+.btn-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.btn-action.matrix:hover { background: #dc3545; color: white; }
+.btn-action.view:hover { background: #6c757d; color: white; }
+.btn-action.evaluate:hover { background: #667eea; color: white; }
+.btn-action.kri:hover { background: #28a745; color: white; }
+
+/* Responsive */
+@media (max-width: 768px) {
+    .matrix-selector {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .selector-buttons {
+        flex-direction: column;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .legend-modern {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+.bg-orange {
+    background-color: #fd7e14 !important;
+}
+</style>
+{% endblock %}

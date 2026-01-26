@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- En-tête -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ url_for('liste_cartographies') }}">Cartographies</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('detail_cartographie', id=cartographie.id) }}">{{ cartographie.nom }}</a></li>
+                            <li class="breadcrumb-item"><a href="{{ url_for('detail_risque', id=risque_cible.id) }}">{{ risque_cible.reference }}</a></li>
+                            <li class="breadcrumb-item active">Vue Matrice</li>
+                        </ol>
+                    </nav>
+                    <h1 class="h3 mb-2">
+                        <i class="fas fa-bullseye me-2 text-warning"></i>
+                        Risque en Surbrillance
+                    </h1>
+                    <p class="text-muted">
+                        Position du risque {{ risque_cible.reference }} dans la matrice des risques
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <a href="{{ url_for('detail_cartographie', id=cartographie.id) }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Retour à la cartographie
+                    </a>
+                    <a href="{{ url_for('detail_risque', id=risque_cible.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-eye me-2"></i>Voir le risque
+                    </a>
+                    <button class="btn btn-success" onclick="exporterMatrice()">
+                        <i class="fas fa-download me-2"></i>Exporter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations du risque -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0">
+                        <i class="fas fa-info-circle me-2"></i>
+                        Informations du Risque
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Référence:</strong>
+                            <p class="h5 text-primary">{{ risque_cible.reference }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Intitulé:</strong>
+                            <p>{{ risque_cible.intitule }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <strong>Catégorie:</strong>
+                            <span class="badge bg-secondary">{{ risque_cible.categorie }}</span>
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Type:</strong>
+                            <span class="badge bg-info">{{ risque_cible.type_risque or 'Non spécifié' }}</span>
+                        </div>
+                    </div>
+                    {% if risque_cible.description %}
+                    <div class="mt-3">
+                        <strong>Description:</strong>
+                        <p class="mb-0">{{ risque_cible.description }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-chart-bar me-2"></i>
+                        Position dans la Matrice
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% set derniere_eval = risque_cible.evaluations|sort(attribute='created_at', reverse=true)|first if risque_cible.evaluations else None %}
+                    {% if derniere_eval %}
+                        {% set impact_final = derniere_eval.impact_conf or derniere_eval.impact_val or derniere_eval.impact_pre %}
+                        {% set probabilite_final = derniere_eval.probabilite_conf or derniere_eval.probabilite_val or derniere_eval.probabilite_pre %}
+                        
+                        <!-- CORRECTION : Vérifier que les valeurs ne sont pas None avant la multiplication -->
+                        {% if impact_final is not none and probabilite_final is not none %}
+                            {% set score_final = impact_final * probabilite_final %}
+                        {% else %}
+                            {% set score_final = none %}
+                        {% endif %}
+                        
+                        <div class="row text-center">
+                            <div class="col-4">
+                                <div class="fw-bold text-primary">Impact</div>
+                                <div class="h3">
+                                    {% if impact_final is not none %}
+                                        {{ impact_final }}/5
+                                    {% else %}
+                                        <span class="text-muted">Non évalué</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    {% if impact_final == 1 %}Négligeable
+                                    {% elif impact_final == 2 %}Mineur
+                                    {% elif impact_final == 3 %}Modéré
+                                    {% elif impact_final == 4 %}Important
+                                    {% elif impact_final == 5 %}Critique
+                                    {% else %}Non spécifié
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold text-warning">Probabilité</div>
+                                <div class="h3">
+                                    {% if probabilite_final is not none %}
+                                        {{ probabilite_final }}/5
+                                    {% else %}
+                                        <span class="text-muted">Non évalué</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    {% if probabilite_final == 1 %}Très rare
+                                    {% elif probabilite_final == 2 %}Rare
+                                    {% elif probabilite_final == 3 %}Possible
+                                    {% elif probabilite_final == 4 %}Probable
+                                    {% elif probabilite_final == 5 %}Très probable
+                                    {% else %}Non spécifié
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <div class="col-4">
+                                <div class="fw-bold text-success">Score</div>
+                                <div class="h3">
+                                    {% if score_final is not none %}
+                                        {{ score_final }}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    {% if score_final is none %}
+                                        Non calculé
+                                    {% elif score_final <= 4 %}Faible
+                                    {% elif score_final <= 10 %}Moyen
+                                    {% elif score_final <= 16 %}Élevé
+                                    {% else %}Critique
+                                    {% endif %}
+                                </small>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                            <p class="mb-0">Ce risque n'a pas encore été évalué</p>
+                            <a href="{{ url_for('evaluer_risque_triphase', id=risque_cible.id) }}" class="btn btn-primary btn-sm mt-2">
+                                <i class="fas fa-chart-bar me-1"></i>Évaluer le risque
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Matrice en surbrillance -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-network me-2 text-warning"></i>
+                            Matrice des Risques - {{ risque_cible.reference }} en Surbrillance
+                        </h5>
+                        <div class="btn-group">
+                            <button class="btn btn-outline-primary btn-sm" onclick="ouvrirVuePleine()">
+                                <i class="fas fa-expand me-1"></i>Plein écran
+                            </button>
+                            <button class="btn btn-outline-success btn-sm" onclick="exporterMatrice()">
+                                <i class="fas fa-download me-1"></i>Exporter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body text-center p-4">
+                    {% if matrice_surbrillance %}
+                        <div class="alert alert-info d-flex align-items-center">
+                            <i class="fas fa-info-circle me-2 fa-lg"></i>
+                            <div>
+                                <strong>Risque sélectionné:</strong> {{ risque_cible.reference }} - {{ risque_cible.intitule }}
+                                <br>
+                                <small>Le risque est mis en évidence avec un marqueur rouge et un effet de surbrillance</small>
+                            </div>
+                        </div>
+                        
+                        <div class="matrix-container-special">
+                            <img src="data:image/png;base64,{{ matrice_surbrillance }}" 
+                                 alt="Matrice avec risque {{ risque_cible.reference }} en surbrillance" 
+                                 class="img-fluid rounded shadow matrix-image-special"
+                                 onclick="ouvrirVuePleine()">
+                        </div>
+                        
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-mouse-pointer me-1"></i>
+                                Cliquez sur l'image pour agrandir • 
+                                <i class="fas fa-download me-1"></i>
+                                Utilisez le bouton Exporter pour sauvegarder
+                            </small>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                            <h4>Impossible de générer la matrice</h4>
+                            <p class="text-muted">Aucune évaluation valide n'a été trouvée pour les risques de cette cartographie.</p>
+                            <div class="mt-3">
+                                <a href="{{ url_for('evaluer_risque_triphase', id=risque_cible.id) }}" class="btn btn-primary me-2">
+                                    <i class="fas fa-chart-bar me-1"></i>Évaluer ce risque
+                                </a>
+                                <a href="{{ url_for('detail_cartographie', id=cartographie.id) }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-list me-1"></i>Voir tous les risques
+                                </a>
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal pour la vue en plein écran -->
+<div class="modal fade" id="matrixModal" tabindex="-1" aria-labelledby="matrixModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="matrixModalLabel">
+                    <i class="fas fa-bullseye me-2 text-warning"></i>
+                    Matrice - {{ risque_cible.reference }} en Surbrillance
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center bg-light">
+                {% if matrice_surbrillance %}
+                <img id="fullscreenMatrix" 
+                     src="data:image/png;base64,{{ matrice_surbrillance }}" 
+                     alt="Matrice en plein écran" 
+                     class="img-fluid h-100">
+                {% endif %}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Fermer
+                </button>
+                <button type="button" class="btn btn-success" onclick="exporterMatrice()">
+                    <i class="fas fa-download me-1"></i>Exporter l'image
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function ouvrirVuePleine() {
+    const modal = new bootstrap.Modal(document.getElementById('matrixModal'));
+    modal.show();
+}
+
+function exporterMatrice() {
+    const img = document.querySelector('.matrix-image-special');
+    if (img) {
+        const link = document.createElement('a');
+        // Créer un nom de fichier plus propre
+        const date = new Date().toISOString().split('T')[0];
+        link.download = `matrice-{{ risque_cible.reference }}-{{ cartographie.nom|replace(' ', '-') }}-${date}.png`;
+        link.href = img.src;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } else {
+        alert('Impossible d\'exporter la matrice. Veuillez réessayer.');
+    }
+}
+
+// Raccourci clavier pour la vue plein écran
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        ouvrirVuePleine();
+    }
+    
+    // Raccourci E pour exporter
+    if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        exporterMatrice();
+    }
+});
+
+// Amélioration de l'expérience utilisateur
+document.addEventListener('DOMContentLoaded', function() {
+    // Tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    // Animation de chargement pour l'export
+    const exportBtn = document.querySelector('.btn-success');
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function(e) {
+            if (e.target === this) {
+                const originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Export en cours...';
+                this.disabled = true;
+                
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                }, 2000);
+            }
+        });
+    }
+    
+    // Zoom sur l'image au survol
+    const matrixImage = document.querySelector('.matrix-image-special');
+    if (matrixImage) {
+        matrixImage.addEventListener('mouseenter', function() {
+            this.style.transform = 'scale(1.03)';
+        });
+        
+        matrixImage.addEventListener('mouseleave', function() {
+            this.style.transform = 'scale(1)';
+        });
+    }
+});
+</script>
+
+<style>
+.matrix-image-special {
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    max-height: 70vh;
+    border: 2px solid #dee2e6;
+    object-fit: contain;
+}
+
+.matrix-image-special:hover {
+    transform: scale(1.03);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.matrix-container-special {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.modal-fullscreen .modal-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+}
+
+.modal-fullscreen img {
+    max-width: 100%;
+    max-height: 90vh;
+}
+
+.card-border-warning {
+    border-left: 4px solid #ffc107;
+}
+
+.card-border-primary {
+    border-left: 4px solid #0d6efd;
+}
+
+/* Améliorations responsives */
+@media (max-width: 768px) {
+    .matrix-image-special {
+        max-height: 50vh;
+    }
+    
+    .matrix-container-special {
+        padding: 10px;
+    }
+    
+    .btn-group {
+        flex-wrap: wrap;
+        gap: 5px;
+    }
+    
+    .btn-group .btn {
+        margin-bottom: 5px;
+    }
+}
+
+/* Animation pour le chargement */
+@keyframes pulse {
+    0% { opacity: 0.7; }
+    50% { opacity: 1; }
+    100% { opacity: 0.7; }
+}
+
+.loading {
+    animation: pulse 1.5s infinite;
+}
+</style>
+{% endblock %}

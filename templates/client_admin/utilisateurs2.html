@@ -1,0 +1,814 @@
+<!-- templates/client_admin/utilisateurs.html -->
+{% extends "base.html" %}
+
+{% block title %}Gestion des utilisateurs - Admin Client{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('client_admin_dashboard') }}">Admin Client</a></li>
+                    <li class="breadcrumb-item active">Utilisateurs</li>
+                </ol>
+            </nav>
+            
+            <!-- En-tête avec bouton -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0">Gestion des utilisateurs</h1>
+                <div>
+                    {% if can_edit_users and stats.total < stats.limite %}
+                    <a href="{{ url_for('client_admin_creer_utilisateur') }}" class="btn btn-modern-primary">
+                        <i class="fas fa-user-plus me-2"></i>Nouvel utilisateur
+                    </a>
+                    {% elif can_edit_users %}
+                    <button class="btn btn-modern-primary" disabled title="Limite d'utilisateurs atteinte">
+                        <i class="fas fa-user-plus me-2"></i>Nouvel utilisateur
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card card-modern card-stat">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center me-3" 
+                             style="width: 48px; height: 48px;">
+                            <i class="fas fa-users fa-lg text-primary"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">{{ stats.total }}</h4>
+                            <p class="text-muted mb-0">Utilisateurs total</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-modern card-stat">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-success bg-opacity-10 d-flex align-items-center justify-content-center me-3" 
+                             style="width: 48px; height: 48px;">
+                            <i class="fas fa-user-check fa-lg text-success"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">{{ stats.actifs }}</h4>
+                            <p class="text-muted mb-0">Utilisateurs actifs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-modern card-stat">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-warning bg-opacity-10 d-flex align-items-center justify-content-center me-3" 
+                             style="width: 48px; height: 48px;">
+                            <i class="fas fa-user-shield fa-lg text-warning"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">{{ stats.admin_count }}</h4>
+                            <p class="text-muted mb-0">Administrateurs</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-3">
+            <div class="card card-modern card-stat">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="rounded-circle bg-info bg-opacity-10 d-flex align-items-center justify-content-center me-3" 
+                             style="width: 48px; height: 48px;">
+                            <i class="fas fa-chart-line fa-lg text-info"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0">{{ stats.limite }}</h4>
+                            <p class="text-muted mb-0">Limite formule</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Barre de progression utilisation -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card card-modern">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Utilisation de votre formule</h6>
+                        <span class="badge bg-{{ 'danger' if stats.total >= stats.limite else 'warning' if stats.total >= stats.limite*0.9 else 'success' }}">
+                            {{ stats.total }}/{{ stats.limite }} utilisateurs
+                            ({{ stats.pourcentage|round|int }}%)
+                        </span>
+                    </div>
+                    <div class="progress" style="height: 10px;">
+                        <div class="progress-bar bg-{{ 'danger' if stats.total >= stats.limite else 'warning' if stats.total >= stats.limite*0.9 else 'success' }}" 
+                             style="width: {{ stats.pourcentage }}%">
+                        </div>
+                    </div>
+                    <div class="mt-2 small text-muted">
+                        {% if stats.total >= stats.limite %}
+                        <i class="fas fa-exclamation-triangle text-danger me-1"></i>
+                        <span class="text-danger">Limite atteinte ! Vous ne pouvez plus créer d'utilisateurs.</span>
+                        {% elif stats.total >= stats.limite*0.9 %}
+                        <i class="fas fa-exclamation-circle text-warning me-1"></i>
+                        <span class="text-warning">Vous approchez de la limite ({{ stats.pourcentage|round|int }}%)</span>
+                        {% else %}
+                        <i class="fas fa-check-circle text-success me-1"></i>
+                        <span>Bonne marge disponible ({{ stats.limite - stats.total }} places restantes)</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des utilisateurs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card card-modern">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Liste des utilisateurs</h5>
+                    <div class="btn-group">
+                        <button class="btn btn-sm btn-outline-secondary" onclick="exportUsersToCSV()">
+                            <i class="fas fa-download me-1"></i>Exporter
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="refreshUserList()">
+                            <i class="fas fa-sync-alt me-1"></i>Rafraîchir
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    {% if users %}
+                    <div class="table-responsive">
+                        <table class="table table-modern table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Utilisateur</th>
+                                    <th>Rôle</th>
+                                    <th>Département</th>
+                                    <th>Statut</th>
+                                    <th>Date création</th>
+                                    <th>Dernière connexion</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user in users %}
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="rounded-circle bg-light d-flex align-items-center justify-content-center me-3" 
+                                                 style="width: 36px; height: 36px;">
+                                                <i class="fas fa-user text-muted"></i>
+                                            </div>
+                                            <div>
+                                                <strong>{{ user.username }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ user.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge-modern 
+                                            {% if user.role == 'admin' or user.is_client_admin %}badge-danger
+                                            {% elif user.role == 'manager' %}badge-warning
+                                            {% elif user.role == 'auditeur' %}badge-info
+                                            {% elif user.role == 'consultant' %}badge-success
+                                            {% else %}badge-secondary{% endif %}">
+                                            {{ user.get_role_display_name() }}
+                                            {% if user.is_client_admin %}
+                                            <i class="fas fa-crown ms-1"></i>
+                                            {% endif %}
+                                        </span>
+                                    </td>
+                                    <td>{{ user.department or 'Non spécifié' }}</td>
+                                    <td>
+                                        {% if user.is_active %}
+                                        <span class="badge bg-success">Actif</span>
+                                        {% else %}
+                                        <span class="badge bg-danger">Inactif</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ user.created_at.strftime('%d/%m/%Y') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if user.last_login %}
+                                        <small>{{ user.last_login.strftime('%d/%m/%Y %H:%M') }}</small>
+                                        {% else %}
+                                        <small class="text-muted">Jamais</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <!-- Voir -->
+                                            <a href="{{ url_for('admin_editer_utilisateur', id=user.id) if can_edit_users else '#' }}" 
+                                               class="btn btn-outline-primary"
+                                               {% if not can_edit_users %}disabled{% endif %}>
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            
+                                            <!-- Éditer -->
+                                            <a href="{{ url_for('admin_editer_utilisateur', id=user.id) if can_edit_users else '#' }}" 
+                                               class="btn btn-outline-secondary"
+                                               {% if not can_edit_users %}disabled{% endif %}
+                                               title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            <!-- Gérer permissions (seulement admin) -->
+                                            {% if current_user.is_client_admin and user.id != current_user.id %}
+                                            <a href="{{ url_for('admin_gerer_permissions', id=user.id) }}" 
+                                               class="btn btn-outline-info"
+                                               title="Gérer permissions">
+                                                <i class="fas fa-key"></i>
+                                            </a>
+                                            {% endif %}
+                                            
+                                            <!-- Activer/Désactiver -->
+                                            {% if can_edit_users and user.id != current_user.id %}
+                                            <button class="btn btn-outline-{{ 'warning' if user.is_active else 'success' }} toggle-user"
+                                                    data-user-id="{{ user.id }}"
+                                                    data-username="{{ user.username }}"
+                                                    data-current-status="{{ 'actif' if user.is_active else 'inactif' }}"
+                                                    title="{{ 'Désactiver' if user.is_active else 'Activer' }}">
+                                                <i class="fas fa-{{ 'ban' if user.is_active else 'check' }}"></i>
+                                            </button>
+                                            {% endif %}
+                                            
+                                            <!-- Supprimer (seulement admin, pas soi-même) -->
+                                            {% if current_user.is_client_admin and user.id != current_user.id %}
+                                            <button class="btn btn-outline-danger delete-user"
+                                                    data-user-id="{{ user.id }}"
+                                                    data-username="{{ user.username }}"
+                                                    title="Supprimer">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Pagination (optionnelle) -->
+                    {% if users|length > 10 %}
+                    <nav aria-label="Navigation utilisateurs" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#" tabindex="-1">Précédent</a>
+                            </li>
+                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                            <li class="page-item"><a class="page-link" href="#">2</a></li>
+                            <li class="page-item"><a class="page-link" href="#">3</a></li>
+                            <li class="page-item">
+                                <a class="page-link" href="#">Suivant</a>
+                            </li>
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5>Aucun utilisateur</h5>
+                        <p class="text-muted mb-4">Commencez par créer votre premier utilisateur</p>
+                        {% if can_edit_users and stats.total < stats.limite %}
+                        <a href="{{ url_for('client_admin_creer_utilisateur') }}" class="btn btn-modern-primary">
+                            <i class="fas fa-user-plus me-2"></i>Créer un utilisateur
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Informations supplémentaires -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Informations</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <i class="fas fa-shield-alt text-primary me-2"></i>
+                            <strong>Administrateurs :</strong> Peuvent gérer tous les aspects du client
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-user-check text-success me-2"></i>
+                            <strong>Utilisateurs actifs :</strong> Peuvent se connecter et utiliser le système
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-user-times text-danger me-2"></i>
+                            <strong>Utilisateurs inactifs :</strong> Ne peuvent pas se connecter
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-chart-line text-warning me-2"></i>
+                            <strong>Limite formule :</strong> {{ stats.limite }} utilisateurs maximum
+                        </li>
+                        <li>
+                            <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                            <strong>Attention :</strong> Vous ne pouvez pas vous désactiver vous-même
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card card-modern">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-tachometer-alt me-2"></i>Statistiques détaillées</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <h6 class="mb-1">Répartition par rôle</h6>
+                                <canvas id="roleChart" height="150"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="mb-3">
+                                <h6 class="mb-1">Statut des comptes</h6>
+                                <canvas id="statusChart" height="150"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="fas fa-sync-alt me-1"></i>
+                            Dernière mise à jour : {{ now.strftime('%d/%m/%Y %H:%M') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation activation/désactivation -->
+<div class="modal fade" id="toggleUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="toggleUserMessage">Êtes-vous sûr de vouloir modifier le statut de cet utilisateur ?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="confirmToggleUser">Confirmer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmation suppression -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Suppression d'utilisateur</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Attention : Cette action est irréversible !</strong>
+                </div>
+                <p id="deleteUserMessage">Êtes-vous absolument sûr de vouloir supprimer cet utilisateur ?</p>
+                <ul class="text-danger small">
+                    <li>Toutes les données associées seront perdues</li>
+                    <li>L'utilisateur ne pourra plus se connecter</li>
+                    <li>Cette action ne peut pas être annulée</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteUser">Supprimer définitivement</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Variables globales pour les modals
+let currentUserId = null;
+let currentUsername = null;
+let currentAction = null;
+
+// Initialiser les charts
+function initCharts() {
+    // Données pour le chart des rôles
+    const roleData = {
+        labels: ['Utilisateurs', 'Managers', 'Auditeurs', 'Administrateurs', 'Consultants'],
+        datasets: [{
+            data: [
+                {{ stats.user_count }},
+                {{ users|selectattr('role', 'equalto', 'manager')|list|length }},
+                {{ users|selectattr('role', 'equalto', 'auditeur')|list|length }},
+                {{ stats.admin_count }},
+                {{ users|selectattr('role', 'equalto', 'consultant')|list|length }}
+            ],
+            backgroundColor: [
+                '#6c757d', // gris - utilisateurs
+                '#ffc107', // jaune - managers
+                '#0dcaf0', // bleu clair - auditeurs
+                '#dc3545', // rouge - admins
+                '#198754'  // vert - consultants
+            ]
+        }]
+    };
+
+    // Données pour le chart des statuts
+    const statusData = {
+        labels: ['Actifs', 'Inactifs'],
+        datasets: [{
+            data: [{{ stats.actifs }}, {{ stats.inactifs }}],
+            backgroundColor: ['#198754', '#dc3545']
+        }]
+    };
+
+    // Chart des rôles
+    const roleCtx = document.getElementById('roleChart').getContext('2d');
+    new Chart(roleCtx, {
+        type: 'doughnut',
+        data: roleData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    // Chart des statuts
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: statusData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+}
+
+// Gérer activation/désactivation
+document.querySelectorAll('.toggle-user').forEach(button => {
+    button.addEventListener('click', function() {
+        currentUserId = this.dataset.userId;
+        currentUsername = this.dataset.username;
+        const currentStatus = this.dataset.currentStatus;
+        const newStatus = currentStatus === 'actif' ? 'inactif' : 'actif';
+        
+        // Mettre à jour le message du modal
+        document.getElementById('toggleUserMessage').innerHTML = `
+            Êtes-vous sûr de vouloir <strong>${newStatus === 'inactif' ? 'désactiver' : 'activer'}</strong> 
+            l'utilisateur <strong>${currentUsername}</strong> ?
+            <br><br>
+            <small class="text-muted">
+                L'utilisateur sera ${newStatus === 'inactif' ? 'incapable de se connecter' : 'capable de se connecter'}.
+            </small>
+        `;
+        
+        // Afficher le modal
+        const modal = new bootstrap.Modal(document.getElementById('toggleUserModal'));
+        modal.show();
+    });
+});
+
+// Confirmer activation/désactivation
+document.getElementById('confirmToggleUser').addEventListener('click', function() {
+    if (!currentUserId) return;
+    
+    // Désactiver le bouton pendant la requête
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Traitement...';
+    
+    // Envoyer la requête AJAX
+    fetch(`/admin/utilisateur/${currentUserId}/toggle`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            
+            // Rafraîchir la page après 1.5 secondes
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showToast(data.error || 'Erreur lors de la modification', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Erreur réseau', 'error');
+        console.error('Erreur:', error);
+    })
+    .finally(() => {
+        // Fermer le modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('toggleUserModal'));
+        modal.hide();
+        
+        // Réactiver le bouton
+        this.disabled = false;
+        this.textContent = 'Confirmer';
+    });
+});
+
+// Gérer suppression
+document.querySelectorAll('.delete-user').forEach(button => {
+    button.addEventListener('click', function() {
+        currentUserId = this.dataset.userId;
+        currentUsername = this.dataset.username;
+        
+        // Mettre à jour le message du modal
+        document.getElementById('deleteUserMessage').innerHTML = `
+            Êtes-vous absolument sûr de vouloir supprimer l'utilisateur 
+            <strong>${currentUsername}</strong> ?
+        `;
+        
+        // Afficher le modal
+        const modal = new bootstrap.Modal(document.getElementById('deleteUserModal'));
+        modal.show();
+    });
+});
+
+// Confirmer suppression
+document.getElementById('confirmDeleteUser').addEventListener('click', function() {
+    if (!currentUserId) return;
+    
+    // Désactiver le bouton pendant la requête
+    this.disabled = true;
+    this.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Suppression...';
+    
+    // Envoyer la requête AJAX
+    fetch(`/admin/utilisateur/${currentUserId}/supprimer`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast(data.message, 'success');
+            
+            // Rafraîchir la page après 1.5 secondes
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showToast(data.error || 'Erreur lors de la suppression', 'error');
+        }
+    })
+    .catch(error => {
+        showToast('Erreur réseau', 'error');
+        console.error('Erreur:', error);
+    })
+    .finally(() => {
+        // Fermer le modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deleteUserModal'));
+        modal.hide();
+        
+        // Réactiver le bouton
+        this.disabled = false;
+        this.textContent = 'Supprimer définitivement';
+    });
+});
+
+// Exporter en CSV
+function exportUsersToCSV() {
+    const rows = [
+        ['Nom', 'Email', 'Rôle', 'Département', 'Statut', 'Date création', 'Dernière connexion']
+    ];
+    
+    {% for user in users %}
+    rows.push([
+        '{{ user.username }}',
+        '{{ user.email }}',
+        '{{ user.get_role_display_name() }}',
+        '{{ user.department or "" }}',
+        '{{ "Actif" if user.is_active else "Inactif" }}',
+        '{{ user.created_at.strftime("%d/%m/%Y") }}',
+        '{% if user.last_login %}{{ user.last_login.strftime("%d/%m/%Y %H:%M") }}{% else %}Jamais{% endif %}'
+    ]);
+    {% endfor %}
+    
+    let csvContent = "data:text/csv;charset=utf-8,";
+    rows.forEach(row => {
+        csvContent += row.map(cell => `"${cell}"`).join(";") + "\n";
+    });
+    
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "utilisateurs_{{ client.reference if client else 'client' }}_{{ now.strftime('%Y%m%d_%H%M') }}.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    showToast('Export CSV généré avec succès', 'success');
+}
+
+// Rafraîchir la liste
+function refreshUserList() {
+    const refreshBtn = document.querySelector('button[onclick="refreshUserList()"]');
+    const originalHtml = refreshBtn.innerHTML;
+    
+    refreshBtn.disabled = true;
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Rafraîchissement...';
+    
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+}
+
+// Afficher les notifications
+function showToast(message, type = 'info') {
+    const toastHtml = `
+        <div class="toast align-items-center text-bg-${type} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `;
+    
+    const toastContainer = document.querySelector('.toast-container');
+    if (!toastContainer) {
+        const container = document.createElement('div');
+        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        document.body.appendChild(container);
+    }
+    
+    const container = document.querySelector('.toast-container');
+    container.insertAdjacentHTML('beforeend', toastHtml);
+    
+    const toastElement = container.lastElementChild;
+    const toast = new bootstrap.Toast(toastElement, { delay: 3000 });
+    toast.show();
+}
+
+// Initialiser les charts au chargement
+document.addEventListener('DOMContentLoaded', function() {
+    initCharts();
+    
+    // Initialiser les tooltips Bootstrap
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+});
+</script>
+
+<style>
+.card-stat {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    transition: transform 0.2s ease;
+}
+
+.card-stat:hover {
+    transform: translateY(-2px);
+}
+
+.badge-modern {
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 600;
+    border-radius: 6px;
+}
+
+.badge-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+}
+
+.badge-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+}
+
+.badge-info {
+    background-color: rgba(13, 202, 240, 0.1);
+    color: #0dcaf0;
+}
+
+.badge-success {
+    background-color: rgba(25, 135, 84, 0.1);
+    color: #198754;
+}
+
+.badge-secondary {
+    background-color: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+}
+
+.table-modern {
+    --bs-table-striped-bg: rgba(0, 0, 0, 0.02);
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table-modern thead th {
+    border-bottom: 2px solid #e9ecef;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.5px;
+    color: #6c757d;
+}
+
+.table-modern tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.table-modern tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.03);
+}
+
+.btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+.progress {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+
+/* Animation pour le bouton rafraîchir */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .card-stat .d-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .card-stat .rounded-circle {
+        margin: 0 auto 1rem auto;
+    }
+    
+    .btn-group {
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>
+            <i class="fas fa-archive me-2"></i>Risques Archivés
+        </h1>
+        <div class="btn-group">
+            <a href="{{ url_for('liste_cartographies') }}" class="btn btn-primary">
+                <i class="fas fa-arrow-left me-2"></i>Retour aux cartographies
+            </a>
+            {% if current_user.role == 'admin' %}
+            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalNettoyage">
+                <i class="fas fa-broom me-2"></i>Nettoyage
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if risques %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Référence</th>
+                            <th>Intitulé</th>
+                            <th>Cartographie</th>
+                            <th>Archivé le</th>
+                            <th>Archivé par</th>
+                            <th>Motif</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for risque in risques %}
+                        <tr>
+                            <td>
+                                <strong>{{ risque.reference }}</strong>
+                            </td>
+                            <td>{{ risque.intitule }}</td>
+                            <td>
+                                <a href="{{ url_for('detail_cartographie', id=risque.cartographie_id) }}" class="text-decoration-none">
+                                    {{ risque.cartographie.nom }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if risque.archived_at %}
+                                    {{ risque.archived_at.strftime('%d/%m/%Y') }}
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if risque.archive_user %}
+                                    {{ risque.archive_user.username }}
+                                {% else %}
+                                    <span class="text-muted">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span title="{{ risque.archive_reason }}">
+                                    {{ risque.archive_reason|truncate(50) if risque.archive_reason else 'Non spécifié' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <form method="POST" action="{{ url_for('restaurer_risque', id=risque.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-success btn-sm" 
+                                                onclick="return confirm('Restaurer ce risque ? Il redeviendra visible dans sa cartographie.')"
+                                                title="Restaurer le risque">
+                                            <i class="fas fa-undo"></i>
+                                        </button>
+                                    </form>
+                                    
+                                    <a href="{{ url_for('detail_risque', id=risque.id) }}" 
+                                       class="btn btn-info btn-sm"
+                                       title="Voir détail">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    
+                                    {% if current_user.role == 'admin' %}
+                                    <form method="POST" action="{{ url_for('supprimer_definitivement_risque', id=risque.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-danger btn-sm" 
+                                                onclick="return confirm('ATTENTION : Supprimer définitivement ce risque ? Cette action est irréversible et supprimera toutes les données associées.')"
+                                                title="Supprimer définitivement">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>Aucun risque archivé.
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de nettoyage pour les admins -->
+{% if current_user.role == 'admin' %}
+<div class="modal fade" id="modalNettoyage" tabindex="-1" aria-labelledby="modalNettoyageLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="modalNettoyageLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Nettoyage des Archives
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger">
+                    <strong>Attention !</strong> Cette action est irréversible.
+                </div>
+                <p>Vous êtes sur le point de supprimer définitivement <strong>tous les risques archivés</strong>.</p>
+                <p class="mb-0">Cette action supprimera :</p>
+                <ul>
+                    <li>Tous les risques archivés</li>
+                    <li>Leurs évaluations associées</li>
+                    <li>Les KRI et mesures associés</li>
+                </ul>
+                <p><strong>Cette action ne peut pas être annulée.</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="POST" action="{{ url_for('nettoyer_archives') }}">
+                    <button type="submit" class="btn btn-danger" 
+                            onclick="return confirm('ÊTES-VOUS ABSOLUMENT SÛR ? Cette action va supprimer définitivement TOUS les risques archivés.')">
+                        <i class="fas fa-broom me-2"></i>Nettoyer toutes les archives
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
