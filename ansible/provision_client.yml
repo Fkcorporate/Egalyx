@@ -1,0 +1,70 @@
+---
+- name: Provisionner environnement client
+  hosts: all
+  become: yes
+  
+  vars:
+    app_user: "appuser"
+    app_dir: "/opt/{{ client_reference }}"
+    db_name: "{{ client_reference }}"
+    db_user: "{{ client_reference }}_user"
+    db_password: "{{ db_password }}"
+    
+  tasks:
+    - name: Créer l'utilisateur applicatif
+      user:
+        name: "{{ app_user }}"
+        groups: sudo
+        append: yes
+        shell: /bin/bash
+        
+    - name: Créer le répertoire applicatif
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: '0755'
+        
+    - name: Installer les dépendances système
+      apt:
+        name:
+          - python3-pip
+          - python3-venv
+          - nginx
+          - postgresql
+          - postgresql-contrib
+          - supervisor
+        state: present
+        update_cache: yes
+        
+    - name: Configurer PostgreSQL
+      postgresql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        state: present
+        
+    - name: Créer la base de données
+      postgresql_db:
+        name: "{{ db_name }}"
+        owner: "{{ db_user }}"
+        state: present
+        
+    - name: Configurer Nginx
+      template:
+        src: templates/nginx.conf.j2
+        dest: "/etc/nginx/sites-available/{{ client_domaine }}"
+      notify: Reload nginx
+      
+    - name: Activer le site Nginx
+      file:
+        src: "/etc/nginx/sites-available/{{ client_domaine }}"
+        dest: "/etc/nginx/sites-enabled/{{ client_domaine }}"
+        state: link
+      notify: Reload nginx
+      
+  handlers:
+    - name: Reload nginx
+      service:
+        name: nginx
+        state: reloaded

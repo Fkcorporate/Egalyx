@@ -1,0 +1,59 @@
+{
+  "total_analyses": 6,
+  "by_type": {
+    "complet": 6
+  },
+  "by_score": {
+    "excellent": 0,
+    "bon": 6,
+    "moyen": 0,
+    "faible": 0
+  },
+  "by_audit": [
+    {
+      "audit": "AUD-0004",
+      "analyses": 4
+    },
+    {
+      "audit": "AUD-0005",
+      "analyses": 2
+    }
+  ],
+  "recent_activity": [
+    {
+      "id": 6,
+      "audit": "AUD-0005",
+      "type": "complet",
+      "score": 78.0,
+      "date": "2026-01-01T14:00:20.364201"
+    },
+    {
+      "id": 5,
+      "audit": "AUD-0004",
+      "type": "complet",
+      "score": 78.0,
+      "date": "2026-01-01T13:59:00.119290"
+    },
+    {
+      "id": 4,
+      "audit": "AUD-0004",
+      "type": "complet",
+      "score": 78.0,
+      "date": "2025-12-31T12:12:17.840946"
+    },
+    {
+      "id": 3,
+      "audit": "AUD-0005",
+      "type": "complet",
+      "score": 78.0,
+      "date": "2025-12-31T12:11:41.076575"
+    },
+    {
+      "id": 2,
+      "audit": "AUD-0004",
+      "type": "complet",
+      "score": 78.0,
+      "date": "2025-12-31T12:10:42.195767"
+    }
+  ]
+}
