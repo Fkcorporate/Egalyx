@@ -2148,6 +2148,9 @@ class FichierMetadata(db.Model):
 
     
 # -------------------- RECOMMANDATION - CORRIGÉ ET COMPLET --------------------
+from datetime import datetime, timezone
+
+# Dans votre modèle Recommandation :
 class Recommandation(db.Model):
     __tablename__ = 'recommandations'
     
@@ -2155,14 +2158,12 @@ class Recommandation(db.Model):
     reference = db.Column(db.String(50), nullable=False)
     description = db.Column(db.Text, nullable=False)
     type_recommandation = db.Column(db.String(50), nullable=False)
-    # Nouvelle typologie
-    categorie = db.Column(db.String(50))  # conformite_reglementaire, amelioration_continue, reduction_risque, optimisation_processus, securite
+    categorie = db.Column(db.String(50))
     delai_mise_en_oeuvre = db.Column(db.String(50))
     date_echeance = db.Column(db.Date)
-    # Priorisation
-    urgence = db.Column(db.Integer, default=1)  # 1-5
-    impact_operationnel = db.Column(db.Integer, default=1)  # 1-5
-    score_priorite = db.Column(db.Integer, default=0)  # Calculé automatiquement
+    urgence = db.Column(db.Integer, default=1)
+    impact_operationnel = db.Column(db.Integer, default=1)
+    score_priorite = db.Column(db.Integer, default=0)
     statut = db.Column(db.String(50), default='a_traiter')
     taux_avancement = db.Column(db.Integer, default=0)
     audit_id = db.Column(db.Integer, db.ForeignKey('audits.id'), nullable=False)
@@ -2170,18 +2171,12 @@ class Recommandation(db.Model):
     risque_id = db.Column(db.Integer, db.ForeignKey('risques.id'), nullable=True)
     responsable_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    # CORRECTION : UN SEUL client_id
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))  # CORRIGÉ
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc),  # CORRIGÉ
+                          onupdate=lambda: datetime.now(timezone.utc))  # CORRIGÉ
     client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)
     
-    # Correction : Supprimer ces lignes en double
-    # is_archived = db.Column(db.Boolean, default=False)  # SUPPRIMER
-    # archived_at = db.Column(db.DateTime)                # SUPPRIMER
-    # archived_by = db.Column(db.Integer, db.ForeignKey('user.id'))  # SUPPRIMER
-    # client_id = db.Column(db.Integer, db.ForeignKey('clients.id'), nullable=True)  # SUPPRIMER
-    
-    # Relations corrigées
+    # Relations
     audit = db.relationship('Audit', back_populates='recommandations')
     constatation = db.relationship('Constatation', back_populates='recommandations')
     risque = db.relationship('Risque', backref='recommandations')
@@ -2193,15 +2188,12 @@ class Recommandation(db.Model):
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Calculer automatiquement le score de priorité
         self.calculer_score_priorite()
     
     def calculer_score_priorite(self):
         """Calcule automatiquement le score de priorité"""
-        # Calcul basique : urgence (40%) + impact (60%)
         score = (self.urgence * 0.4 + self.impact_operationnel * 0.6) * 20
         
-        # Ajouter un bonus si un risque est associé
         if self.risque and hasattr(self.risque, 'evaluations') and self.risque.evaluations:
             try:
                 derniere_eval = sorted(self.risque.evaluations, key=lambda x: x.created_at)[-1]
@@ -2214,7 +2206,6 @@ class Recommandation(db.Model):
     
     @property
     def couleur_statut(self):
-        """Couleur Bootstrap pour le statut"""
         couleurs = {
             'a_traiter': 'secondary',
             'en_cours': 'warning',
@@ -2226,17 +2217,14 @@ class Recommandation(db.Model):
     
     @property
     def est_en_retard(self):
-        """Vérifie si la recommandation est en retard"""
         if not self.date_echeance or self.statut == 'termine':
             return False
-        return datetime.utcnow().date() > self.date_echeance
+        return datetime.now(timezone.utc).date() > self.date_echeance  # CORRIGÉ
     
     def changer_statut(self, nouveau_statut, utilisateur_id, commentaire=None):
-        """Change le statut et enregistre dans l'historique"""
         ancien_statut = self.statut
         self.statut = nouveau_statut
         
-        # Enregistrer dans l'historique
         historique = HistoriqueRecommandation(
             recommandation_id=self.id,
             action='changement_statut',
@@ -2244,51 +2232,31 @@ class Recommandation(db.Model):
                 'ancien_statut': ancien_statut,
                 'nouveau_statut': nouveau_statut,
                 'commentaire': commentaire,
-                'date': datetime.utcnow().isoformat()
+                'date': datetime.now(timezone.utc).isoformat()  # CORRIGÉ
             },
             utilisateur_id=utilisateur_id
         )
         db.session.add(historique)
         
-        # Si le statut est 'termine', mettre le taux à 100%
         if nouveau_statut == 'termine':
             self.taux_avancement = 100
-
-    # SUPPRIMER les méthodes d'archivage qui n'existent pas
-    # def archiver(self, user_id, raison=None):
-    #     """Archiver la recommandation"""
-    #     self.is_archived = True
-    #     self.archived_at = datetime.utcnow()
-    #     self.archived_by = user_id
-    #     if raison:
-    #         self.archive_raison = raison
-    
-    # def restaurer(self):
-    #     """Restaurer la recommandation"""
-    #     self.is_archived = False
-    #     self.archived_at = None
-    #     self.archived_by = None
-    #     self.archive_raison = None
     
     def mettre_a_jour_avancement(self, nouveau_taux, utilisateur_id):
-        """Met à jour le taux d'avancement"""
         ancien_taux = self.taux_avancement
         self.taux_avancement = min(100, max(0, nouveau_taux))
         
-        # Enregistrer dans l'historique
         historique = HistoriqueRecommandation(
             recommandation_id=self.id,
             action='mise_a_jour_avancement',
             details={
                 'ancien_taux': ancien_taux,
                 'nouveau_taux': self.taux_avancement,
-                'date': datetime.utcnow().isoformat()
+                'date': datetime.now(timezone.utc).isoformat()  # CORRIGÉ
             },
             utilisateur_id=utilisateur_id
         )
         db.session.add(historique)
         
-        # Si 100%, suggérer de changer le statut
         if self.taux_avancement == 100 and self.statut != 'termine':
             self.statut = 'termine'
     
